@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+<link rel="stylesheet" href="css/style.css">
+<script src="js/config.js"></script>
+<script src="js/client.js"></script>
+    <title>Home - Membres Frenchjumper</title>
+  </head>
+  <body>
+    <h2>Liste des Membres Frenchjumper</h2>
+    
+    <!-- Conteneur de la liste des membres par grade -->
+    <div id="listeMembres"></div>
+
+    <!-- Formulaire d'ajout en bas, inchangé visuellement -->
+    <div id="addForm" class="bottom-form">
+      <h3>Ajouter un membre</h3>
+      <input type="text" id="newNom" placeholder="Nom d'Avatar">
+      <input type="datetime-local" id="newDate">
+      <button onclick="submitNewMembre()">Valider</button>
+      <div id="addMsg"></div>
+    </div>
+
+    <!-- Modal Fiche Membre -->
+    <div id="modalFiche" class="modal" style="display:none;">
+      <div class="modal-content">
+        <span id="closeFiche" class="close-btn">&times;</span>
+        <div id="modalFicheContainer"></div>
+      </div>
+    </div>
+  </body>
+</html>

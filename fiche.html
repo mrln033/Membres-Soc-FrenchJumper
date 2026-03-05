@@ -1,0 +1,89 @@
+<!-- fiche.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+<link rel="stylesheet" href="css/style.css">
+<script src="js/config.js"></script>
+<script src="js/client.js"></script>
+  <title>Fiche Membre</title>
+</head>
+<body>
+  <div class="fiche-container">
+
+    <!-- Infos Membre -->
+    <div class="fiche-header">
+      <h2 id="fiche-nom"></h2>
+      <div>
+        <strong>Grade :</strong> <span id="fiche-grade"></span>
+      </div>
+      <div>
+        <strong>Date Première Entrée :</strong> <span id="fiche-date-entree"></span>
+      </div>
+      <div>
+        <strong>Date Maj :</strong> <span id="fiche-date-maj"></span>
+      </div>
+      <div>
+        <strong>Nom Discord :</strong> <span id="fiche-nom-discord"></span>
+      </div>
+      <div>
+        <strong>ID Discord :</strong> <span id="fiche-id-discord"></span>
+      </div>
+      <div>
+        <strong>Règle Soc :</strong>
+        <button id="fiche-regle-soc" class="toggle-btn"></button>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Tableau Historique -->
+    <div class="fiche-historique">
+      <h3>Historique des mouvements</h3>
+      <table id="fiche-historique-table">
+        <thead>
+          <tr>
+            <th>Date Effective</th>
+            <th>Type de Mouvement</th>
+            <th>Grade</th>
+            <th>Commentaire</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Rempli par JS -->
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+<script>
+  function populateFiche(data) {
+    document.getElementById("fiche-nom").innerText = data.NomAvatar;
+    document.getElementById("fiche-grade").innerText = data.Grade;
+    document.getElementById("fiche-date-entree").innerText = data.DatePremiereEntree;
+    document.getElementById("fiche-date-maj").innerText = data.DateMaj || "";
+    document.getElementById("fiche-nom-discord").innerText = data.NomDiscord || "";
+    document.getElementById("fiche-id-discord").innerText = data.IDDiscord || "";
+
+    const regleBtn = document.getElementById("fiche-regle-soc");
+    regleBtn.innerText = data.RegleSoc ? "OUI" : "NON";
+    regleBtn.className = data.RegleSoc ? "toggle-btn oui" : "toggle-btn non";
+
+    // Historique
+    const tbody = document.getElementById("fiche-historique-table").querySelector("tbody");
+    tbody.innerHTML = "";
+    data.Historique.forEach(m => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${m.DateEffective}</td>
+        <td>${m.Type}</td>
+        <td>${m.NouveauGrade || m.AncienGrade}</td>
+        <td>${m.Commentaire || ""}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+</script>
+</body>
+</html>
