@@ -12,7 +12,7 @@ async function loadMembres() {
     const res = await fetch(API_URL + "?action=getMembres");
     const membres = await res.json();
 
-    // Filtrage : ne garder que les niveaux 1 à 6
+    // Filtrage : ne garder que les membres dont le niveau est entre 1 et 6
     const filtered = membres.filter(m => m.niveau >= 1 && m.niveau <= 6);
 
     displayMembres(filtered);
@@ -33,6 +33,7 @@ function displayMembres(list) {
   const container = document.getElementById("listeMembres");
   container.innerHTML = "";
 
+  // aucun membre après filtrage
   if (!list.length) {
     container.innerText = "Aucun membre";
     return;
