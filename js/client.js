@@ -1,3 +1,7 @@
+document.addEventListener("DOMContentLoaded", loadMembres);
+
+
+
 async function loadMembres() {
 
   const container = document.getElementById("listeMembres");
@@ -10,7 +14,7 @@ async function loadMembres() {
 
     displayMembres(membres);
 
-  } catch(err) {
+  } catch (err) {
 
     console.error(err);
     container.innerText = "Erreur chargement";
@@ -26,13 +30,13 @@ function displayMembres(list) {
   const container = document.getElementById("listeMembres");
   container.innerHTML = "";
 
-  if (!list.length) {
+  if (!list || !list.length) {
     container.innerText = "Aucun membre";
     return;
   }
 
-  // tri : niveau desc puis nom
-  list.sort((a,b) => {
+  // tri par niveau puis nom
+  list.sort((a, b) => {
 
     if (b.niveau !== a.niveau)
       return b.niveau - a.niveau;
@@ -73,7 +77,6 @@ function displayMembres(list) {
       compteurGrade = 0;
 
       const tr = document.createElement("tr");
-
       tr.className = "grade-row";
 
       headerRow = document.createElement("td");
@@ -94,7 +97,7 @@ function displayMembres(list) {
     tr.innerHTML = `
       <td>${compteurGrade}</td>
       <td>${m.nom}</td>
-      <td>${m.date || ""}</td>
+      <td>${m.date}</td>
     `;
 
     tbody.appendChild(tr);
