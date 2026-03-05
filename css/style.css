@@ -23,22 +23,22 @@ td:first-child {
 /* Entête du tableau plus petit */
 th {
   background: #eee;
-  font-size: 1.5em; /* plus petit */
+  font-size: 1em;
 }
 
 /* Entête de groupe (grade + nombre) */
-.grade-row {
+.grade-row td {
   background: #eee;
   font-weight: bold;
-  font-size: 1em; /* même taille que total */
-  text-align: left; /* aligné à gauche */
-  font-family: Arial; /* même police que total */
+  font-size: 1em;
+  text-align: left;      /* aligné à gauche */
+  font-family: Arial;
 }
 
 .grade-row .count {
   font-weight: normal;
-  font-size: 0.85em; /* plus petit */
-  color: #666; /* gris */
+  font-size: 0.85em;
+  color: #666;
   margin-left: 10px;
 }
 
@@ -46,7 +46,7 @@ th {
 .total {
   background: #ddd;
   font-weight: bold;
-  text-align: center;
-  font-size: 1em; /* même que grade-row */
+  text-align: left;
+  font-size: 1em;
   font-family: Arial;
 }
