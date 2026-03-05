@@ -1,4 +1,3 @@
-// client.js - Version finale
 
 document.addEventListener("DOMContentLoaded", function() {
   loadMembres();
@@ -42,9 +41,7 @@ async function displayMembresParGrade(list) {
   }
 
   const gradeMap = {};
-  grades.forEach(g => {
-    gradeMap[g.Niveau] = g.NomGrade;
-  });
+  grades.forEach(g => gradeMap[g.Niveau] = g.NomGrade);
 
   list.sort((a, b) => {
     if (b.Niveau !== a.Niveau) return b.Niveau - a.Niveau;
@@ -71,8 +68,7 @@ async function displayMembresParGrade(list) {
   list.forEach(m => {
     if (m.Niveau !== currentNiveau) {
       if (currentNiveau !== null && gradeRowTitle) {
-        gradeRowTitle.querySelector(".grade-count").innerText =
-          `(${compteurGrade} membres)`;
+        gradeRowTitle.querySelector(".grade-count").innerText = `(${compteurGrade} membres)`;
       }
       currentNiveau = m.Niveau;
       compteurGrade = 0;
@@ -104,8 +100,7 @@ async function displayMembresParGrade(list) {
   });
 
   if (currentNiveau !== null && gradeRowTitle) {
-    gradeRowTitle.querySelector(".grade-count").innerText =
-      `(${compteurGrade} membres)`;
+    gradeRowTitle.querySelector(".grade-count").innerText = `(${compteurGrade} membres)`;
   }
 
   const totalRow = document.createElement("tr");
@@ -137,17 +132,9 @@ async function submitNewMembre() {
   try {
     const res = await fetch(API_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"  // <- essentiel
-      },
-      body: JSON.stringify({
-        action: "addMembre",
-        nom: nom,
-        date: date
-      })
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({action: "addMembre", nom: nom, date: date})
     });
-
-    if (!res.ok) throw new Error("Réponse réseau non OK");
 
     const result = await res.json();
     msgDiv.style.color = result.success ? "green" : "red";
@@ -162,6 +149,5 @@ async function submitNewMembre() {
   } catch(err) {
     msgDiv.style.color = "red";
     msgDiv.textContent = "Erreur serveur : " + err.message;
-    console.error(err);
   }
 }
