@@ -1,20 +1,22 @@
-// client.js
-
 document.addEventListener("DOMContentLoaded", function() {
   loadMembres();
 });
 
 async function loadMembres() {
-  const container = document.getElementById("listeMembres");
-  container.innerHTML = "Chargement...";
-  
   try {
-    const res = await fetch(API_URL + "?action=getMembresForHome");
+    const res = await fetch(API_URL + "?action=getHome"); // <== action correcte
     const list = await res.json();
+
+    if (!Array.isArray(list)) {
+      console.error("Liste reçue invalide :", list);
+      document.getElementById("listeMembres").innerText = "Erreur chargement.";
+      return;
+    }
+
     displayMembresParGrade(list);
   } catch(err) {
     console.error("Erreur serveur :", err);
-    container.innerText = "Erreur chargement.";
+    document.getElementById("listeMembres").innerText = "Erreur chargement.";
   }
 }
 
@@ -22,15 +24,22 @@ async function displayMembresParGrade(list) {
   const container = document.getElementById("listeMembres");
   container.innerHTML = "";
 
-  if (!list || list.length === 0) {
+  if (!Array.isArray(list) || list.length === 0) {
     container.innerText = "Aucun membre actif.";
     return;
   }
 
   let grades;
   try {
-    const res = await fetch(API_URL + "?action=grades"); // action correcte
+    const res = await fetch(API_URL + "?action=grades"); // <== action correcte
     grades = await res.json();
+
+    if (!Array.isArray(grades)) {
+      console.error("Grades reçus invalides :", grades);
+      container.innerText = "Erreur affichage grades.";
+      return;
+    }
+
   } catch(err) {
     console.error("Grades non reçus correctement :", err);
     container.innerText = "Erreur affichage grades.";
@@ -48,15 +57,15 @@ async function displayMembresParGrade(list) {
   });
 
   const table = document.createElement("table");
-  table.innerHTML = `
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Nom Avatar</th>
-        <th>Date Première Entrée</th>
-      </tr>
-    </thead>
+  const thead = document.createElement("thead");
+  thead.innerHTML = `
+    <tr>
+      <th>#</th>
+      <th>Nom Avatar</th>
+      <th>Date Première Entrée</th>
+    </tr>
   `;
+  table.appendChild(thead);
 
   const tbody = document.createElement("tbody");
   let currentNiveau = null;
@@ -70,7 +79,6 @@ async function displayMembresParGrade(list) {
         gradeRowTitle.querySelector(".grade-count").innerText =
           `(${compteurGrade} membres)`;
       }
-
       currentNiveau = m.Niveau;
       compteurGrade = 0;
 
@@ -105,7 +113,6 @@ async function displayMembresParGrade(list) {
       `(${compteurGrade} membres)`;
   }
 
-  // ligne total
   const totalRow = document.createElement("tr");
   totalRow.innerHTML = `
     <td colspan="3" class="total-row">
@@ -113,7 +120,6 @@ async function displayMembresParGrade(list) {
     </td>
   `;
   tbody.appendChild(totalRow);
-
   table.appendChild(tbody);
   container.appendChild(table);
 }
@@ -133,10 +139,9 @@ async function submitNewMembre() {
   msgDiv.textContent = "Traitement en cours...";
 
   try {
-    const res = await fetch(API_URL, {
+    const res = await fetch(API_URL + "?action=addMembre", {
       method: "POST",
       body: JSON.stringify({
-        action: "addOrUpdateMembreRobuste",
         nom: nom,
         date: date
       })
