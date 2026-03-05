@@ -16,3 +16,14 @@ th, td {
 th {
   background: #eee;
 }
+
+.grade-row {
+  background:#eee;
+  font-weight:bold;
+}
+
+.total {
+  background:#ddd;
+  font-weight:bold;
+  text-align:right;
+}
