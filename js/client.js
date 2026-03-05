@@ -1,22 +1,23 @@
+// client.js - Version finale
+
 document.addEventListener("DOMContentLoaded", function() {
   loadMembres();
 });
 
 async function loadMembres() {
+  const container = document.getElementById("listeMembres");
+  container.innerText = "Chargement...";
+
   try {
-    const res = await fetch(API_URL + "?action=getHome"); // <== action correcte
+    const res = await fetch(API_URL + "?action=getHome");
     const list = await res.json();
 
-    if (!Array.isArray(list)) {
-      console.error("Liste reçue invalide :", list);
-      document.getElementById("listeMembres").innerText = "Erreur chargement.";
-      return;
-    }
-
+    if (!Array.isArray(list)) throw new Error("Liste reçue invalide");
     displayMembresParGrade(list);
+
   } catch(err) {
     console.error("Erreur serveur :", err);
-    document.getElementById("listeMembres").innerText = "Erreur chargement.";
+    container.innerText = "Erreur chargement.";
   }
 }
 
@@ -24,22 +25,16 @@ async function displayMembresParGrade(list) {
   const container = document.getElementById("listeMembres");
   container.innerHTML = "";
 
-  if (!Array.isArray(list) || list.length === 0) {
+  if (!list || !list.length) {
     container.innerText = "Aucun membre actif.";
     return;
   }
 
-  let grades;
+  let grades = [];
   try {
-    const res = await fetch(API_URL + "?action=grades"); // <== action correcte
+    const res = await fetch(API_URL + "?action=grades");
     grades = await res.json();
-
-    if (!Array.isArray(grades)) {
-      console.error("Grades reçus invalides :", grades);
-      container.innerText = "Erreur affichage grades.";
-      return;
-    }
-
+    if (!Array.isArray(grades)) throw new Error("Grades non reçus correctement");
   } catch(err) {
     console.error("Grades non reçus correctement :", err);
     container.innerText = "Erreur affichage grades.";
@@ -57,15 +52,15 @@ async function displayMembresParGrade(list) {
   });
 
   const table = document.createElement("table");
-  const thead = document.createElement("thead");
-  thead.innerHTML = `
-    <tr>
-      <th>#</th>
-      <th>Nom Avatar</th>
-      <th>Date Première Entrée</th>
-    </tr>
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nom Avatar</th>
+        <th>Date Première Entrée</th>
+      </tr>
+    </thead>
   `;
-  table.appendChild(thead);
 
   const tbody = document.createElement("tbody");
   let currentNiveau = null;
@@ -108,7 +103,7 @@ async function displayMembresParGrade(list) {
     tbody.appendChild(tr);
   });
 
-  if (currentNiveau !== null) {
+  if (currentNiveau !== null && gradeRowTitle) {
     gradeRowTitle.querySelector(".grade-count").innerText =
       `(${compteurGrade} membres)`;
   }
@@ -124,6 +119,7 @@ async function displayMembresParGrade(list) {
   container.appendChild(table);
 }
 
+// =================== Formulaire ajout membre ===================
 async function submitNewMembre() {
   const nom = document.getElementById("newNom").value.trim();
   const date = document.getElementById("newDate").value;
@@ -139,26 +135,25 @@ async function submitNewMembre() {
   msgDiv.textContent = "Traitement en cours...";
 
   try {
-    const res = await fetch(API_URL + "?action=addMembre", {
+    const res = await fetch(API_URL, {
       method: "POST",
       body: JSON.stringify({
+        action: "addMembre",
         nom: nom,
         date: date
       })
     });
 
     const result = await res.json();
+    msgDiv.style.color = result.success ? "green" : "red";
+    msgDiv.textContent = result.message;
 
     if (result.success) {
-      msgDiv.style.color = "green";
       document.getElementById("newNom").value = "";
       document.getElementById("newDate").value = "";
       loadMembres();
-    } else {
-      msgDiv.style.color = "red";
     }
 
-    msgDiv.textContent = result.message;
   } catch(err) {
     msgDiv.style.color = "red";
     msgDiv.textContent = "Erreur serveur : " + err.message;
