@@ -137,12 +137,17 @@ async function submitNewMembre() {
   try {
     const res = await fetch(API_URL, {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json"  // <- essentiel
+      },
       body: JSON.stringify({
         action: "addMembre",
         nom: nom,
         date: date
       })
     });
+
+    if (!res.ok) throw new Error("Réponse réseau non OK");
 
     const result = await res.json();
     msgDiv.style.color = result.success ? "green" : "red";
@@ -157,5 +162,6 @@ async function submitNewMembre() {
   } catch(err) {
     msgDiv.style.color = "red";
     msgDiv.textContent = "Erreur serveur : " + err.message;
+    console.error(err);
   }
 }
