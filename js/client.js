@@ -2,28 +2,14 @@ document.addEventListener("DOMContentLoaded", loadMembres);
 
 
 
-async function loadMembres() {
-
+function loadMembres() {
   const container = document.getElementById("listeMembres");
   container.innerText = "Chargement...";
 
-  try {
-
-    const res = await fetch(API_URL + "?action=getMembres");
-    const membres = await res.json();
-
-    // Filtrage : ne garder que les niveaux 1 à 6
-    const filtered = membres.filter(m => m.niveau >= 1 && m.niveau <= 6);
-
-    displayMembres(filtered);
-
-  } catch(err) {
-
-    console.error(err);
-    container.innerText = "Erreur chargement";
-
-  }
-
+  const script = document.createElement("script");
+  script.src = `${API_URL}?action=getMembres&callback=displayMembres`;
+  script.onerror = () => { container.innerText = "Erreur chargement"; };
+  document.body.appendChild(script);
 }
 
 
