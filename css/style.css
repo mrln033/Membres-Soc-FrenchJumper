@@ -23,7 +23,7 @@ td:first-child {
 /* Entête du tableau plus petit */
 th {
   background: #eee;
-  font-size: 1em; /* plus petit */
+  font-size: 1.5em; /* plus petit */
 }
 
 /* Entête de groupe (grade + nombre) */
