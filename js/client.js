@@ -1,3 +1,7 @@
+document.addEventListener("DOMContentLoaded", loadMembres);
+
+
+
 async function loadMembres() {
 
   const container = document.getElementById("listeMembres");
@@ -8,12 +12,9 @@ async function loadMembres() {
     const res = await fetch(API_URL + "?action=getMembres");
     const membres = await res.json();
 
-    // Filtrage : ne garder que les niveaux 1 à 6
-    const filtered = membres.filter(m => m.niveau >= 1 && m.niveau <= 6);
+    displayMembres(membres);
 
-    displayMembres(filtered);
-
-  } catch(err) {
+  } catch (err) {
 
     console.error(err);
     container.innerText = "Erreur chargement";
@@ -29,15 +30,19 @@ function displayMembres(list) {
   const container = document.getElementById("listeMembres");
   container.innerHTML = "";
 
-  if (!list.length) {
+  if (!list || !list.length) {
     container.innerText = "Aucun membre";
     return;
   }
 
-  // tri : niveau desc puis nom
-  list.sort((a,b) => {
-    if (b.niveau !== a.niveau) return b.niveau - a.niveau;
+  // tri par niveau puis nom
+  list.sort((a, b) => {
+
+    if (b.niveau !== a.niveau)
+      return b.niveau - a.niveau;
+
     return a.nom.localeCompare(b.nom);
+
   });
 
   const table = document.createElement("table");
@@ -88,10 +93,11 @@ function displayMembres(list) {
     total++;
 
     const tr = document.createElement("tr");
+
     tr.innerHTML = `
       <td>${compteurGrade}</td>
       <td>${m.nom}</td>
-      <td>${m.date || ""}</td>
+      <td>${m.date}</td>
     `;
 
     tbody.appendChild(tr);
@@ -104,6 +110,7 @@ function displayMembres(list) {
   }
 
   const totalRow = document.createElement("tr");
+
   totalRow.innerHTML =
     `<td colspan="3" class="total">Total : ${total} membres</td>`;
 
