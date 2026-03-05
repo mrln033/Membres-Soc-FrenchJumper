@@ -2,24 +2,14 @@ document.addEventListener("DOMContentLoaded", function() {
   loadMembres();
 });
 
-async function api(action, params = {}) {
-  const url = new URL(API_URL);
-  url.searchParams.set("action", action);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url);
-  return res.json();
-}
-
 async function loadMembres() {
-  const container = document.getElementById("listeMembres");
-  container.innerText = "Chargement...";
-  
   try {
-    const list = await api("getHome");
+    const res = await fetch(API_URL + "?action=getMembresForHome");
+    const list = await res.json();
     displayMembresParGrade(list);
   } catch(err) {
     console.error("Erreur serveur :", err);
-    container.innerText = "Erreur chargement.";
+    document.getElementById("listeMembres").innerText = "Erreur chargement.";
   }
 }
 
@@ -34,7 +24,8 @@ async function displayMembresParGrade(list) {
 
   let grades;
   try {
-    grades = await api("grades");
+    const res = await fetch(API_URL + "?action=getGrades");
+    grades = await res.json();
   } catch(err) {
     console.error(err);
     container.innerText = "Erreur affichage grades.";
@@ -42,7 +33,9 @@ async function displayMembresParGrade(list) {
   }
 
   const gradeMap = {};
-  grades.forEach(g => { gradeMap[g.Niveau] = g.NomGrade; });
+  grades.forEach(g => {
+    gradeMap[g.Niveau] = g.NomGrade;
+  });
 
   list.sort((a, b) => {
     if (b.Niveau !== a.Niveau) return b.Niveau - a.Niveau;
@@ -50,7 +43,6 @@ async function displayMembresParGrade(list) {
   });
 
   const table = document.createElement("table");
-
   const thead = document.createElement("thead");
   thead.innerHTML = `
     <tr>
@@ -62,7 +54,6 @@ async function displayMembresParGrade(list) {
   table.appendChild(thead);
 
   const tbody = document.createElement("tbody");
-
   let currentNiveau = null;
   let compteurGrade = 0;
   let totalGlobal = 0;
@@ -81,7 +72,6 @@ async function displayMembresParGrade(list) {
       gradeRowTitle = document.createElement("td");
       gradeRowTitle.colSpan = 3;
       gradeRowTitle.className = "grade-row";
-
       gradeRowTitle.innerHTML = `
         <div class="grade-header">
           <h2>${gradeMap[currentNiveau] || ("Grade " + currentNiveau)}</h2>
@@ -99,11 +89,13 @@ async function displayMembresParGrade(list) {
     tr.innerHTML = `
       <td class="num-col">${compteurGrade}</td>
       <td>
-        <a href="#" onclick="openFiche('${m.MembreID}')">
-          ${m.NomAvatar}
-        </a>
+        <span>${m.NomAvatar}</span>
       </td>
-      <td>${m.DatePremiereEntree ? new Date(m.DatePremiereEntree).toLocaleDateString("fr-FR") : ""}</td>
+      <td>
+        ${m.DatePremiereEntree
+          ? new Date(m.DatePremiereEntree).toLocaleDateString("fr-FR")
+          : ""}
+      </td>
     `;
     tbody.appendChild(tr);
   });
@@ -120,58 +112,8 @@ async function displayMembresParGrade(list) {
     </td>
   `;
   tbody.appendChild(totalRow);
-
   table.appendChild(tbody);
   container.appendChild(table);
-}
-
-async function openFiche(membreId) {
-  const modal = document.getElementById("modalFiche");
-  const container = document.getElementById("modalFicheContainer");
-
-  modal.style.display = "flex";
-  container.innerText = "Chargement...";
-
-  document.getElementById("closeFiche").onclick = () => {
-    modal.style.display = "none";
-  };
-
-  try {
-    const data = await api("getFiche", { id: membreId });
-
-    if (!data) {
-      container.innerText = "Aucune donnée trouvée.";
-      return;
-    }
-
-    container.innerHTML = `
-      <h2>${data.NomAvatar}</h2>
-      <p><strong>Grade :</strong> ${data.Grade}</p>
-      <p><strong>Date entrée :</strong> ${data.DatePremiereEntree || ""}</p>
-      <p><strong>Statut :</strong> ${data.Statut || ""}</p>
-
-      <h3>Historique</h3>
-      <table border="1" style="width:100%; border-collapse:collapse;">
-        <tr>
-          <th>Date</th>
-          <th>Type</th>
-          <th>Grade</th>
-          <th>Commentaire</th>
-        </tr>
-        ${(data.Historique || []).map(h => `
-          <tr>
-            <td>${h.DateEffective || ""}</td>
-            <td>${h.Type || ""}</td>
-            <td>${h.NouveauGrade || h.AncienGrade || ""}</td>
-            <td>${h.Commentaire || ""}</td>
-          </tr>
-        `).join("")}
-      </table>
-    `;
-  } catch(err) {
-    console.error(err);
-    container.innerText = "Erreur : " + err;
-  }
 }
 
 async function submitNewMembre() {
@@ -189,7 +131,16 @@ async function submitNewMembre() {
   msgDiv.textContent = "Traitement en cours...";
 
   try {
-    const result = await api("addOrUpdateMembreRobuste", { nom, date });
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "addOrUpdateMembreRobuste",
+        nom: nom,
+        date: date
+      })
+    });
+
+    const result = await res.json();
 
     if (result.success) {
       msgDiv.style.color = "green";
@@ -199,6 +150,7 @@ async function submitNewMembre() {
     } else {
       msgDiv.style.color = "red";
     }
+
     msgDiv.textContent = result.message;
   } catch(err) {
     msgDiv.style.color = "red";
