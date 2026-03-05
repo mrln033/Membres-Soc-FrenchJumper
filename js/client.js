@@ -61,28 +61,28 @@ function displayMembres(list) {
 
   list.forEach(m => {
 
-    if (m.niveau !== niveauActuel) {
+if (m.niveau !== niveauActuel) {
 
-      if (headerRow) {
-        headerRow.querySelector(".count").innerText =
-          "(" + compteurGrade + " membres)";
-      }
+  if (headerRow) {
+    headerRow.querySelector(".count").innerText =
+      "(" + compteurGrade + " membres)";
+  }
 
-      niveauActuel = m.niveau;
-      compteurGrade = 0;
+  niveauActuel = m.niveau;
+  compteurGrade = 0;
 
-      const tr = document.createElement("tr");
-      tr.className = "grade-row";
+  const tr = document.createElement("tr");
 
-      headerRow = document.createElement("td");
-      headerRow.colSpan = 3;
+  headerRow = document.createElement("td");
+  headerRow.colSpan = 3;
+  headerRow.className = "grade-row"; // <-- appliquer la classe sur le td
 
-      headerRow.innerHTML =
-        "<strong>" + m.grade + "</strong> <span class='count'></span>";
+  headerRow.innerHTML =
+    "<strong>" + m.grade + "</strong> <span class='count'></span>";
 
-      tr.appendChild(headerRow);
-      tbody.appendChild(tr);
-    }
+  tr.appendChild(headerRow);
+  tbody.appendChild(tr);
+}
 
     compteurGrade++;
     total++;
