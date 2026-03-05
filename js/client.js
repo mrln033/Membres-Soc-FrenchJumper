@@ -1,15 +1,20 @@
+// client.js
+
 document.addEventListener("DOMContentLoaded", function() {
   loadMembres();
 });
 
 async function loadMembres() {
+  const container = document.getElementById("listeMembres");
+  container.innerHTML = "Chargement...";
+  
   try {
     const res = await fetch(API_URL + "?action=getMembresForHome");
     const list = await res.json();
     displayMembresParGrade(list);
   } catch(err) {
     console.error("Erreur serveur :", err);
-    document.getElementById("listeMembres").innerText = "Erreur chargement.";
+    container.innerText = "Erreur chargement.";
   }
 }
 
@@ -24,8 +29,7 @@ async function displayMembresParGrade(list) {
 
   let grades;
   try {
-    // Correction : action correcte côté serveur
-    const res = await fetch(API_URL + "?action=grades");
+    const res = await fetch(API_URL + "?action=grades"); // action correcte
     grades = await res.json();
   } catch(err) {
     console.error("Grades non reçus correctement :", err);
@@ -44,15 +48,15 @@ async function displayMembresParGrade(list) {
   });
 
   const table = document.createElement("table");
-  const thead = document.createElement("thead");
-  thead.innerHTML = `
-    <tr>
-      <th>#</th>
-      <th>Nom Avatar</th>
-      <th>Date Première Entrée</th>
-    </tr>
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nom Avatar</th>
+        <th>Date Première Entrée</th>
+      </tr>
+    </thead>
   `;
-  table.appendChild(thead);
 
   const tbody = document.createElement("tbody");
   let currentNiveau = null;
@@ -66,6 +70,7 @@ async function displayMembresParGrade(list) {
         gradeRowTitle.querySelector(".grade-count").innerText =
           `(${compteurGrade} membres)`;
       }
+
       currentNiveau = m.Niveau;
       compteurGrade = 0;
 
@@ -89,14 +94,8 @@ async function displayMembresParGrade(list) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="num-col">${compteurGrade}</td>
-      <td>
-        <span>${m.NomAvatar}</span>
-      </td>
-      <td>
-        ${m.DatePremiereEntree
-          ? new Date(m.DatePremiereEntree).toLocaleDateString("fr-FR")
-          : ""}
-      </td>
+      <td><span>${m.NomAvatar}</span></td>
+      <td>${m.DatePremiereEntree ? new Date(m.DatePremiereEntree).toLocaleDateString("fr-FR") : ""}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -106,6 +105,7 @@ async function displayMembresParGrade(list) {
       `(${compteurGrade} membres)`;
   }
 
+  // ligne total
   const totalRow = document.createElement("tr");
   totalRow.innerHTML = `
     <td colspan="3" class="total-row">
@@ -113,6 +113,7 @@ async function displayMembresParGrade(list) {
     </td>
   `;
   tbody.appendChild(totalRow);
+
   table.appendChild(tbody);
   container.appendChild(table);
 }
