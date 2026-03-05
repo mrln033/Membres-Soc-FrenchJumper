@@ -23,16 +23,16 @@ td:first-child {
 /* Entête du tableau plus petit */
 th {
   background: #eee;
-  font-size: 1em;
+  font-size: 1.2em;
 }
 
 /* Entête de groupe (grade + nombre) */
-.grade-row td {
+.grade-row {
   background: #eee;
   font-weight: bold;
   font-size: 1em;
-  text-align: left;      /* aligné à gauche */
   font-family: Arial;
+  text-align: left !important;  /* FORCER alignement à gauche */
 }
 
 .grade-row .count {
