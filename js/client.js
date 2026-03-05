@@ -4,8 +4,10 @@ function loadMembres() {
   const container = document.getElementById("listeMembres");
   container.innerText = "Chargement...";
 
+  // JSONP
   const script = document.createElement("script");
-  script.src = `${API_URL}?action=getMembres&callback=displayMembres`;
+  const callbackName = "displayMembres";
+  script.src = `${API_URL}?action=getMembres&callback=${callbackName}`;
   script.onerror = () => { container.innerText = "Erreur chargement"; };
   document.body.appendChild(script);
 }
@@ -20,10 +22,7 @@ function displayMembres(list) {
   }
 
   // tri : niveau desc puis nom
-  list.sort((a, b) => {
-    if (b.niveau !== a.niveau) return b.niveau - a.niveau;
-    return a.nom.localeCompare(b.nom);
-  });
+  list.sort((a,b) => b.niveau - a.niveau || a.nom.localeCompare(b.nom));
 
   const table = document.createElement("table");
   table.innerHTML = `
@@ -35,6 +34,7 @@ function displayMembres(list) {
       </tr>
     </thead>
   `;
+
   const tbody = document.createElement("tbody");
 
   let niveauActuel = null;
@@ -45,7 +45,6 @@ function displayMembres(list) {
   list.forEach(m => {
     if (m.niveau !== niveauActuel) {
       if (headerRow) headerRow.querySelector(".count").innerText = `(${compteurGrade} membres)`;
-
       niveauActuel = m.niveau;
       compteurGrade = 0;
 
@@ -53,7 +52,7 @@ function displayMembres(list) {
       headerRow = document.createElement("td");
       headerRow.colSpan = 3;
       headerRow.className = "grade-row";
-      headerRow.innerHTML = `<strong>${m.grade}</strong> <span class='count'></span>`;
+      headerRow.innerHTML = `<strong>${m.grade}</strong> <span class="count"></span>`;
       tr.appendChild(headerRow);
       tbody.appendChild(tr);
     }
@@ -62,11 +61,7 @@ function displayMembres(list) {
     total++;
 
     const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${compteurGrade}</td>
-      <td>${m.nom}</td>
-      <td>${m.date || ""}</td>
-    `;
+    tr.innerHTML = `<td>${compteurGrade}</td><td>${m.nom}</td><td>${m.date || ""}</td>`;
     tbody.appendChild(tr);
   });
 
