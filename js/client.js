@@ -86,7 +86,7 @@ function displayMembres(list) {
 
 		tr.appendChild(headerRow);
 		tbody.appendChild(tr);
-}
+	}
 
     compteurGrade++;
     total++;
