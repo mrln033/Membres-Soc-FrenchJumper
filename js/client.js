@@ -24,18 +24,11 @@ async function displayMembresParGrade(list) {
 
   let grades;
   try {
-    const res = await fetch(API_URL + "?action=getGrades");
+    // Correction : action correcte côté serveur
+    const res = await fetch(API_URL + "?action=grades");
     grades = await res.json();
-
-    // sécurité : grades doit être un tableau
-    if (!Array.isArray(grades)) {
-      console.error("Grades non reçus correctement :", grades);
-      container.innerText = "Erreur affichage grades.";
-      return;
-    }
-
   } catch(err) {
-    console.error(err);
+    console.error("Grades non reçus correctement :", err);
     container.innerText = "Erreur affichage grades.";
     return;
   }
@@ -96,10 +89,13 @@ async function displayMembresParGrade(list) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="num-col">${compteurGrade}</td>
-      <td><span>${m.NomAvatar}</span></td>
-      <td>${m.DatePremiereEntree
-        ? new Date(m.DatePremiereEntree).toLocaleDateString("fr-FR")
-        : ""}
+      <td>
+        <span>${m.NomAvatar}</span>
+      </td>
+      <td>
+        ${m.DatePremiereEntree
+          ? new Date(m.DatePremiereEntree).toLocaleDateString("fr-FR")
+          : ""}
       </td>
     `;
     tbody.appendChild(tr);
@@ -117,7 +113,6 @@ async function displayMembresParGrade(list) {
     </td>
   `;
   tbody.appendChild(totalRow);
-
   table.appendChild(tbody);
   container.appendChild(table);
 }
