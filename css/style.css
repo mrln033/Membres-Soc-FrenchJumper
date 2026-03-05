@@ -16,23 +16,23 @@ th, td {
 /* Première colonne plus étroite et centrée */
 th:first-child,
 td:first-child {
-  width: 40px;
+  width: 30px;
   text-align: center;
 }
 
 /* Entête du tableau plus petit */
 th {
   background: #eee;
-  font-size: 1.2em;
+  font-size: 0.9em;
 }
 
 /* Entête de groupe (grade + nombre) */
 .grade-row {
-  background: #eee;
+  background: #ddd;
   font-weight: bold;
-  font-size: 1em;
+  font-size: 1em; 
+  text-align: left;
   font-family: Arial;
-  text-align: left !important;  /* FORCER alignement à gauche */
 }
 
 .grade-row .count {
