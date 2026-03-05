@@ -20,26 +20,32 @@ td:first-child {
   text-align: center;
 }
 
+/* Entête du tableau plus petit */
 th {
   background: #eee;
-  font-size: 1.5em; /* entête générale plus gros */
+  font-size: 1em; /* plus petit */
 }
 
+/* Entête de groupe (grade + nombre) */
 .grade-row {
   background: #eee;
   font-weight: bold;
-  font-size: 1.2em; /* nom des grades un peu plus petit que l'entête */
+  font-size: 1em; /* même taille que total */
   text-align: left; /* aligné à gauche */
+  font-family: Arial; /* même police que total */
 }
 
 .grade-row .count {
   font-weight: normal;
-  opacity: 0.7; /* plus discret */
+  font-size: 0.85em; /* plus petit */
+  color: #666; /* gris */
   margin-left: 10px;
 }
 
+/* Ligne total en bas */
 .total {
   background: #ddd;
   font-weight: bold;
-  text-align: right;
+  text-align: center;
+  font-size: 1em; /* même que grade-row */
 }
