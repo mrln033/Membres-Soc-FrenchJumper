@@ -31,7 +31,7 @@ th {
   background: #eee;
   font-weight: bold;
   font-size: 1em;
-  font-family: Arial;
+  font-family: Arial !important;
   text-align: left !important;  /* FORCER alignement à gauche */
 }
 
