@@ -8,39 +8,34 @@ table {
   width: 100%;
 }
 
-thead th {
-  border: 1px solid #ccc;
-  padding: 10px;
-  background: #eee;
-  font-size: 1.3em;
-  text-align: left;
-}
-
-td {
+th, td {
   border: 1px solid #ccc;
   padding: 8px;
 }
 
-td:first-child,
-th:first-child {
-  width: 60px;
+/* Première colonne plus étroite et centrée */
+th:first-child,
+td:first-child {
+  width: 40px;
   text-align: center;
 }
 
-.grade-row td {
-  background: #f2f2f2;
-  padding: 10px;
-  text-align: left;  /* entête de groupe alignée à gauche */
+th {
+  background: #eee;
+  font-size: 1.5em; /* entête générale plus gros */
 }
 
-.grade-row strong {
-  font-size: 1.2em;
+.grade-row {
+  background: #eee;
+  font-weight: bold;
+  font-size: 1.2em; /* nom des grades un peu plus petit que l'entête */
+  text-align: left; /* aligné à gauche */
 }
 
 .grade-row .count {
+  font-weight: normal;
+  opacity: 0.7; /* plus discret */
   margin-left: 10px;
-  color: #666;
-  font-size: 0.9em;
 }
 
 .total {
