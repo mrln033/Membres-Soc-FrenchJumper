@@ -50,3 +50,10 @@ th {
 	font-size: 1em;
 	font-family: Arial;
 }
+
+/* colonne date centrée */
+td:nth-child(3),
+th:nth-child(3) {
+  text-align: center;
+}
+
