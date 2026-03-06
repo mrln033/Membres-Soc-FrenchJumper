@@ -170,6 +170,7 @@ function showModal(message, okCallback=null, cancelCallback=null) {
    AJOUT NOUVEAU MEMBRE
 ======================================================= */
 async function addMembre() {
+
   const nom = document.getElementById("newNom").value.trim();
   const date = document.getElementById("newDate").value;
 
@@ -179,46 +180,52 @@ async function addMembre() {
   }
 
   try {
-    // Vérifier si le nom existe déjà
-    const resCheck = await fetch(`${API_URL}?action=getMembres`);
-    const membres = await resCheck.json();
-    const existing = membres.find(m => m.nom.toLowerCase() === nom.toLowerCase());
 
-    if (existing) {
-      // modal : membre existe
-      showModal(
-        `Le membre "${nom}" existe déjà.`,
-        () => { openFicheMembre(existing.id); },
-        () => {} // annuler ne fait rien
-      );
-      return;
-    }
-
-    // Ajout du membre
     const payload = {
       nomAvatar: nom,
       dateEntree: date,
-      gradeId: "eea478c0-3223-4d58-b256-59e1cc0e6600" // Voyageur
+      gradeId: "eea478c0-3223-4d58-b256-59e1cc0e6600"
     };
 
-    const resAdd = await fetch(API_URL, {
+    const res = await fetch(API_URL, {
       method: "POST",
       body: JSON.stringify(payload),
       headers: { "Content-Type": "application/json" }
     });
 
-    const result = await resAdd.json();
+    const result = await res.json();
 
-    if (!result.success || !result.membreId) {
-      showModal("Erreur ajout");
+    /* -------------------------
+       MEMBRE EXISTE
+    ------------------------- */
+
+    if (result.exists) {
+
+      showModal(
+        `Le membre "${nom}" existe déjà dans la base.`,
+        () => openFicheMembre(result.membreId),
+        () => {}
+      );
+
       return;
     }
 
-    // ouverture fiche membre
-    openFicheMembre(result.membreId);
+    /* -------------------------
+       AJOUT OK
+    ------------------------- */
+
+    if (result.success && result.membreId) {
+      openFicheMembre(result.membreId);
+      return;
+    }
+
+    showModal("Erreur lors de l'ajout du membre.");
 
   } catch (err) {
+
     console.error(err);
-    showModal("Erreur ajout");
+    showModal("Erreur communication serveur.");
+
   }
+
 }
