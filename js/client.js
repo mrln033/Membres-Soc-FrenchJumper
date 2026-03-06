@@ -80,7 +80,7 @@ function displayMembres(list) {
   const tr = document.createElement("tr");
 
   headerRow = document.createElement("td");
-  headerRow.colSpan = 3;
+  headerRow.colSpan = 4;
   headerRow.className = "grade-row"; // <-- appliquer la classe sur le td
 
   headerRow.innerHTML =
