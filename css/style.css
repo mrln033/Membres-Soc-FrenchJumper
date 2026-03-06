@@ -57,6 +57,12 @@ th:nth-child(3) {
   text-align: center;
 }
 
+/* colonne Ancienneté centrée */
+td:nth-child(4),
+th:nth-child(4) {
+  text-align: center;
+}
+
 .regle-cell {
   text-align: center;
 }
