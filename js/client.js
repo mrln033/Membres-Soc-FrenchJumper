@@ -97,7 +97,9 @@ function displayMembres(list) {
     tr.innerHTML = `
 		<td>${compteurGrade}</td>
 		<td>${m.nom}</td>
-		<td>${m.date || ""}</td>
+		<td>
+			${m.date ? m.date + " (" + m.entreeCount + ")" : ""}
+		</td>
 		<td>${calcAnciennete(m.date)}</td>
     `;
 
