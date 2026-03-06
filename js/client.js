@@ -1,7 +1,5 @@
 document.addEventListener("DOMContentLoaded", loadMembres);
 
-
-
 async function loadMembres() {
 
   const container = document.getElementById("listeMembres");
@@ -12,7 +10,6 @@ async function loadMembres() {
     const res = await fetch(API_URL + "?action=getMembres");
     const membres = await res.json();
 
-    // Filtrage : ne garder que les membres dont le niveau est entre 1 et 6
     const filtered = membres.filter(m => m.niveau >= 1 && m.niveau <= 6);
 
     displayMembres(filtered);
@@ -26,20 +23,16 @@ async function loadMembres() {
 
 }
 
-
-
 function displayMembres(list) {
 
   const container = document.getElementById("listeMembres");
   container.innerHTML = "";
 
-  // aucun membre après filtrage
   if (!list.length) {
     container.innerText = "Aucun membre";
     return;
   }
 
-  // tri : niveau desc puis nom
   list.sort((a,b) => {
     if (b.niveau !== a.niveau) return b.niveau - a.niveau;
     return a.nom.localeCompare(b.nom);
@@ -50,11 +43,11 @@ function displayMembres(list) {
   table.innerHTML = `
     <thead>
       <tr>
-		<th>#</th>
-		<th>Nom Avatar</th>
-		<th>Date entrée</th>
-		<th>Ancienneté</th>
-		<th>Règles</th>
+        <th>#</th>
+        <th>Nom Avatar</th>
+        <th>Date entrée</th>
+        <th>Ancienneté</th>
+        <th>Règles</th>
       </tr>
     </thead>
   `;
@@ -70,41 +63,40 @@ function displayMembres(list) {
 
     if (m.niveau !== niveauActuel) {
 
-  if (headerRow) {
-    headerRow.querySelector(".count").innerText =
-      "(" + compteurGrade + " membres)";
-  }
+      if (headerRow) {
+        headerRow.querySelector(".count").innerText =
+        "(" + compteurGrade + " membres)";
+      }
 
-  niveauActuel = m.niveau;
-  compteurGrade = 0;
+      niveauActuel = m.niveau;
+      compteurGrade = 0;
 
-  const tr = document.createElement("tr");
+      const tr = document.createElement("tr");
 
-  headerRow = document.createElement("td");
-  headerRow.colSpan = 5;
-  headerRow.className = "grade-row"; // <-- appliquer la classe sur le td
+      headerRow = document.createElement("td");
+      headerRow.colSpan = 5;
+      headerRow.className = "grade-row";
 
-  headerRow.innerHTML =
-    "<strong>" + m.grade + "</strong> <span class='count'></span>";
+      headerRow.innerHTML =
+      "<strong>" + m.grade + "</strong> <span class='count'></span>";
 
-  tr.appendChild(headerRow);
-  tbody.appendChild(tr);
-}
+      tr.appendChild(headerRow);
+      tbody.appendChild(tr);
+    }
 
     compteurGrade++;
     total++;
 
     const tr = document.createElement("tr");
+
     tr.innerHTML = `
-		<td>${compteurGrade}</td>
-		<td>${m.nom}</td>
-		<td>
-			${m.date ? m.date + " (" + m.entreeCount + ")" : ""}
-		</td>
-		<td>${calcAnciennete(m.date)}</td>
-		<td class="regle-cell">
-			${m.regleSoc ? '<span class="regle-ok">Oui</span>' : '<span class="regle-ko">Non</span>'}
-		</td>
+      <td>${compteurGrade}</td>
+      <td>${m.nom}</td>
+      <td>${m.date ? m.date + " (" + m.entreeCount + ")" : ""}</td>
+      <td>${calcAnciennete(m.date)}</td>
+      <td class="regle-cell">
+        ${m.regleSoc ? '<span class="regle-ok">Oui</span>' : '<span class="regle-ko">Non</span>'}
+      </td>
     `;
 
     tbody.appendChild(tr);
@@ -113,12 +105,12 @@ function displayMembres(list) {
 
   if (headerRow) {
     headerRow.querySelector(".count").innerText =
-      "(" + compteurGrade + " membres)";
+    "(" + compteurGrade + " membres)";
   }
 
   const totalRow = document.createElement("tr");
   totalRow.innerHTML =
-    `<td colspan="5" class="total">Total : ${total} membres</td>`;
+  `<td colspan="5" class="total">Total : ${total} membres</td>`;
 
   tbody.appendChild(totalRow);
 
@@ -144,3 +136,75 @@ function calcAnciennete(dateStr) {
 
 }
 
+
+/* ===========================
+   AJOUT MEMBRE
+=========================== */
+
+async function addMembre(){
+
+  const nom = document.getElementById("newNom").value.trim();
+  const date = document.getElementById("newDate").value;
+
+  if(!nom || !date){
+    alert("Nom et date obligatoires");
+    return;
+  }
+
+  try{
+
+    const res = await fetch(API_URL + "?action=addMembre",{
+      method:"POST",
+      body:JSON.stringify({nom,date})
+    });
+
+    const data = await res.json();
+
+    if(data.exists){
+
+      showModal(
+        "Ce membre existe déjà dans la base.<br><br>Ouvrir sa fiche ?",
+        () => {
+          window.location = "fiche.html?id=" + data.id;
+        }
+      );
+
+      return;
+
+    }
+
+    window.location = "fiche.html?id=" + data.id;
+
+  }catch(err){
+
+    console.error(err);
+    alert("Erreur ajout");
+
+  }
+
+}
+
+
+/* ===========================
+   MODAL
+=========================== */
+
+function showModal(message, onOk){
+
+  const overlay = document.getElementById("modalOverlay");
+  const msg = document.getElementById("modalMessage");
+
+  msg.innerHTML = message;
+
+  overlay.style.display = "flex";
+
+  document.getElementById("modalOk").onclick = () => {
+    overlay.style.display = "none";
+    if(onOk) onOk();
+  };
+
+  document.getElementById("modalCancel").onclick = () => {
+    overlay.style.display = "none";
+  };
+
+}
