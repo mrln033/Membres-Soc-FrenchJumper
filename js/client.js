@@ -41,14 +41,15 @@ function displayMembres(list) {
 	
 	const table = document.createElement("table");
 	
-	table.innerHTML =
-		<thead>
-			<tr>
-				<th>#</th>
-				<th>Nom Avatar</th>
-				<th>Date entrée</th>
-			</tr>
-		</thead> ;
+table.innerHTML = `
+<thead>
+	<tr>
+		<th>#</th>
+		<th>Nom Avatar</th>
+		<th>Date entrée</th>
+	</tr>
+</thead>
+`;
 		
 		const tbody = document.createElement("tbody");
 		
@@ -84,11 +85,11 @@ function displayMembres(list) {
 			total++;
 			
 			const tr = document.createElement("tr");
-			tr.innerHTML =
-				<td>${compteurGrade}</td>
-				<td>${m.nom}</td>
-				<td>${m.date || ""}</td>
-			;
+tr.innerHTML = `
+<td>${compteurGrade}</td>
+<td>${m.nom}</td>
+<td>${m.date || ""}</td>
+`;
 			
 			tbody.appendChild(tr);
 		});
@@ -99,8 +100,9 @@ function displayMembres(list) {
 		}
 		
 		const totalRow = document.createElement("tr");
-		totalRow.innerHTML =
-			<td colspan="3" class="total">Total : ${total} membres</td>;
+totalRow.innerHTML = `
+<td colspan="3" class="total">Total : ${total} membres</td>
+`;
 			
 		tbody.appendChild(totalRow);
 		
