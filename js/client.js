@@ -50,9 +50,10 @@ function displayMembres(list) {
   table.innerHTML = `
     <thead>
       <tr>
-        <th>#</th>
-        <th>Nom Avatar</th>
-        <th>Date entrée</th>
+		<th>#</th>
+		<th>Nom Avatar</th>
+		<th>Date entrée</th>
+		<th>Ancienneté</th>
       </tr>
     </thead>
   `;
@@ -94,9 +95,10 @@ function displayMembres(list) {
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${compteurGrade}</td>
-      <td>${m.nom}</td>
-      <td>${m.date || ""}</td>
+		<td>${compteurGrade}</td>
+		<td>${m.nom}</td>
+		<td>${m.date || ""}</td>
+		<td>${calcAnciennete(m.date)}</td>
     `;
 
     tbody.appendChild(tr);
@@ -118,3 +120,21 @@ function displayMembres(list) {
   container.appendChild(table);
 
 }
+
+function calcAnciennete(dateStr) {
+
+  if (!dateStr) return "";
+
+  const [jour, mois, an] = dateStr.split("/");
+
+  const dateEntree = new Date(an, mois - 1, jour);
+  const today = new Date();
+
+  const diff = today - dateEntree;
+
+  const jours = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  return jours + " j";
+
+}
+
