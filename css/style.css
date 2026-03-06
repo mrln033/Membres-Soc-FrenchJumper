@@ -57,3 +57,8 @@ th:nth-child(3) {
   text-align: center;
 }
 
+/* colonne ancienneté centrée */
+td:nth-child(4),
+th:nth-child(4) {
+  text-align: center;
+}

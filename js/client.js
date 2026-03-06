@@ -134,7 +134,7 @@ function calcAnciennete(dateStr) {
 
   const jours = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-  return jours + " j";
+  return jours + " jours";
 
 }
 
