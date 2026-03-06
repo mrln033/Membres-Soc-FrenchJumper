@@ -48,6 +48,7 @@ function displayMembres(list) {
 				<th>Nom Avatar</th>
 				<th>Date entrée</th>
 				<th>Ancienneté</th>
+				<th>Règles</th>
 			</tr>
 		</thead>
 	`;
@@ -72,7 +73,7 @@ function displayMembres(list) {
 			const tr = document.createElement("tr");
 				
 			headerRow = document.createElement("td");
-			headerRow.colSpan = 4;
+			headerRow.colSpan = 5;
 			headerRow.className = "grade-row"; // <-- appliquer la classe sur le td
 				
 			headerRow.innerHTML =
@@ -89,8 +90,13 @@ function displayMembres(list) {
 		tr.innerHTML = `
 			<td>${compteurGrade}</td>
 			<td>${m.nom}</td>
-			<td>${m.date || ""}</td>
+			<td>
+				${m.date ? m.date + " (" + m.entreeCount + ")" : ""}
+			</td>
 			<td>${calcAnciennete(m.date)}</td>
+			<td class="regle-cell">
+				${m.regleSoc ? '<span class="regle-ok">Oui</span>' : '<span class="regle-ko">Non</span>'}
+			</td>
 		`;
 			
 			tbody.appendChild(tr);
@@ -103,7 +109,7 @@ function displayMembres(list) {
 		
 		const totalRow = document.createElement("tr");
 		totalRow.innerHTML = `
-			<td colspan="4" class="total">Total : ${total} membres</td>
+			<td colspan="5" class="total">Total : ${total} membres</td>
 		`;
 			
 		tbody.appendChild(totalRow);

@@ -57,3 +57,24 @@ th:nth-child(3) {
   text-align: center;
 }
 
+.regle-cell {
+  text-align: center;
+}
+
+.regle-ok {
+  background: #2ecc71;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.85em;
+  font-weight: bold;
+}
+
+.regle-ko {
+  background: #e74c3c;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.85em;
+  font-weight: bold;
+}
