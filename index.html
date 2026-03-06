@@ -1,11 +1,8 @@
 <!DOCTYPE html>
-
 <html>
 
 <head>
-
 <meta charset="UTF-8">
-
 <title>Membres Frenchjumper</title>
 
 <link rel="stylesheet" href="css/style.css">
@@ -28,35 +25,25 @@ Chargement...
 <h2>Ajouter un membre</h2>
 
 <div class="add-form">
+  <label>Nom Avatar</label>
+  <input id="newNom" type="text">
 
-<label>Nom Avatar</label>
-<input id="newNom" type="text">
+  <label>Date entrée</label>
+  <input id="newDate" type="date">
 
-<label>Date entrée</label>
-<input id="newDate" type="date">
-
-<button onclick="addMembre()">Ajouter</button>
-
+  <button onclick="addMembre()">Ajouter</button>
 </div>
-
 
 <!-- MODAL -->
-
 <div id="modalOverlay" class="modal-overlay">
-
-<div class="modal">
-
-<div id="modalMessage"></div>
-
-<div class="modal-buttons">
-<button id="modalOk">OK</button>
-<button id="modalCancel">Annuler</button>
-</div>
-
-</div>
-
+  <div class="modal">
+    <div id="modalMessage"></div>
+    <div class="modal-buttons">
+      <button id="modalOk">OK</button>
+      <button id="modalCancel">Annuler</button>
+    </div>
+  </div>
 </div>
 
 </body>
-
 </html>
