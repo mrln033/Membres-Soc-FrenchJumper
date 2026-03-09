@@ -196,8 +196,8 @@ function displayMembresAnciens(list, mouvements) {
                 <th>Nom Avatar</th>
                 <th>Première Entrée</th>
                 <th>Dernière Sortie</th>
-                <th>Ancienneté</th>
-                <th>Règles</th>
+				<th>Total Présence</th>
+				<th>Nbr Périodes</th>
             </tr>
         </thead>
     `;
@@ -221,10 +221,10 @@ function displayMembresAnciens(list, mouvements) {
             <td>${m.nom}</td>
             <td>${premiere}</td>
             <td>${derniere}</td>
-            <td>${anciennete}</td>
-            <td class="regle-cell">
-                ${m.regleSoc ? '<span class="regle-ok">Oui</span>' : '<span class="regle-ko">Non</span>'}
-            </td>
+            <td>${calcTotalPresence(m.id, mouvements)}</td>
+			<td class="nbr-periodes-cell">
+				${mouvements.filter(mv => mv.MembreID === m.id && mv.TypeMouvement === "ENTREE").length}
+			</td>
         `;
 
         tr.addEventListener("click", () => {
@@ -258,6 +258,39 @@ function calcAnciennete(dateStr) {
 
 	return jours + " j";
 
+}
+
+// Calcule le total de présence d'un membre en jours
+function calcTotalPresence(membreId, mouvements) {
+    // filtre uniquement les mouvements du membre
+    const mv = mouvements.filter(m => m.MembreID === membreId);
+
+    // trier par date croissante
+    mv.sort((a,b) => new Date(a.DateEffective) - new Date(b.DateEffective));
+
+    let total = 0;
+    let entreeDate = null;
+
+    mv.forEach(m => {
+        const type = m.TypeMouvement;
+        const date = new Date(m.DateEffective);
+
+        if (type === "ENTREE") {
+            entreeDate = date; // début période
+        } else if (["SORTIE","BANNISSEMENT","DEMISSION","DESERTION"].includes(type)) {
+            if (entreeDate) {
+                total += (date - entreeDate)/(1000*60*60*24); // en jours
+                entreeDate = null; // réinitialiser pour la prochaine période
+            }
+        }
+    });
+
+    // si le membre est encore “présent” (ENTREE sans sortie)
+    if (entreeDate) {
+        total += (new Date() - entreeDate)/(1000*60*60*24);
+    }
+
+    return Math.round(total) + " j";
 }
 
 // Récupère la première date d'entrée pour un membre
