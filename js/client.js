@@ -107,9 +107,9 @@ function displayMembresActifs(list) {
 			<td>${m.date ? m.date + " (" + m.entreeCount + ")" : ""}</td>
 			<td>${calcAnciennete(m.date)}</td>
 			<td class="regle-cell">
-			${m.IDDiscord ? '<span"><img src="images/discord-32.png" alt="Discord"></span> + ' : ''}
-			${m.regleSoc ? '<span class="regle-ok">Oui</span>' : '<span class="regle-ko">Non</span>'}
-		</td>
+				${m.IDDiscord ? '<span"><img src="images/discord-32.png" alt="Discord"></span> + ' : ''}
+				${m.regleSoc ? '<span class="regle-ok">Oui</span>' : '<span class="regle-ko">Non</span>'}
+			</td>
 		`;
 
 		tr.addEventListener("click", () => {
