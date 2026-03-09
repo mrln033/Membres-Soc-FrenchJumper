@@ -188,6 +188,7 @@ function displayMembresAnciens(list, mouvements) {
     list.sort((a,b) => a.nom.localeCompare(b.nom));
 
     const table = document.createElement("table");
+	table.className = "anciens-table";
 
     table.innerHTML = `
         <thead>

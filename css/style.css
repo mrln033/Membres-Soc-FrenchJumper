@@ -102,3 +102,39 @@ th:nth-child(4) {
 .membre-row:hover td {
 	color: #2980b9;
 }
+
+
+/* ===== Anciens Membres ===== */
+.anciens-table th, .anciens-table td {
+    border: 1px solid #ccc;
+    padding: 8px;
+}
+
+/* Colonne 1 : numéro, centrée, largeur fixe */
+.anciens-table th:first-child,
+.anciens-table td:first-child {
+    width: 30px;
+    text-align: center;
+}
+
+/* Colonne 2 : Nom Avatar, aligné à gauche */
+.anciens-table th:nth-child(2),
+.anciens-table td:nth-child(2) {
+    text-align: left;
+    font-weight: normal; /* pas de gras */
+}
+
+/* Colonnes 3 à 6 : largeur automatique, alignement */
+.anciens-table th:nth-child(n+3),
+.anciens-table td:nth-child(n+3) {
+    width: auto; /* largeur basée sur le contenu le plus large de l'entête */
+}
+
+/* Colonnes 5 et 6 centrées (Total Présence et Nbr Périodes) */
+.anciens-table th:nth-child(5),
+.anciens-table td:nth-child(5),
+.anciens-table th:nth-child(6),
+.anciens-table td:nth-child(6) {
+    text-align: center;
+}
+
