@@ -95,18 +95,25 @@ function displayMembresActifs(list) {
 
 		compteurGrade++;
 		total++;
-
+		
 		const tr = document.createElement("tr");
+
+		tr.className = "membre-row";
+		tr.dataset.id = m.id;
 
 		tr.innerHTML = `
 			<td>${compteurGrade}</td>
-			<td><a class="membre-link" href="fiche.html?id=${m.id}">${m.nom}</a></td>
+			<td>${m.nom}</td>
 			<td>${m.date ? m.date + " (" + m.entreeCount + ")" : ""}</td>
 			<td>${calcAnciennete(m.date)}</td>
 			<td class="regle-cell">
 				${m.regleSoc ? '<span class="regle-ok">Oui</span>' : '<span class="regle-ko">Non</span>'}
 			</td>
 		`;
+
+		tr.addEventListener("click", () => {
+			window.location.href = "fiche.html?id=" + tr.dataset.id;
+		});
 
 		tbody.appendChild(tr);
 
