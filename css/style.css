@@ -8,6 +8,10 @@ table {
 	width: 100%;
 }
 
+table td {
+    vertical-align: middle;
+}
+
 th, td {
 	border: 1px solid #ccc;
 	padding: 8px;
@@ -105,6 +109,11 @@ th:nth-child(4) {
 
 
 /* ===== Anciens Membres ===== */
+.anciens-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
 .anciens-table th, .anciens-table td {
     border: 1px solid #ccc;
     padding: 8px;
@@ -118,10 +127,13 @@ th:nth-child(4) {
 }
 
 /* Colonne 2 : Nom Avatar, aligné à gauche */
-.anciens-table th:nth-child(2),
+.anciens-table th:nth-child(2) {
+    text-align: left;
+    font-weight: bold;
+}
+
 .anciens-table td:nth-child(2) {
     text-align: left;
-    font-weight: normal; /* pas de gras */
 }
 
 /* Colonnes 3 à 6 : largeur automatique, alignement */
