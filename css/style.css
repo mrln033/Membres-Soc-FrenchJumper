@@ -139,7 +139,7 @@ th:nth-child(4) {
 /* Colonnes 3 à 6 : largeur automatique, alignement */
 .anciens-table th:nth-child(n+3),
 .anciens-table td:nth-child(n+3) {
-    width: auto; /* largeur basée sur le contenu le plus large de l'entête */
+    width: 100px; /* largeur basée sur le contenu le plus large de l'entête */
 }
 
 /* Colonnes 5 et 6 centrées (Total Présence et Nbr Périodes) */
