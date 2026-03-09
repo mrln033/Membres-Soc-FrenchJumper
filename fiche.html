@@ -1,22 +1,33 @@
 <!DOCTYPE html>
 <html>
-
 <head>
+
 <meta charset="UTF-8">
-<title>Membres Frenchjumper : Fiche Individuelle</title>
+<title>Fiche Membre</title>
 
 <link rel="stylesheet" href="css/style.css">
 
 <script src="js/config.js"></script>
-<script src="js/client.js" defer></script>
+<script src="js/client.js"></script>
 
 </head>
 
 <body>
 
-<h1>FrenchJumper - Fiche Membre</h1>
-<p>Page en construction</p>
+<h1>Fiche Membre</h1>
+
+<div id="ficheMembre">
+Construction en cours...
+</div>
+
+<script>
+
+const params = new URLSearchParams(window.location.search);
+const membreId = params.get("id");
+
+console.log("ID membre :", membreId);
+
+</script>
 
 </body>
 </html>
-
