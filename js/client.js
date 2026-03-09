@@ -142,83 +142,100 @@ function displayMembresActifs(list) {
    ANCIENS MEMBRES
 ================================ */
 
+// -----------------------------
+// Chargement et affichage Anciens Membres
+// -----------------------------
 async function loadMembresAnciens() {
 
-	const container = document.getElementById("listeMembres");
-	container.innerText = "Chargement...";
+    const container = document.getElementById("listeMembres");
+    container.innerText = "Chargement...";
 
-	try {
+    try {
+        // 1️⃣ Récupération des membres
+        const resMembres = await fetch(API_URL + "?action=getMembres");
+        let membres = await resMembres.json();
 
-		const membres = await fetchMembres();
+        // 2️⃣ Récupération des mouvements
+        const resMouvements = await fetch(API_URL + "?action=getMouvements"); // on crée un endpoint côté Code.gs pour renvoyer HISTORIQUE_MOUVEMENTS
+        const mouvements = await resMouvements.json();
 
-		const filtered = membres.filter(m => m.niveau === 0);
+        // 3️⃣ Filtrage anciens membres (niveau 0)
+        const anciens = membres.filter(m => m.niveau === 0);
 
-		displayMembresAnciens(filtered);
+        // 4️⃣ Affichage
+        displayMembresAnciens(anciens, mouvements);
 
-	} catch(err) {
-
-		console.error(err);
-		container.innerText = "Erreur chargement";
-
-	}
-
+    } catch(err) {
+        console.error(err);
+        container.innerText = "Erreur chargement";
+    }
 }
 
-function displayMembresAnciens(list) {
+// -----------------------------
+// Affichage tableau Anciens Membres
+// -----------------------------
+function displayMembresAnciens(list, mouvements) {
 
-	const container = document.getElementById("listeMembres");
-	container.innerHTML = "";
+    const container = document.getElementById("listeMembres");
+    container.innerHTML = "";
 
-	if (!list.length) {
-		container.innerText = "Aucun ancien membre";
-		return;
-	}
+    if (!list.length) {
+        container.innerText = "Aucun ancien membre";
+        return;
+    }
 
-	list.sort((a,b) => a.nom.localeCompare(b.nom));
+    // tri alphabétique
+    list.sort((a,b) => a.nom.localeCompare(b.nom));
 
-	const table = document.createElement("table");
+    const table = document.createElement("table");
 
-	table.innerHTML = `
-	<thead>
-	<tr>
-	<th>Nom Avatar</th>
-	<th>Nom Avatar</th>
-	<th>Dernière entrée</th>
-	<th>Nb entrées</th>
-	</tr>
-	</thead>
-	`;
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Nom Avatar</th>
+                <th>Première Entrée</th>
+                <th>Dernière Sortie</th>
+                <th>Ancienneté</th>
+                <th>Règles</th>
+            </tr>
+        </thead>
+    `;
 
-	const tbody = document.createElement("tbody");
+    const tbody = document.createElement("tbody");
+    let compteur = 0;
 
-let compteur = 0;
+    list.forEach(m => {
+        compteur++;
 
-list.forEach(m => {
+        const tr = document.createElement("tr");
+        tr.className = "membre-row";
+        tr.dataset.id = m.id;
 
-	compteur++;
+        const premiere = getPremiereEntree(m.id, mouvements);
+        const derniere = getDerniereSortie(m.id, mouvements);
+        const anciennete = premiere ? calcAnciennete(premiere) : "";
 
-	const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${compteur}</td>
+            <td>${m.nom}</td>
+            <td>${premiere}</td>
+            <td>${derniere}</td>
+            <td>${anciennete}</td>
+            <td class="regle-cell">
+                ${m.regleSoc ? '<span class="regle-ok">Oui</span>' : '<span class="regle-ko">Non</span>'}
+            </td>
+        `;
 
-	tr.className = "membre-row";
-	tr.dataset.id = m.id;
+        tr.addEventListener("click", () => {
+            window.location.href = "fiche.html?id=" + tr.dataset.id;
+        });
 
-	tr.innerHTML = `
-		<td>${compteur}</td>
-		<td>${m.nom}</td>
-		<td>${m.date || ""}</td>
-		<td>${m.entreeCount}</td>
-	`;
+        tbody.appendChild(tr);
+    });
 
-	tr.addEventListener("click", () => {
-		window.location.href = "fiche.html?id=" + tr.dataset.id;
-	});
-
-	tbody.appendChild(tr);
-});
-
-	table.appendChild(tbody);
-	container.appendChild(table);
-
+    table.appendChild(tbody);
+    container.appendChild(table);
 }
 
 
@@ -241,4 +258,32 @@ function calcAnciennete(dateStr) {
 
 	return jours + " j";
 
+}
+
+// Récupère la première date d'entrée pour un membre
+function getPremiereEntree(membreId, mouvements) {
+    const entrees = mouvements.filter(m => m.MembreID === membreId && m.TypeMouvement === "ENTREE");
+    if (!entrees.length) return "";
+    entrees.sort((a,b) => new Date(a.DateEffective) - new Date(b.DateEffective));
+    const d = new Date(entrees[0].DateEffective);
+    return formatDate(d);
+}
+
+// Récupère la dernière sortie pour un membre
+function getDerniereSortie(membreId, mouvements) {
+    const sorties = mouvements.filter(m => 
+        m.MembreID === membreId &&
+        (m.TypeMouvement === "SORTIE" || m.TypeMouvement === "BANNISSEMENT" || m.TypeMouvement === "DEMISSION")
+    );
+    if (!sorties.length) return "";
+    sorties.sort((a,b) => new Date(b.DateEffective) - new Date(a.DateEffective));
+    const d = new Date(sorties[0].DateEffective);
+    return formatDate(d);
+}
+
+// Format date jj/mm/yyyy
+function formatDate(date) {
+    return ("0"+date.getDate()).slice(-2)+"/"+
+           ("0"+(date.getMonth()+1)).slice(-2)+"/"+
+           date.getFullYear();
 }
