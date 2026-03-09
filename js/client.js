@@ -194,10 +194,10 @@ table.innerHTML = `
 <colgroup>
 <col style="width:40px">
 <col>
-<col style="width:120px">
-<col style="width:120px">
-<col style="width:120px">
-<col style="width:120px">
+<col style="width:100px">
+<col style="width:100px">
+<col style="width:100px">
+<col style="width:80px">
 </colgroup>
 `;
     table.innerHTML = `
