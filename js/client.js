@@ -182,6 +182,7 @@ function displayMembresAnciens(list) {
 	<thead>
 	<tr>
 	<th>Nom Avatar</th>
+	<th>Nom Avatar</th>
 	<th>Dernière entrée</th>
 	<th>Nb entrées</th>
 	</tr>
@@ -190,19 +191,30 @@ function displayMembresAnciens(list) {
 
 	const tbody = document.createElement("tbody");
 
-	list.forEach(m => {
+let compteur = 0;
 
-		const tr = document.createElement("tr");
+list.forEach(m => {
 
-		tr.innerHTML = `
-			<td><a class="membre-link" href="fiche.html?id=${m.id}">${m.nom}</a></td>
-			<td>${m.date || ""}</td>
-			<td>${m.entreeCount}</td>
-		`;
+	compteur++;
 
-		tbody.appendChild(tr);
+	const tr = document.createElement("tr");
 
+	tr.className = "membre-row";
+	tr.dataset.id = m.id;
+
+	tr.innerHTML = `
+		<td>${compteur}</td>
+		<td>${m.nom}</td>
+		<td>${m.date || ""}</td>
+		<td>${m.entreeCount}</td>
+	`;
+
+	tr.addEventListener("click", () => {
+		window.location.href = "fiche.html?id=" + tr.dataset.id;
 	});
+
+	tbody.appendChild(tr);
+});
 
 	table.appendChild(tbody);
 	container.appendChild(table);
