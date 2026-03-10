@@ -323,8 +323,10 @@ function formatDate(date) {
            date.getFullYear();
 }
 
+// ================================
+// CHARGEMENT FICHE
+// ================================
 async function loadFiche(membreId) {
-
   const container = document.getElementById("ficheMembre");
   container.innerHTML = "Chargement...";
 
@@ -338,11 +340,12 @@ async function loadFiche(membreId) {
     console.error(err);
     container.innerHTML = "Erreur chargement";
   }
-
 }
 
+// ================================
+// AFFICHAGE FICHE
+// ================================
 function displayFiche(container, membre, mouvements) {
-
   container.innerHTML = "";
 
   if (!membre) {
@@ -351,56 +354,55 @@ function displayFiche(container, membre, mouvements) {
   }
 
   container.appendChild(buildCardMembre(membre));
-  container.appendChild(buildCardHistorique(membre.id, mouvements));
-
+  container.appendChild(buildCardHistorique(mouvements)); // <== on passe tout l’historique
 }
 
-function buildCardMembre(m){
-
-	const card = document.createElement("div");
-	card.className="card";
-
-	card.innerHTML=`
-
-	<h2>${m.nom}</h2>
-
-	<div class="fiche-grid">
-
-	<div><b>Grade :</b> ${m.grade}</div>
-
-	<div><b>Première entrée :</b> ${m.date || ""}</div>
-
-	<div>
-	<b>Discord :</b>
-	${m.IDDiscord ? 
-	`<img src="images/icon-discord.png" class="icon-discord"> ${m.IDDiscord}`
-	:
-	"non renseigné"}
-	</div>
-
-	<div>
-	<b>Règles SOC :</b>
-	${m.regleSoc ?
-	'<span class="regle-ok">Oui</span>'
-	:
-	'<span class="regle-ko">Non</span>'}
-	</div>
-
-	</div>
-	`;
-
-	return card;
-
-}
-
-function buildCardHistorique(membreId, mouvements) {
-
+// ================================
+// CARTE MEMBRE
+// ================================
+function buildCardMembre(m) {
   const card = document.createElement("div");
   card.className = "card";
 
-  const mv = mouvements
-    .filter(m => m.MembreID === membreId)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  card.innerHTML = `
+    <h2>${m.nom}</h2>
+    <div class="fiche-grid">
+
+      <div><b>Grade :</b> ${m.grade}</div>
+      <div><b>Première entrée :</b> ${m.datePremiere || ""}</div> <!-- corrigé -->
+      <div>
+        <b>Discord :</b>
+        ${m.IDDiscord ?
+          `<img src="images/icon-discord.png" class="icon-discord"> ${m.IDDiscord}` :
+          "non renseigné"}
+      </div>
+      <div>
+        <b>Règles SOC :</b>
+        ${m.regleSoc ?
+          '<span class="regle-ok">Oui</span>' :
+          '<span class="regle-ko">Non</span>'}
+      </div>
+
+    </div>
+  `;
+
+  return card;
+}
+
+// ================================
+// CARTE HISTORIQUE
+// ================================
+function buildCardHistorique(mouvements) {
+  const card = document.createElement("div");
+  card.className = "card";
+
+  if (!mouvements || !mouvements.length) {
+    card.innerHTML = "<p>Aucun mouvement.</p>";
+    return card;
+  }
+
+  // Tri DESC sur la date
+  mouvements.sort((a,b) => new Date(b.date) - new Date(a.date));
 
   let html = `
     <h2>Historique des mouvements</h2>
@@ -415,7 +417,7 @@ function buildCardHistorique(membreId, mouvements) {
       <tbody>
   `;
 
-  mv.forEach(m => {
+  mouvements.forEach(m => {
     html += `
       <tr>
         <td>${formatDate(new Date(m.date))}</td>
@@ -432,6 +434,5 @@ function buildCardHistorique(membreId, mouvements) {
 
   card.innerHTML = html;
   return card;
-
 }
 
