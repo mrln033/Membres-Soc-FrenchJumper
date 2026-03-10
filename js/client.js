@@ -365,11 +365,13 @@ function buildCardMembre(m) {
   card.className = "card";
 
   card.innerHTML = `
-    <h2>${m.nom}</h2>
-    <div class="fiche-grid">
+    <h2 style="text-align:center; font-size:2em; margin-bottom:0.2em;">${m.nom}</h2>
+    <div style="text-align:center; font-weight:bold; font-style:italic; margin-bottom:1em;">
+      ${m.grade || ""}
+    </div>
 
-      <div><b>Grade :</b> ${m.grade}</div>
-      <div><b>Première entrée :</b> ${m.datePremiere || ""}</div> <!-- corrigé -->
+    <div class="fiche-grid">
+      <div><b>Première entrée :</b> ${m.datePremiere ? formatDate(new Date(m.datePremiere)) : ""}</div>
       <div>
         <b>Discord :</b>
         ${m.IDDiscord ?
@@ -382,7 +384,6 @@ function buildCardMembre(m) {
           '<span class="regle-ok">Oui</span>' :
           '<span class="regle-ko">Non</span>'}
       </div>
-
     </div>
   `;
 
