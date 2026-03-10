@@ -26,7 +26,11 @@ Construction en cours...
 const params = new URLSearchParams(window.location.search);
 const membreId = params.get("id");
 
-console.log("ID membre :", membreId);
+if(membreId){
+    loadFiche(membreId);
+}else{
+    document.getElementById("ficheMembre").innerText="ID manquant";
+}
 
 </script>
 

@@ -322,3 +322,131 @@ function formatDate(date) {
            ("0"+(date.getMonth()+1)).slice(-2)+"/"+
            date.getFullYear();
 }
+
+async function loadFiche(membreId){
+
+	const container = document.getElementById("ficheMembre");
+	container.innerHTML = "Chargement...";
+
+	try{
+
+		const membres = await fetchMembres();
+		const membre = membres.find(m => m.id === membreId);
+
+		if(!membre){
+			container.innerHTML = "Membre introuvable";
+			return;
+		}
+
+		const res = await fetch(API_URL + "?action=getMouvements");
+		const mouvements = await res.json();
+
+		const mv = mouvements.filter(m => m.MembreID === membreId);
+
+		displayFiche(container, membre, mv);
+
+	}catch(err){
+
+		console.error(err);
+		container.innerHTML="Erreur chargement";
+
+	}
+
+}
+
+function displayFiche(container, membre, mouvements){
+
+	container.innerHTML="";
+
+	container.appendChild(buildCardMembre(membre));
+	container.appendChild(buildCardHistorique(membre.id, mouvements));
+
+}
+
+function buildCardMembre(m){
+
+	const card = document.createElement("div");
+	card.className="card";
+
+	card.innerHTML=`
+
+	<h2>${m.nom}</h2>
+
+	<div class="fiche-grid">
+
+	<div><b>Grade :</b> ${m.grade}</div>
+
+	<div><b>Première entrée :</b> ${m.date || ""}</div>
+
+	<div>
+	<b>Discord :</b>
+	${m.IDDiscord ? 
+	`<img src="images/icon-discord.png" class="icon-discord"> ${m.IDDiscord}`
+	:
+	"non renseigné"}
+	</div>
+
+	<div>
+	<b>Règles SOC :</b>
+	${m.regleSoc ?
+	'<span class="regle-ok">Oui</span>'
+	:
+	'<span class="regle-ko">Non</span>'}
+	</div>
+
+	</div>
+	`;
+
+	return card;
+
+}
+
+function buildCardHistorique(membreId, mouvements){
+
+	const card=document.createElement("div");
+	card.className="card";
+
+	const mv = mouvements
+	.filter(m=>m.MembreID===membreId)
+	.sort((a,b)=>new Date(b.DateEffective)-new Date(a.DateEffective));
+
+	let html=`
+
+	<h2>Historique des mouvements</h2>
+
+	<table class="historique-table">
+
+	<thead>
+	<tr>
+	<th>Date</th>
+	<th>Type</th>
+	<th>Nouveau grade</th>
+	</tr>
+	</thead>
+
+	<tbody>
+	`;
+
+	mv.forEach(m=>{
+
+		html+=`
+		<tr>
+		<td>${formatDate(new Date(m.DateEffective))}</td>
+		<td>${m.TypeMouvement}</td>
+		<td>${m.NouveauGradeID || ""}</td>
+		</tr>
+		`;
+
+	});
+
+	html+=`
+	</tbody>
+	</table>
+	`;
+
+	card.innerHTML=html;
+
+	return card;
+
+}
+
