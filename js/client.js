@@ -414,7 +414,8 @@ function buildCardHistorique(mouvements) {
   const card = document.createElement("div");
   card.className = "card";
 
-  if (!mouvements || !mouvements.length) {
+  // S'assurer que mouvements est bien un tableau
+  if (!Array.isArray(mouvements) || !mouvements.length) {
     card.innerHTML = "<p>Aucun mouvement.</p>";
     return card;
   }
@@ -453,4 +454,3 @@ function buildCardHistorique(mouvements) {
   card.innerHTML = html;
   return card;
 }
-
