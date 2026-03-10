@@ -346,15 +346,46 @@ async function loadFiche(membreId) {
 // AFFICHAGE FICHE
 // ================================
 function displayFiche(container, membre, mouvements) {
-  container.innerHTML = "";
+	container.innerHTML = "";
 
-  if (!membre) {
-    container.innerHTML = "<p>Membre introuvable.</p>";
-    return;
-  }
+	if (!membre) {
+		container.innerHTML = "<p>Membre introuvable.</p>";
+		return;
+	}
 
-  container.appendChild(buildCardMembre(membre));
-  container.appendChild(buildCardHistorique(mouvements)); // <== on passe tout l’historique
+	// 1️⃣ Card Nom + Grade
+	container.appendChild(buildCardMembre(membre));
+
+	// 2️⃣ Card Informations + historique
+	container.appendChild(buildCardHistorique(membre.id, mouvements));
+
+	// 3️⃣ Card Retour à la liste
+	const retourCard = document.createElement("div");
+	retourCard.className = "card";
+
+	const lien = membre.grade === "Ancien Membre" ? "anciens.html" : "actifs.html";
+
+	retourCard.innerHTML = `
+		<div style="text-align:center; margin-top:10px;">
+			<a href="${lien}" class="btn-retour">⬅ Retour à la liste</a>
+		</div>
+	`;
+
+	container.appendChild(retourCard);
+
+	// Optionnel : style inline minimal pour bouton compatible card
+	const styleBtn = `
+		display:inline-block;
+		padding:8px 16px;
+		background:#2980b9;
+		color:white;
+		text-decoration:none;
+		border-radius:6px;
+		font-weight:bold;
+	`;
+
+	retourCard.querySelector(".btn-retour").style.cssText = styleBtn;
+
 }
 
 // ================================
