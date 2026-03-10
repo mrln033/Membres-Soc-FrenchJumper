@@ -201,3 +201,17 @@ border-bottom:1px solid #ddd;
 
 }
 
+.btn-retour {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #2980b9;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: bold;
+}
+
+.btn-retour:hover {
+    background: #3498db;
+}
+

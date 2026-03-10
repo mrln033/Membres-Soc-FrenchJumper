@@ -353,39 +353,29 @@ function displayFiche(container, membre, mouvements) {
 		return;
 	}
 
-	// 1️⃣ Card Nom + Grade
-	container.appendChild(buildCardMembre(membre));
+    // Card 1 : Nom avatar + grade
+    container.appendChild(buildCardMembre(membre));
 
-	// 2️⃣ Card Informations + historique
-	container.appendChild(buildCardHistorique(membre.id, mouvements));
+    // Card 2 : Historique
+    container.appendChild(buildCardHistorique(membre.id, mouvements));
 
-	// 3️⃣ Card Retour à la liste
-	const retourCard = document.createElement("div");
-	retourCard.className = "card";
+    // Card 3 : Retour à la liste (compatible design existant)
+    container.appendChild(buildCardRetour(membre.grade));
+}
 
-	const lien = membre.grade === "Ancien Membre" ? "anciens.html" : "actifs.html";
 
-	retourCard.innerHTML = `
-		<div style="text-align:center; margin-top:10px;">
-			<a href="${lien}" class="btn-retour">⬅ Retour à la liste</a>
-		</div>
-	`;
+// Bouton “Retour à la liste”
+function buildCardRetour(grade) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.textAlign = "center";
 
-	container.appendChild(retourCard);
+    let lien = "actifs.html";
+    if (grade === "Ancien Membre") lien = "anciens.html";
 
-	// Optionnel : style inline minimal pour bouton compatible card
-	const styleBtn = `
-		display:inline-block;
-		padding:8px 16px;
-		background:#2980b9;
-		color:white;
-		text-decoration:none;
-		border-radius:6px;
-		font-weight:bold;
-	`;
+    card.innerHTML = `<a href="${lien}" class="btn-retour">⬅ Retour à la liste</a>`;
 
-	retourCard.querySelector(".btn-retour").style.cssText = styleBtn;
-
+    return card;
 }
 
 // ================================
