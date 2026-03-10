@@ -323,33 +323,35 @@ function formatDate(date) {
            date.getFullYear();
 }
 
-async function loadFiche(membreId){
+async function loadFiche(membreId) {
 
-	const container=document.getElementById("ficheMembre");
-	container.innerHTML="Chargement...";
+  const container = document.getElementById("ficheMembre");
+  container.innerHTML = "Chargement...";
 
-	try{
+  try {
+    const res = await fetch(API_URL + "?action=getFiche&id=" + membreId);
+    const data = await res.json();
 
-		const res=await fetch(API_URL+"?action=getFiche&id="+membreId);
-		const data=await res.json();
+    displayFiche(container, data.membre, data.historique);
 
-		displayFiche(container,data.membre,data.historique);
-
-	}catch(err){
-
-		console.error(err);
-		container.innerHTML="Erreur chargement";
-
-	}
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = "Erreur chargement";
+  }
 
 }
 
-function displayFiche(container, membre, mouvements){
+function displayFiche(container, membre, mouvements) {
 
-	container.innerHTML="";
+  container.innerHTML = "";
 
-	container.appendChild(buildCardMembre(membre));
-	container.appendChild(buildCardHistorique(membre.id, mouvements));
+  if (!membre) {
+    container.innerHTML = "<p>Membre introuvable.</p>";
+    return;
+  }
+
+  container.appendChild(buildCardMembre(membre));
+  container.appendChild(buildCardHistorique(membre.id, mouvements));
 
 }
 
@@ -391,52 +393,45 @@ function buildCardMembre(m){
 
 }
 
-function buildCardHistorique(membreId, mouvements){
+function buildCardHistorique(membreId, mouvements) {
 
-	const card=document.createElement("div");
-	card.className="card";
+  const card = document.createElement("div");
+  card.className = "card";
 
-	const mv = mouvements
-	.filter(m=>m.MembreID===membreId)
-	.sort((a,b)=>new Date(b.DateEffective)-new Date(a.DateEffective));
+  const mv = mouvements
+    .filter(m => m.MembreID === membreId)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-	let html=`
+  let html = `
+    <h2>Historique des mouvements</h2>
+    <table class="historique-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Nouveau grade</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
 
-	<h2>Historique des mouvements</h2>
+  mv.forEach(m => {
+    html += `
+      <tr>
+        <td>${formatDate(new Date(m.date))}</td>
+        <td>${m.type}</td>
+        <td>${m.grade || ""}</td>
+      </tr>
+    `;
+  });
 
-	<table class="historique-table">
+  html += `
+      </tbody>
+    </table>
+  `;
 
-	<thead>
-	<tr>
-	<th>Date</th>
-	<th>Type</th>
-	<th>Nouveau grade</th>
-	</tr>
-	</thead>
-
-	<tbody>
-	`;
-
-	mv.forEach(m=>{
-
-		html+=`
-		<tr>
-		<td>${formatDate(new Date(m.DateEffective))}</td>
-		<td>${m.TypeMouvement}</td>
-		<td>${m.grade}</td>
-		</tr>
-		`;
-
-	});
-
-	html+=`
-	</tbody>
-	</table>
-	`;
-
-	card.innerHTML=html;
-
-	return card;
+  card.innerHTML = html;
+  return card;
 
 }
 
