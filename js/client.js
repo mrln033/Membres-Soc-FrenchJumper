@@ -346,21 +346,16 @@ async function loadFiche(membreId) {
 // AFFICHAGE FICHE
 // ================================
 function displayFiche(container, membre, mouvements) {
-	container.innerHTML = "";
+  container.innerHTML = "";
 
-	if (!membre) {
-		container.innerHTML = "<p>Membre introuvable.</p>";
-		return;
-	}
+  if (!membre) {
+    container.innerHTML = "<p>Membre introuvable.</p>";
+    return;
+  }
 
-    // Card 1 : Nom avatar + grade
-    container.appendChild(buildCardMembre(membre));
-
-    // Card 2 : Historique
-    container.appendChild(buildCardHistorique(membre.id, mouvements));
+  container.appendChild(buildCardMembre(membre));
+  container.appendChild(buildCardHistorique(mouvements)); // <== on passe tout l’historique
 }
-
-
 
 // ================================
 // CARTE MEMBRE
