@@ -358,25 +358,9 @@ function displayFiche(container, membre, mouvements) {
 
     // Card 2 : Historique
     container.appendChild(buildCardHistorique(membre.id, mouvements));
-
-    // Card 3 : Retour à la liste (compatible design existant)
-    container.appendChild(buildCardRetour(membre.grade));
 }
 
 
-// Bouton “Retour à la liste”
-function buildCardRetour(grade) {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.style.textAlign = "center";
-
-    let lien = "actifs.html";
-    if (grade === "Ancien Membre") lien = "anciens.html";
-
-    card.innerHTML = `<a href="${lien}" class="btn-retour">⬅ Retour à la liste</a>`;
-
-    return card;
-}
 
 // ================================
 // CARTE MEMBRE
