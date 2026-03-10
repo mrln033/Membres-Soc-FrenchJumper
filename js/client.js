@@ -325,25 +325,15 @@ function formatDate(date) {
 
 async function loadFiche(membreId){
 
-	const container = document.getElementById("ficheMembre");
-	container.innerHTML = "Chargement...";
+	const container=document.getElementById("ficheMembre");
+	container.innerHTML="Chargement...";
 
 	try{
 
-		const membres = await fetchMembres();
-		const membre = membres.find(m => m.id === membreId);
+		const res=await fetch(API_URL+"?action=getFiche&id="+membreId);
+		const data=await res.json();
 
-		if(!membre){
-			container.innerHTML = "Membre introuvable";
-			return;
-		}
-
-		const res = await fetch(API_URL + "?action=getMouvements");
-		const mouvements = await res.json();
-
-		const mv = mouvements.filter(m => m.MembreID === membreId);
-
-		displayFiche(container, membre, mv);
+		displayFiche(container,data.membre,data.historique);
 
 	}catch(err){
 
@@ -433,7 +423,7 @@ function buildCardHistorique(membreId, mouvements){
 		<tr>
 		<td>${formatDate(new Date(m.DateEffective))}</td>
 		<td>${m.TypeMouvement}</td>
-		<td>${m.NouveauGradeID || ""}</td>
+		<td>${m.grade}</td>
 		</tr>
 		`;
 
