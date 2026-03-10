@@ -385,7 +385,7 @@ function buildCardMembre(m) {
     card2.className = "card";
 
     card2.innerHTML = `
-        <h3>Informations</h3>
+        <h2>Informations</h2>
         <div class="fiche-grid">
             <div><b>Première entrée :</b> ${m.datePremiere ? formatDate(new Date(m.datePremiere)) : ""}</div>
             <div>
