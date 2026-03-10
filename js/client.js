@@ -361,33 +361,50 @@ function displayFiche(container, membre, mouvements) {
 // CARTE MEMBRE
 // ================================
 function buildCardMembre(m) {
-  const card = document.createElement("div");
-  card.className = "card";
 
-  card.innerHTML = `
-    <h2 style="text-align:center; font-size:2em; margin-bottom:0.2em;">${m.nom}</h2>
-    <div style="text-align:center; font-weight:bold; font-style:italic; margin-bottom:1em;">
-      ${m.grade || ""}
-    </div>
+    const container = document.createElement("div");
 
-    <div class="fiche-grid">
-      <div><b>Première entrée :</b> ${m.datePremiere ? formatDate(new Date(m.datePremiere)) : ""}</div>
-      <div>
-        <b>Discord :</b>
-        ${m.IDDiscord ?
-          `<img src="images/icon-discord.png" class="icon-discord"> ${m.IDDiscord}` :
-          "non renseigné"}
-      </div>
-      <div>
-        <b>Règles SOC :</b>
-        ${m.regleSoc ?
-          '<span class="regle-ok">Oui</span>' :
-          '<span class="regle-ko">Non</span>'}
-      </div>
-    </div>
-  `;
+    // -----------------------------
+    // Card 1 : Nom + Grade
+    // -----------------------------
+    const card1 = document.createElement("div");
+    card1.className = "card";
 
-  return card;
+    card1.innerHTML = `
+        <h2 style="text-align:center; font-size:2em; margin-bottom:0.2em;">${m.nom}</h2>
+        <div style="text-align:center; font-weight:bold; font-style:italic; font-size:1.2em;">
+            ${m.grade || ""}
+        </div>
+    `;
+    container.appendChild(card1);
+
+    // -----------------------------
+    // Card 2 : Informations
+    // -----------------------------
+    const card2 = document.createElement("div");
+    card2.className = "card";
+
+    card2.innerHTML = `
+        <h3>Informations</h3>
+        <div class="fiche-grid">
+            <div><b>Première entrée :</b> ${m.datePremiere ? formatDate(new Date(m.datePremiere)) : ""}</div>
+            <div>
+                <b>Discord :</b>
+                ${m.IDDiscord ?
+                    `<img src="images/icon-discord.png" class="icon-discord"> ${m.IDDiscord}` :
+                    "non renseigné"}
+            </div>
+            <div>
+                <b>Règles SOC :</b>
+                ${m.regleSoc ?
+                    '<span class="regle-ok">Oui</span>' :
+                    '<span class="regle-ko">Non</span>'}
+            </div>
+        </div>
+    `;
+    container.appendChild(card2);
+
+    return container;
 }
 
 // ================================

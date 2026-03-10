@@ -200,3 +200,41 @@ padding:6px;
 border-bottom:1px solid #ddd;
 
 }
+
+/* ==============================
+   Fiche Membre : Nom + Grade
+================================= */
+.card h2 {
+    margin: 0;
+}
+
+.card h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+/* Card Nom + Grade centrée */
+.card > h2, 
+.card > div:first-child {
+    text-align: center;
+}
+
+/* Nom d'avatar plus gros */
+.card > h2 {
+    font-size: 2em;
+    font-weight: bold;
+}
+
+/* Grade actuel juste en dessous du nom */
+.card > div {
+    font-weight: bold;
+    font-style: italic;
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+/* Card Informations : espace uniforme */
+.card .fiche-grid div {
+    padding: 5px 0;
+}
