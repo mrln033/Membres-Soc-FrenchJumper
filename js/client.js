@@ -493,7 +493,7 @@ function displayMouvementsMensuels(container, mouvements) {
 				label: `${m.nom} (${date})`
 			});
 
-		if (m.type === "SORTIE" || m.type === "BANISSEMENT")
+		if (m.type === "SORTIE" || m.type === "BANISSEMENT" || m.type === "DEMISSION")
 			sorties.push({
 				id: m.id,
 				label: `${m.nom} (${date})`
@@ -679,7 +679,7 @@ next.onclick = ()=>{
 };
 
 	const label = document.createElement("span");
-	label.innerText = moisNoms[moisCourant] + " / " + anneeCourante;
+	label.innerText = moisNoms[moisCourant] + " " + anneeCourante;
 
 	header.appendChild(prev);
 	header.appendChild(label);
