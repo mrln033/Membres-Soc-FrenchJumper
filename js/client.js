@@ -454,3 +454,113 @@ function buildCardHistorique(mouvements) {
   card.innerHTML = html;
   return card;
 }
+
+async function loadMouvementsMensuels() {
+
+	const container = document.getElementById("mouvementsContainer");
+	container.innerHTML = "Chargement...";
+
+	try {
+
+		const res = await fetch(API_URL + "?action=getMouvementsMensuels");
+		const mouvements = await res.json();
+
+		displayMouvementsMensuels(container, mouvements);
+
+	} catch(err) {
+
+		console.error(err);
+		container.innerHTML = "Erreur chargement";
+
+	}
+
+}
+
+function displayMouvementsMensuels(container, mouvements) {
+
+	container.innerHTML = "";
+
+	const entrees = [];
+	const sorties = [];
+	const grades = [];
+	const desertions = [];
+
+	mouvements.forEach(m => {
+
+		const date = formatDate(new Date(m.date));
+
+		if (m.type === "ENTREE")
+			entrees.push(`${m.nom} (${date})`);
+
+		if (m.type === "SORTIE" || m.type === "BANISSEMENT")
+			sorties.push(`${m.nom} (${date})`);
+
+		if (m.type === "PROMOTION")
+			grades.push(`${m.nom} ⤴️ ${m.grade} (${date})`);
+
+		if (m.type === "RETROGRADATION")
+			grades.push(`${m.nom} ⤵️ ${m.grade} (${date})`);
+
+		if (m.type === "DESERTION")
+			desertions.push(`${m.nom} (${date})`);
+
+	});
+
+	entrees.sort((a,b)=>a.localeCompare(b));
+	sorties.sort((a,b)=>a.localeCompare(b));
+	grades.sort((a,b)=>a.localeCompare(b));
+	desertions.sort((a,b)=>a.localeCompare(b));
+
+	let totalCards = 0;
+
+	if (entrees.length) {
+		container.appendChild(buildCardListe("📥 Ils nous ont rejoints :", entrees));
+		totalCards++;
+	}
+
+	if (sorties.length) {
+		container.appendChild(buildCardListe("📤 Ils nous ont quittés :", sorties));
+		totalCards++;
+	}
+
+	if (grades.length) {
+		container.appendChild(buildCardListe("🔃 Ils ont changés de grade :", grades));
+		totalCards++;
+	}
+
+	if (desertions.length) {
+		container.appendChild(buildCardListe("⚰️ Ils sont portés déserteurs :", desertions));
+		totalCards++;
+	}
+
+	if (totalCards === 0) {
+		container.appendChild(buildCardListe("Les Mouvements Mensuels", [
+			"Aucun mouvements pour le mois sélectionné"
+		]));
+	}
+
+}
+
+function buildCardListe(titre, items) {
+
+	const card = document.createElement("div");
+	card.className = "card";
+
+	const h2 = document.createElement("h2");
+	h2.innerText = titre;
+
+	const ul = document.createElement("ul");
+
+	items.forEach(i=>{
+		const li = document.createElement("li");
+		li.innerHTML = i;
+		ul.appendChild(li);
+	});
+
+	card.appendChild(h2);
+	card.appendChild(ul);
+
+	return card;
+
+}
+

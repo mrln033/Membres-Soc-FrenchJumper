@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Anciens Membres</title>
+<title>Listes des Mouvements</title>
 <link rel="icon" href="./favicon.ico">
 
 <link rel="stylesheet" href="css/style.css">
@@ -11,16 +11,15 @@
 <script src="js/client.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded", loadMembresAnciens);
 </script>
 
 </head>
 
-<body>
+<body onload="loadMouvementsMensuels()">
 
-<h1>Anciens Membres</h1>
+<h1>Les Mouvements Mensuels</h1>
 
-<div id="listeMembres">Chargement...</div>
+<div id="mouvementsContainer">Chargement en cours...</div>
 
 </body>
 </html>
