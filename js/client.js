@@ -569,11 +569,15 @@ function buildCardListe(titre, items){
 		const li = document.createElement("li");
 
 		li.className = "membre-row";
-		li.innerHTML = i.label;
+		li.innerText = i.label;
 
-		li.onclick = ()=>{
-			window.location.href = "fiche.html?id=" + i.id;
-		};
+		// même logique que tes tableaux
+		li.dataset.id = i.id;
+
+		li.addEventListener("click", function(){
+			const membreId = this.dataset.id;
+			window.location.href = "fiche.html?id=" + membreId;
+		});
 
 		ul.appendChild(li);
 
