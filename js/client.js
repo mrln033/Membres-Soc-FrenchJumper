@@ -308,7 +308,7 @@ function getPremiereEntree(membreId, mouvements) {
 function getDerniereSortie(membreId, mouvements) {
     const sorties = mouvements.filter(m => 
         m.MembreID === membreId &&
-        (m.TypeMouvement === "SORTIE" || m.TypeMouvement === "BANNISSEMENT" || m.TypeMouvement === "DEMISSION")
+        (m.TypeMouvement === "SORTIE" || m.TypeMouvement === "BANNISSEMENT" || m.TypeMouvement === "DEMISSION" || m.TypeMouvement === "DESERTION")
     );
     if (!sorties.length) return "";
     sorties.sort((a,b) => new Date(b.DateEffective) - new Date(a.DateEffective));
@@ -547,7 +547,7 @@ function displayMouvementsMensuels(container, mouvements) {
 	}
 
 	if (totalCards === 0) {
-		container.appendChild(buildCardListe("Les Mouvements Mensuels", [
+		container.appendChild(buildCardListe(".", [
 			"Aucun mouvements pour le mois sélectionné"
 		]));
 	}
@@ -575,8 +575,7 @@ function buildCardListe(titre, items){
 		li.dataset.id = i.id;
 
 		li.addEventListener("click", function(){
-			const membreId = this.dataset.id;
-			window.location.href = "fiche.html?id=" + membreId;
+			window.location.href = "fiche.html?id=" + li.dataset.id;
 		});
 
 		ul.appendChild(li);
