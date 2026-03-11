@@ -463,9 +463,9 @@ async function loadMouvementsMensuels() {
 	try {
 
 		const res = await fetch(API_URL + "?action=getMouvementsMensuels");
-		const mouvements = await res.json();
+		mouvementsData = await res.json();
 
-		displayMouvementsMensuels(container, mouvements);
+		renderMouvements();
 
 	} catch(err) {
 
@@ -477,8 +477,6 @@ async function loadMouvementsMensuels() {
 }
 
 function displayMouvementsMensuels(container, mouvements) {
-
-	container.innerHTML = "";
 
 	const entrees = [];
 	const sorties = [];
@@ -564,3 +562,84 @@ function buildCardListe(titre, items) {
 
 }
 
+let mouvementsData = [];
+let moisCourant = new Date().getMonth();
+let anneeCourante = new Date().getFullYear();
+
+function renderMouvements(){
+
+	const container = document.getElementById("mouvementsContainer");
+	container.innerHTML = "";
+
+	container.appendChild(buildCardFiltre());
+
+	const filtered = mouvementsData.filter(m => {
+
+		const d = new Date(m.date);
+
+		return (
+			d.getMonth() === moisCourant &&
+			d.getFullYear() === anneeCourante
+		);
+
+	});
+
+	displayMouvementsMensuels(container, filtered);
+
+}
+
+function buildCardFiltre(){
+
+	const card = document.createElement("div");
+	card.className = "card";
+
+	const moisNoms = [
+		"Janvier","Février","Mars","Avril","Mai","Juin",
+		"Juillet","Août","Septembre","Octobre","Novembre","Décembre"
+	];
+
+	const header = document.createElement("div");
+	header.style.textAlign = "center";
+	header.style.fontSize = "1.2em";
+	header.style.fontWeight = "bold";
+
+	const prev = document.createElement("span");
+	prev.innerHTML = "&#9664;&#9664;";
+	prev.style.cursor = "pointer";
+	prev.style.marginRight = "20px";
+
+	prev.onclick = ()=>{
+		moisCourant--;
+		if(moisCourant < 0){
+			moisCourant = 11;
+			anneeCourante--;
+		}
+		renderMouvements();
+	};
+
+	const next = document.createElement("span");
+	next.innerHTML = "&#9654;&#9654;";
+	next.style.cursor = "pointer";
+	next.style.marginLeft = "20px";
+
+	next.onclick = ()=>{
+		moisCourant++;
+		if(moisCourant > 11){
+			moisCourant = 0;
+			anneeCourante++;
+		}
+		renderMouvements();
+	};
+
+	const label = document.createElement("span");
+	label.innerText = moisNoms[moisCourant] + " / " + anneeCourante;
+
+	header.appendChild(prev);
+	header.appendChild(label);
+	header.appendChild(next);
+
+	card.appendChild(header);
+
+	return card;
+
+}
