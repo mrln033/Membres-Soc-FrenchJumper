@@ -488,26 +488,41 @@ function displayMouvementsMensuels(container, mouvements) {
 		const date = formatDate(new Date(m.date));
 
 		if (m.type === "ENTREE")
-			entrees.push(`${m.nom} (${date})`);
+			entrees.push({
+				id: m.id,
+				label: `${m.nom} (${date})`
+			});
 
 		if (m.type === "SORTIE" || m.type === "BANISSEMENT")
-			sorties.push(`${m.nom} (${date})`);
+			sorties.push({
+				id: m.id,
+				label: `${m.nom} (${date})`
+			});
 
 		if (m.type === "PROMOTION")
-			grades.push(`${m.nom} ⤴️ ${m.grade} (${date})`);
+			grades.push({
+				id: m.id,
+				label: `${m.nom} ⤴️ ${m.grade} (${date})`
+			});
 
 		if (m.type === "RETROGRADATION")
-			grades.push(`${m.nom} ⤵️ ${m.grade} (${date})`);
+			grades.push({
+				id: m.id,
+				label: `${m.nom} ⤵️ ${m.grade} (${date})`
+			});
 
 		if (m.type === "DESERTION")
-			desertions.push(`${m.nom} (${date})`);
+			desertions.push({
+				id: m.id,
+				label: `${m.nom} (${date})`
+			});
 
 	});
 
-	entrees.sort((a,b)=>a.localeCompare(b));
-	sorties.sort((a,b)=>a.localeCompare(b));
-	grades.sort((a,b)=>a.localeCompare(b));
-	desertions.sort((a,b)=>a.localeCompare(b));
+	entrees.sort((a,b)=>a.label.localeCompare(b.label));
+	sorties.sort((a,b)=>a.label.localeCompare(b.label));
+	grades.sort((a,b)=>a.label.localeCompare(b.label));
+	desertions.sort((a,b)=>a.label.localeCompare(b.label));
 
 	let totalCards = 0;
 
@@ -539,7 +554,7 @@ function displayMouvementsMensuels(container, mouvements) {
 
 }
 
-function buildCardListe(titre, items) {
+function buildCardListe(titre, items){
 
 	const card = document.createElement("div");
 	card.className = "card";
@@ -550,9 +565,18 @@ function buildCardListe(titre, items) {
 	const ul = document.createElement("ul");
 
 	items.forEach(i=>{
+
 		const li = document.createElement("li");
-		li.innerHTML = i;
+
+		li.className = "membre-row";
+		li.innerHTML = i.label;
+
+		li.onclick = ()=>{
+			window.location.href = "fiche.html?id=" + i.id;
+		};
+
 		ul.appendChild(li);
+
 	});
 
 	card.appendChild(h2);

@@ -215,3 +215,16 @@ border-bottom:1px solid #ddd;
     background: #3498db;
 }
 
+.card ul{
+	list-style: disc;
+	padding-left: 20px;
+}
+
+.card li{
+	padding: 4px 6px;
+}
+
+.membre-row:hover{
+	color:#2980b9;
+	cursor:pointer;
+}
