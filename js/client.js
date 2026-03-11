@@ -547,9 +547,7 @@ function displayMouvementsMensuels(container, mouvements) {
 	}
 
 	if (totalCards === 0) {
-		container.appendChild(buildCardListe(".", [
-			"Aucun mouvements pour le mois sélectionné"
-		]));
+		container.appendChild(buildCardListe("📥 📤 🔃 ⚰️ Aucun mouvement enregistré ce mois-ci", []));
 	}
 
 }
