@@ -591,8 +591,18 @@ function buildCardListe(titre, items){
 }
 
 let mouvementsData = [];
+
 let moisCourant = new Date().getMonth();
 let anneeCourante = new Date().getFullYear();
+
+// récupération session
+const storedMois = sessionStorage.getItem("mouvementsMois");
+const storedAnnee = sessionStorage.getItem("mouvementsAnnee");
+
+if(storedMois !== null && storedAnnee !== null){
+	moisCourant = parseInt(storedMois);
+	anneeCourante = parseInt(storedAnnee);
+}
 
 function renderMouvements(){
 
@@ -636,28 +646,40 @@ function buildCardFiltre(){
 	prev.style.cursor = "pointer";
 	prev.style.marginRight = "20px";
 
-	prev.onclick = ()=>{
-		moisCourant--;
-		if(moisCourant < 0){
-			moisCourant = 11;
-			anneeCourante--;
-		}
-		renderMouvements();
-	};
+prev.onclick = ()=>{
+
+	moisCourant--;
+
+	if(moisCourant < 0){
+		moisCourant = 11;
+		anneeCourante--;
+	}
+
+	sessionStorage.setItem("mouvementsMois", moisCourant);
+	sessionStorage.setItem("mouvementsAnnee", anneeCourante);
+
+	renderMouvements();
+};
 
 	const next = document.createElement("span");
 	next.innerHTML = "&#9654;&#9654;";
 	next.style.cursor = "pointer";
 	next.style.marginLeft = "20px";
 
-	next.onclick = ()=>{
-		moisCourant++;
-		if(moisCourant > 11){
-			moisCourant = 0;
-			anneeCourante++;
-		}
-		renderMouvements();
-	};
+next.onclick = ()=>{
+
+	moisCourant++;
+
+	if(moisCourant > 11){
+		moisCourant = 0;
+		anneeCourante++;
+	}
+
+	sessionStorage.setItem("mouvementsMois", moisCourant);
+	sessionStorage.setItem("mouvementsAnnee", anneeCourante);
+
+	renderMouvements();
+};
 
 	const label = document.createElement("span");
 	label.innerText = moisNoms[moisCourant] + " / " + anneeCourante;
