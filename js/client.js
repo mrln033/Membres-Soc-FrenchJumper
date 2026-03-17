@@ -423,6 +423,7 @@ function buildCardMembre(m) {
                     body: JSON.stringify({
                         action: "syncDiscordFromWeb",
                         membreId: m.id
+						nom: m.nom
                     })
                 });
                 const data = await res.json();
