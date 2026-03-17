@@ -422,7 +422,7 @@ function buildCardMembre(m) {
                     method: "POST",
                     body: JSON.stringify({
                         action: "syncDiscordFromWeb",
-                        membreId: m.id
+                        membreId: m.id,
 						nom: m.nom
                     })
                 });
