@@ -25,20 +25,38 @@
 </div>
 
 <div id="ficheMembre">
-Chargement en cours...
+  Chargement en cours...
 </div>
 
-<script>
+<button id="btnSyncDiscord" style="margin:10px;">Synchroniser Discord</button>
 
+<script>
 const params = new URLSearchParams(window.location.search);
 const membreId = params.get("id");
 
 if(membreId){
     loadFiche(membreId);
-}else{
+} else {
     document.getElementById("ficheMembre").innerText="ID manquant";
 }
 
+// Bouton synchronisation Discord
+document.getElementById("btnSyncDiscord").addEventListener("click", async ()=>{
+    if(!membreId) return alert("ID membre manquant");
+
+    try {
+        const res = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ action:"syncDiscordFromWeb", membreId: membreId })
+        });
+
+        const data = await res.json();
+        if(data.success) alert(data.message);
+        else alert("Erreur : "+data.error);
+    } catch(err) {
+        alert("Erreur réseau ou serveur : "+err.message);
+    }
+});
 </script>
 
 </body>
