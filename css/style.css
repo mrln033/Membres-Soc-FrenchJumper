@@ -228,3 +228,23 @@ border-bottom:1px solid #ddd;
 	color:#2980b9;
 	cursor:pointer;
 }
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.link-mouvements {
+  text-decoration: none;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.link-mouvements:hover {
+  text-decoration: underline;
+  cursor: pointer;
+  opacity: 1;
+}
+
