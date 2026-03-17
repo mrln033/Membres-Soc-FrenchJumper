@@ -235,14 +235,14 @@ border-bottom:1px solid #ddd;
   align-items: center;
 }
 
-.link-mouvements {
+.link-header {
   text-decoration: none;
   color: inherit;
   opacity: 0.7;
   transition: opacity 0.2s ease;
 }
 
-.link-mouvements:hover {
+.link-header:hover {
   text-decoration: underline;
   cursor: pointer;
   opacity: 1;
