@@ -248,3 +248,18 @@ border-bottom:1px solid #ddd;
   opacity: 1;
 }
 
+.btn-sync-discord {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-sync-discord:hover {
+    background-color: #357ab8;
+}
+

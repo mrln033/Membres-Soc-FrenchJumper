@@ -404,6 +404,40 @@ function buildCardMembre(m) {
     `;
     container.appendChild(card2);
 
+    // -----------------------------
+    // Bouton Synchroniser Discord
+    // -----------------------------
+    if(m.IDDiscord) {
+        const btnDiv = document.createElement("div");
+        btnDiv.style.textAlign = "center";
+        btnDiv.style.margin = "20px 0";
+
+        const btn = document.createElement("button");
+        btn.className = "btn-sync-discord";
+        btn.innerText = "🔄 Synchroniser Discord";
+
+        btn.onclick = async () => {
+            try {
+                const res = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "syncDiscordFromWeb",
+                        membreId: m.id
+                    })
+                });
+                const data = await res.json();
+                if(data.success) alert(data.message);
+                else alert("Erreur : " + data.error);
+            } catch(err) {
+                alert("Erreur réseau ou serveur : " + err.message);
+            }
+        };
+
+        btnDiv.appendChild(btn);
+        container.appendChild(btnDiv);
+    }
+
     return container;
 }
 
