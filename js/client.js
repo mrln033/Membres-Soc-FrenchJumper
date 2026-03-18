@@ -419,12 +419,7 @@ function buildCardMembre(m) {
 
         btn.onclick = async () => {
             try {
-    console.log("=== BOUTON CLIQUE ===");
-    console.log("Données envoyées au serveur (Apps Script) :", {
-    membreId: m.id,
-    nomAvatar: m.nom,
-    discordId: m.IDDiscord
-    });
+				
                 const res = await fetch(API_URL, {
                     method: "POST",
                     body: JSON.stringify({
