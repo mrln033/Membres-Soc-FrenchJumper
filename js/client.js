@@ -1,3 +1,4 @@
+
 async function fetchMembres() {
 
 	const res = await fetch(API_URL + "?action=getMembres");
@@ -420,10 +421,10 @@ function buildCardMembre(m) {
             try {
                 const res = await fetch(API_URL, {
                     method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         action: "syncDiscordFromWeb",
-                        membreId: m.id,
-						nom: m.nom
+                        membreId: m.id
                     })
                 });
                 const data = await res.json();

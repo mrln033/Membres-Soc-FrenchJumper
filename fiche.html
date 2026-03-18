@@ -28,17 +28,16 @@
   Chargement en cours...
 </div>
 
+
+
 <script>
 const params = new URLSearchParams(window.location.search);
 const membreId = params.get("id");
 
-if(membreId){
-    loadFiche(membreId);
-} else {
+@@ -40,23 +38,6 @@ if(membreId){
     document.getElementById("ficheMembre").innerText="ID manquant";
 }
 
 </script>
 
 </body>
-</html>
