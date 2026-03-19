@@ -360,24 +360,23 @@ function formatDate(date) {
            date.getFullYear();
 }
 
-async function sendDiscordWebhook(message) {
-
+async function sendDiscordWebhook(payload) {
     try {
+        // Si c'est une chaîne de caractères, on l'envoie en tant que content
+        const body = typeof payload === "string"
+            ? { content: payload }
+            : payload; // si c'est déjà un objet (embed)
 
         await fetch(WH_NOTIF_RH, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-                content: message
-            })
+            body: JSON.stringify(body)
         });
 
     } catch (err) {
-
         console.error("Webhook Discord ERROR:", err);
-
     }
 }
 
@@ -502,7 +501,7 @@ function buildCardMembre(m) {
 					btn.innerText = "🔄 Synchroniser Discord";
 				}, 2000);
 				
-				// 🔥 Construction du message ICI (comme demandé)
+				// 🔥 Construction embed
 				const now = new Date();
 
 				const dateStr =
@@ -512,16 +511,43 @@ function buildCardMembre(m) {
 					("0"+now.getHours()).slice(-2) + ":" +
 					("0"+now.getMinutes()).slice(-2);
 
-				const message = [
-					"🔄 **Synchronisation Effectuée (pour vérification)**",
-					"Membre = " + m.nom,
-					"Discord = <@" + m.IDDiscord + ">",
-					"Grade Actuel = " + (m.grade || ""),
-					"Date = " + dateStr
-				].join("\n");
+				// couleur : vert = succès, rouge = erreur
+				const color = success ? 0x2ecc71 : 0xe74c3c;
 
-				
-				sendDiscordWebhook(message);
+				const embed = {
+					title: "🔄 Synchronisation Discord",
+					description: success
+						? "✅ Synchronisation effectuée"
+						: "❌ Erreur lors de la synchronisation",
+					color: color,
+					fields: [
+						{
+							name: "Membre",
+							value: m.nom,
+							inline: true
+						},
+						{
+							name: "Discord",
+							value: `<@${m.IDDiscord}>`,
+							inline: true
+						},
+						{
+							name: "Grade",
+							value: m.grade || "N/A",
+							inline: true
+						},
+						{
+							name: "Date",
+							value: dateStr,
+							inline: false
+						}
+					],
+					footer: {
+						text: "Log automatique - WebApp Membres"
+					}
+				};
+
+				sendDiscordWebhook({ embeds: [embed] });
 
 			}
 
