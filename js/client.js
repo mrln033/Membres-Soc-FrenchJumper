@@ -488,10 +488,12 @@ function buildCardMembre(m) {
 					discordId: m.IDDiscord
 				}, "POST");
 
+				success = true
 				btn.innerText = "✅ OK";
 
 			} catch(err) {
-
+				
+				success = false
 				btn.innerText = "❌ Erreur";
 
 			} finally {
