@@ -517,7 +517,7 @@ function buildCardMembre(m) {
 				const color = success ? 0x2ecc71 : 0xe74c3c;
 
 				const embed = {
-					title: "🔄 Synchronisation Discord",
+					title: "🔄 Synchronisation Discord (pour vérification)",
 					description: success
 						? "✅ Synchronisation effectuée"
 						: "❌ Erreur lors de la synchronisation",
@@ -534,14 +534,14 @@ function buildCardMembre(m) {
 							inline: true
 						},
 						{
-							name: "Grade",
-							value: m.grade || "N/A",
-							inline: true
-						},
-						{
 							name: "Date",
 							value: dateStr,
 							inline: false
+						},
+						{
+							name: "Grade",
+							value: m.grade || "N/A",
+							inline: true
 						}
 					],
 					footer: {
