@@ -1,9 +1,47 @@
+async function apiRequest(action, data = null, method = "GET") {
+
+    try {
+
+        let url = API_URL;
+        let options = { method };
+
+        if (method === "GET") {
+
+            // construction URL avec query params
+            const params = new URLSearchParams({ action, ...data });
+            url += "?" + params.toString();
+
+        } else {
+
+            // POST
+            options.body = JSON.stringify({ action, ...data });
+
+        }
+
+        const res = await fetch(url, options);
+
+        if (!res.ok) {
+            throw new Error("Erreur HTTP : " + res.status);
+        }
+
+        const json = await res.json();
+
+        if (json.error) {
+            throw new Error(json.error);
+        }
+
+        return json;
+
+    } catch (err) {
+
+        console.error("API ERROR:", err);
+        throw err;
+
+    }
+}
 
 async function fetchMembres() {
-
-	const res = await fetch(API_URL + "?action=getMembres");
-	return await res.json();
-
+    return await apiRequest("getMembres");
 }
 
 /* ================================
