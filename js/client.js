@@ -549,7 +549,9 @@ function buildCardMembre(m) {
 					}
 				};
 
-				sendDiscordWebhook(embed);
+				sendDiscordWebhook({ 
+					embeds: [embed] 
+				});
 
 			}
 
