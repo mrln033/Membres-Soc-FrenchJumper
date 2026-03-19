@@ -537,8 +537,7 @@ async function loadMouvementsMensuels() {
 
 	try {
 
-		const res = await fetch(API_URL + "?action=getMouvementsMensuels");
-		mouvementsData = await res.json();
+		mouvementsData = await apiRequest("getMouvementsMensuels");
 
 		renderMouvements();
 
