@@ -553,7 +553,7 @@ function buildCardMembre(m) {
 						text: "Log automatique - WebApp Membres"
 					},
 					,
-					timestamp: new Date()
+					timestamp: new Date(),
 				};
 
 				sendDiscordWebhook({ 
