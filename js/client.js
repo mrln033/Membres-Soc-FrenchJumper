@@ -457,19 +457,29 @@ function buildCardMembre(m) {
 
         btn.onclick = async () => {
 
+			btn.disabled = true;
+			btn.innerText = "⏳ Synchronisation...";
+
 			try {
-        
+
 				const data = await apiRequest("syncDiscordFromWeb", {
 					membreId: m.id,
 					nomAvatar: m.nom,
 					discordId: m.IDDiscord
 				}, "POST");
 
-				alert(data.message || "Synchronisation OK");
+				btn.innerText = "✅ OK";
 
 			} catch(err) {
 
-				alert("Erreur : " + err.message);
+				btn.innerText = "❌ Erreur";
+
+			} finally {
+
+				setTimeout(() => {
+					btn.disabled = false;
+					btn.innerText = "🔄 Synchroniser Discord";
+				}, 2000);
 
 			}
 
