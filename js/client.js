@@ -462,105 +462,108 @@ function buildCardMembre(m) {
         </div>
     `;
     container.appendChild(card2);
+	
+	if (isAdmin) {
 
-    // -----------------------------
-    // Bouton Synchroniser Discord
-    // -----------------------------
-    if(m.IDDiscord) {
-        const btnDiv = document.createElement("div");
-        btnDiv.style.textAlign = "center";
-        btnDiv.style.margin = "20px 0";
+		// -----------------------------
+		// Bouton Synchroniser Discord
+		// -----------------------------
+		if(m.IDDiscord) {
+			const btnDiv = document.createElement("div");
+			btnDiv.style.textAlign = "center";
+			btnDiv.style.margin = "20px 0";
+	
+			const btn = document.createElement("button");
+			btn.className = "btn-sync-discord";
+			btn.innerText = "🔄 Synchroniser Discord";
 
-        const btn = document.createElement("button");
-        btn.className = "btn-sync-discord";
-        btn.innerText = "🔄 Synchroniser Discord";
+			btn.onclick = async () => {
 
-        btn.onclick = async () => {
+				btn.disabled = true;
+				btn.innerText = "⏳ Synchronisation...";
+				let succes = false
 
-			btn.disabled = true;
-			btn.innerText = "⏳ Synchronisation...";
-			let succes = false
+				try {
 
-			try {
+					const data = await apiRequest("syncDiscordFromWeb", {
+						membreId: m.id,
+						nomAvatar: m.nom,
+						discordId: m.IDDiscord
+					}, "POST");
 
-				const data = await apiRequest("syncDiscordFromWeb", {
-					membreId: m.id,
-					nomAvatar: m.nom,
-					discordId: m.IDDiscord
-				}, "POST");
+					success = true
+					btn.innerText = "✅ OK";
 
-				success = true
-				btn.innerText = "✅ OK";
-
-			} catch(err) {
+				} catch(err) {
 				
-				btn.innerText = "❌ Erreur";
+					btn.innerText = "❌ Erreur";
 
-			} finally {
+				} finally {
 
-				setTimeout(() => {
-					btn.disabled = false;
-					btn.innerText = "🔄 Synchroniser Discord";
-				}, 2000);
+					setTimeout(() => {
+						btn.disabled = false;
+						btn.innerText = "🔄 Synchroniser Discord";
+					}, 2000);
 				
-				// 🔥 Construction embed
-				const now = new Date();
+					// 🔥 Construction embed
+					const now = new Date();
 
-				const dateStr =
-					("0"+now.getDate()).slice(-2) + "/" +
-					("0"+(now.getMonth()+1)).slice(-2) + "/" +
-					now.getFullYear() + " " +
-					("0"+now.getHours()).slice(-2) + ":" +
-					("0"+now.getMinutes()).slice(-2);
+					const dateStr =
+						("0"+now.getDate()).slice(-2) + "/" +
+						("0"+(now.getMonth()+1)).slice(-2) + "/" +
+						now.getFullYear() + " " +
+						("0"+now.getHours()).slice(-2) + ":" +
+						("0"+now.getMinutes()).slice(-2);
 
-				// couleur : vert = succès, rouge = erreur
-				const color = success ? 0x2ecc71 : 0xe74c3c;
+					// couleur : vert = succès, rouge = erreur
+					const color = success ? 0x2ecc71 : 0xe74c3c;
 
-				const embed = {
-					title: "🔄 Synchronisation Discord (pour vérification)",
-					description: success
-						? '✅ Synchronisation effectuée'
-						: '❌ Erreur lors de la synchronisation\n\nRôle notifié : <@&464706697408020482>',
-					color: color,
-					fields: [
-						{
-							name: "Membre",
-							value: m.nom,
-							inline: true
+					const embed = {
+						title: "🔄 Synchronisation Discord (pour vérification)",
+						description: success
+							? '✅ Synchronisation effectuée'
+							: '❌ Erreur lors de la synchronisation\n\nRôle notifié : <@&464706697408020482>',
+						color: color,
+						fields: [
+							{
+								name: "Membre",
+								value: m.nom,
+								inline: true
+							},
+							{
+								name: "Discord",
+								value: `<@${m.IDDiscord}>`,
+								inline: true
+							},
+							{
+								name: "Grade",
+								value: m.grade || "N/A",
+								inline: true
+							},
+							{
+								name: "Date",
+								value: dateStr,
+								inline: true
+							},
+							{ 
+								name: "Rôle notifié", 
+								value: `<@&464706697408020482>`, 
+								inline: false
+							}
+						],
+						footer: {
+							text: "Log automatique - Notification R.H."
 						},
-						{
-							name: "Discord",
-							value: `<@${m.IDDiscord}>`,
-							inline: true
-						},
-						{
-							name: "Grade",
-							value: m.grade || "N/A",
-							inline: true
-						},
-						{
-							name: "Date",
-							value: dateStr,
-							inline: true
-						},
-						{ 
-							name: "Rôle notifié", 
-							value: `<@&464706697408020482>`, 
-							inline: false
-						}
-					],
-					footer: {
-						text: "Log automatique - Notification R.H."
-					},
-					timestamp: new Date()
-				};
+						timestamp: new Date()
+					};
 
-				sendDiscordWebhook({ 
-					embeds: [embed] 
-				});
+					sendDiscordWebhook({ 
+						embeds: [embed] 
+					});
 
-			}
+				}
 
+			};
 		};
 
         btnDiv.appendChild(btn);
