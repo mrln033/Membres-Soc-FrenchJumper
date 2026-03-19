@@ -563,8 +563,8 @@ function buildCardMembre(m) {
 
 				}
 
-			}
-		};
+			};
+		}
 
         btnDiv.appendChild(btn);
         container.appendChild(btnDiv);
