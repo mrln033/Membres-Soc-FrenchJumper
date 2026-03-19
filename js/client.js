@@ -481,7 +481,7 @@ function buildCardMembre(m) {
 
 				btn.disabled = true;
 				btn.innerText = "⏳ Synchronisation...";
-				let succes = false
+				let success = false
 
 				try {
 
@@ -564,11 +564,12 @@ function buildCardMembre(m) {
 				}
 
 			};
-		}
 
-        btnDiv.appendChild(btn);
-        container.appendChild(btnDiv);
-    }
+
+			btnDiv.appendChild(btn);
+			container.appendChild(btnDiv);
+		}
+	}
 
     return container;
 }
