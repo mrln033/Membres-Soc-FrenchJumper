@@ -192,12 +192,10 @@ async function loadMembresAnciens() {
 
     try {
         // 1️⃣ Récupération des membres
-        const resMembres = await fetch(API_URL + "?action=getMembres");
-        let membres = await resMembres.json();
+        let membres = await apiRequest("getMembres");
 
         // 2️⃣ Récupération des mouvements
-        const resMouvements = await fetch(API_URL + "?action=getMouvements"); // on crée un endpoint côté Code.gs pour renvoyer HISTORIQUE_MOUVEMENTS
-        const mouvements = await resMouvements.json();
+        const mouvements = await apiRequest("getMouvements");
 
         // 3️⃣ Filtrage anciens membres (niveau 0)
         const anciens = membres.filter(m => m.niveau === 0);
