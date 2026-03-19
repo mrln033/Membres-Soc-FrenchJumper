@@ -360,6 +360,27 @@ function formatDate(date) {
            date.getFullYear();
 }
 
+async function sendDiscordWebhook(message) {
+
+    try {
+
+        await fetch(WH_NOTIF_RH, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                content: message
+            })
+        });
+
+    } catch (err) {
+
+        console.error("Webhook Discord ERROR:", err);
+
+    }
+}
+
 // ================================
 // CHARGEMENT FICHE
 // ================================
@@ -480,6 +501,27 @@ function buildCardMembre(m) {
 					btn.disabled = false;
 					btn.innerText = "🔄 Synchroniser Discord";
 				}, 2000);
+				
+				// 🔥 Construction du message ICI (comme demandé)
+				const now = new Date();
+
+				const dateStr =
+					("0"+now.getDate()).slice(-2) + "/" +
+					("0"+(now.getMonth()+1)).slice(-2) + "/" +
+					now.getFullYear() + " " +
+					("0"+now.getHours()).slice(-2) + ":" +
+					("0"+now.getMinutes()).slice(-2);
+
+				const message = [
+					"🔄 **Synchronisation Effectuée (pour vérification)**",
+					"Membre = " + m.nom,
+					"Discord = <@" + m.IDDiscord + ">",
+					"Grade Actuel = " + (m.grade || ""),
+					"Date = " + dateStr
+				].join("\n");
+
+				
+				sendDiscordWebhook(message);
 
 			}
 
