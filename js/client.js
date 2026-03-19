@@ -479,6 +479,7 @@ function buildCardMembre(m) {
 
 			btn.disabled = true;
 			btn.innerText = "⏳ Synchronisation...";
+			let succes = false
 
 			try {
 
@@ -493,7 +494,6 @@ function buildCardMembre(m) {
 
 			} catch(err) {
 				
-				success = false
 				btn.innerText = "❌ Erreur";
 
 			} finally {
