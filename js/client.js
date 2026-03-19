@@ -55,7 +55,7 @@ async function loadMembresActifs() {
 
 	try {
 
-		const membres = await fetchMembres();
+		const membres = await apiRequest("getMembres");
 
 		const filtered = membres.filter(m => m.niveau >= 1 && m.niveau <= 6);
 
