@@ -368,14 +368,16 @@ async function loadFiche(membreId) {
   container.innerHTML = "Chargement...";
 
   try {
-    const res = await fetch(API_URL + "?action=getFiche&id=" + membreId);
-    const data = await res.json();
+
+    const data = await apiRequest("getFiche", { id: membreId });
 
     displayFiche(container, data.membre, data.historique);
 
   } catch (err) {
+
     console.error(err);
     container.innerHTML = "Erreur chargement";
+
   }
 }
 
