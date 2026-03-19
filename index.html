@@ -82,27 +82,18 @@ iframe{
 
 <script>
 
-document.addEventListener("DOMContentLoaded", () => {
-    Admin.init();
-});
+// appel au chargement
+checkAdminParam();
 
-const Admin = {
+function checkAdminParam() {
+    const params = new URLSearchParams(window.location.search);
 
-    init() {
-        const params = new URLSearchParams(window.location.search);
-
-        if (params.get("admin") === "1") {
-            sessionStorage.setItem("admin", "true");
-        } else if (params.has("admin")) {
-            sessionStorage.removeItem("admin");
-        }
-    },
-
-    isAdmin() {
-        return sessionStorage.getItem("admin") === "true";
+    if (params.get("admin") === "1") {
+        sessionStorage.setItem("admin", "true");
+    } else {
+        sessionStorage.removeItem("admin");
     }
-
-};
+}
 
 function loadPage(page){
     document.getElementById("mainFrame").src = page;
