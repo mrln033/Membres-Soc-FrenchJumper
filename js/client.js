@@ -563,7 +563,7 @@ function buildCardMembre(m) {
 
 				}
 
-			};
+			}
 		};
 
         btnDiv.appendChild(btn);
