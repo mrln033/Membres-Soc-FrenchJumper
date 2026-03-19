@@ -550,7 +550,7 @@ function buildCardMembre(m) {
 						}
 					],
 					footer: {
-						text: "Log automatique - WebApp Membres"
+						text: "Log automatique - Notification R.H."
 					},
 					timestamp: new Date()
 				};
