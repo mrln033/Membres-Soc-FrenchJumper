@@ -534,15 +534,16 @@ function buildCardMembre(m) {
 							inline: true
 						},
 						{
-							name: "Date",
-							value: dateStr,
-							inline: false
-						},
-						{
 							name: "Grade",
 							value: m.grade || "N/A",
 							inline: true
-						}
+						},
+						{
+							name: "Date",
+							value: dateStr,
+							inline: true
+						},
+					
 					],
 					footer: {
 						text: "Log automatique - WebApp Membres"
