@@ -6,4 +6,6 @@ const isAdmin = sessionStorage.getItem("admin") === "true";
 
 if (isAdmin) {
     console.log("Mode admin activé");
+} else {
+	console.log("Mode admin désactivé");
 }
