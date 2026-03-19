@@ -543,7 +543,11 @@ function buildCardMembre(m) {
 							value: dateStr,
 							inline: true
 						},
-					
+						{ 
+							name: "Rôle notifié", 
+							value: `<@&464706697408020482>`, 
+							inline: false
+						}
 					],
 					footer: {
 						text: "Log automatique - WebApp Membres"
