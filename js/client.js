@@ -548,6 +548,8 @@ function buildCardMembre(m) {
 					footer: {
 						text: "Log automatique - WebApp Membres"
 					}
+					
+					content: '<@&464706697408020482>'
 				};
 
 				sendDiscordWebhook({ 
