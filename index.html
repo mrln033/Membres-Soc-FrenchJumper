@@ -82,6 +82,28 @@ iframe{
 
 <script>
 
+document.addEventListener("DOMContentLoaded", () => {
+    Admin.init();
+});
+
+const Admin = {
+
+    init() {
+        const params = new URLSearchParams(window.location.search);
+
+        if (params.get("admin") === "1") {
+            sessionStorage.setItem("admin", "true");
+        } else if (params.has("admin")) {
+            sessionStorage.removeItem("admin");
+        }
+    },
+
+    isAdmin() {
+        return sessionStorage.getItem("admin") === "true";
+    }
+
+};
+
 function loadPage(page){
     document.getElementById("mainFrame").src = page;
 }
