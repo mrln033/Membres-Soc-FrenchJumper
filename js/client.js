@@ -456,24 +456,24 @@ function buildCardMembre(m) {
         btn.innerText = "🔄 Synchroniser Discord";
 
         btn.onclick = async () => {
-            try {
-				
-                const res = await fetch(API_URL, {
-                    method: "POST",
-                    body: JSON.stringify({
-                        action: "syncDiscordFromWeb",
-                        membreId: m.id,
-						nomAvatar: m.nom,
-						discordId: m.IDDiscord
-                    })
-                });
-                const data = await res.json();
-                if(data.success) alert(data.message);
-                else alert("Erreur : " + data.error);
-            } catch(err) {
-                alert("Erreur réseau ou serveur : " + err.message);
-            }
-        };
+
+			try {
+        
+				const data = await apiRequest("syncDiscordFromWeb", {
+					membreId: m.id,
+					nomAvatar: m.nom,
+					discordId: m.IDDiscord
+				}, "POST");
+
+				alert(data.message || "Synchronisation OK");
+
+			} catch(err) {
+
+				alert("Erreur : " + err.message);
+
+			}
+
+		};
 
         btnDiv.appendChild(btn);
         container.appendChild(btnDiv);
