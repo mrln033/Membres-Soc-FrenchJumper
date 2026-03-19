@@ -519,7 +519,7 @@ function buildCardMembre(m) {
 				const embed = {
 					title: "🔄 Synchronisation Discord (pour vérification)",
 					description: success
-						? "✅ Synchronisation effectuée"
+						? '✅ Synchronisation effectuée'
 						: '❌ Erreur lors de la synchronisation\n\nRôle notifié : <@&464706697408020482>',
 					color: color,
 					fields: [
@@ -551,7 +551,9 @@ function buildCardMembre(m) {
 					],
 					footer: {
 						text: "Log automatique - WebApp Membres"
-					}
+					},
+					,
+					timestamp: new Date()
 				};
 
 				sendDiscordWebhook({ 
