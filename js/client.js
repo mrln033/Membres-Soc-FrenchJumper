@@ -1,4 +1,5 @@
 async function apiRequest(action, data = null, method = "GET") {
+	console.log("Fonction : client.js - apiRequest(action, data = null, method = 'GET')");
 
     try {
 
@@ -41,6 +42,7 @@ async function apiRequest(action, data = null, method = "GET") {
 }
 
 async function fetchMembres() {
+	console.log("Fonction : client.js - fetchMembres()");
     return await apiRequest("getMembres");
 }
 
@@ -49,6 +51,7 @@ async function fetchMembres() {
 ================================ */
 
 async function loadMembresActifs() {
+	console.log("Fonction : client.js - loadMembresActifs()");
 
 	const container = document.getElementById("listeMembres");
 	container.innerText = "Chargement...";
@@ -71,6 +74,7 @@ async function loadMembresActifs() {
 }
 
 function displayMembresActifs(list) {
+	console.log("Fonction : client.js - displayMembresActifs(list)");
 
 	const container = document.getElementById("listeMembres");
 	container.innerHTML = "";

@@ -87,6 +87,7 @@ iframe{
 checkAdminParam();
 
 function checkAdminParam() {
+	console.log("Fonction : index.html - checkAdminParam()");
     const params = new URLSearchParams(window.location.search);
 
     if (params.get("admin") === "1") {
@@ -97,6 +98,7 @@ function checkAdminParam() {
 }
 
 function loadPage(page){
+	console.log("Fonction : index.html - loadPage(page)");
     document.getElementById("mainFrame").src = page;
 }
 
