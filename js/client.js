@@ -284,19 +284,16 @@ function displayMembresAnciens(list, mouvements) {
 
 function calcAnciennete(dateStr) {
 
-	if (!dateStr) return "";
+    if (!dateStr) return "";
 
-	const [jour, mois, an] = dateStr.split("/");
+    const dateEntree = parseDateISO(dateStr);
+    const today = new Date();
 
-	const dateEntree = new Date(an, mois - 1, jour);
-	const today = new Date();
+    const diff = today - dateEntree;
 
-	const diff = today - dateEntree;
+    const jours = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-	const jours = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-	return jours + " j";
-
+    return jours + " j";
 }
 
 // Calcule le total de présence d'un membre en jours
@@ -305,20 +302,20 @@ function calcTotalPresence(membreId, mouvements) {
     const mv = mouvements.filter(m => m.MembreID === membreId);
 
     // trier par date croissante
-    mv.sort((a,b) => new Date(a.DateEffective) - new Date(b.DateEffective));
+    mv.sort((a,b) => parseDateISO(a.DateEffective) - parseDateISO(b.DateEffective));
 
     let total = 0;
     let entreeDate = null;
 
     mv.forEach(m => {
         const type = m.TypeMouvement;
-        const date = new Date(m.DateEffective);
+        const date = parseDateISO(m.DateEffective);
 
         if (type === "ENTREE") {
             entreeDate = date; // début période
         } else if (["SORTIE","BANNISSEMENT","DEMISSION","DESERTION"].includes(type)) {
             if (entreeDate) {
-                total += (date - entreeDate)/(1000*60*60*24); // en jours
+                total += (new Date() - entreeDate)/(1000*60*60*24); // en jours
                 entreeDate = null; // réinitialiser pour la prochaine période
             }
         }
@@ -336,9 +333,10 @@ function calcTotalPresence(membreId, mouvements) {
 function getPremiereEntree(membreId, mouvements) {
     const entrees = mouvements.filter(m => m.MembreID === membreId && m.TypeMouvement === "ENTREE");
     if (!entrees.length) return "";
-    entrees.sort((a,b) => new Date(a.DateEffective) - new Date(b.DateEffective));
-    const d = new Date(entrees[0].DateEffective);
-    return formatDate(d);
+    entrees.sort((a,b) => parseDateISO(a.DateEffective) - parseDateISO(b.DateEffective));
+
+	const d = parseDateISO(entrees[0].DateEffective);
+	return formatDate(d);
 }
 
 // Récupère la dernière sortie pour un membre
@@ -348,9 +346,10 @@ function getDerniereSortie(membreId, mouvements) {
         (m.TypeMouvement === "SORTIE" || m.TypeMouvement === "BANNISSEMENT" || m.TypeMouvement === "DEMISSION" || m.TypeMouvement === "DESERTION")
     );
     if (!sorties.length) return "";
-    sorties.sort((a,b) => new Date(b.DateEffective) - new Date(a.DateEffective));
-    const d = new Date(sorties[0].DateEffective);
-    return formatDate(d);
+    sorties.sort((a,b) => parseDateISO(b.DateEffective) - parseDateISO(a.DateEffective));
+
+	const d = parseDateISO(sorties[0].DateEffective);
+	return formatDate(d);
 }
 
 // Format date jj/mm/yyyy
@@ -588,7 +587,7 @@ function buildCardHistorique(mouvements) {
   }
 
   // Tri DESC sur la date
-  mouvements.sort((a,b) => new Date(b.date) - new Date(a.date));
+  mouvements.sort((a,b) => parseDateISO(b.date) - parseDateISO(a.date));
 
   let html = `
     <h2>Historique des mouvements</h2>
@@ -606,7 +605,7 @@ function buildCardHistorique(mouvements) {
   mouvements.forEach(m => {
     html += `
       <tr>
-        <td>${formatDate(new Date(m.date))}</td>
+        <td>${formatDate(parseDateISO(m.date))}</td>
         <td>${m.type}</td>
         <td>${m.grade || ""}</td>
       </tr>
@@ -651,7 +650,7 @@ function displayMouvementsMensuels(container, mouvements) {
 
 	mouvements.forEach(m => {
 
-		const date = formatDate(new Date(m.date));
+		const date = formatDate(parseDateISO(m.date));
 
 		if (m.type === "ENTREE")
 			entrees.push({
@@ -776,7 +775,7 @@ function renderMouvements(){
 
 	const filtered = mouvementsData.filter(m => {
 
-		const d = new Date(m.date);
+		const d = parseDateISO(m.date);
 
 		return (
 			d.getMonth() === moisCourant &&
