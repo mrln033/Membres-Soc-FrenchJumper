@@ -190,6 +190,7 @@ function displayMembresActifs(list) {
 // Chargement et affichage Anciens Membres
 // -----------------------------
 async function loadMembresAnciens() {
+	console.log("Fonction : client.js - loadMembresAnciens()");
 
     const container = document.getElementById("listeMembres");
     container.innerText = "Chargement...";
@@ -217,6 +218,7 @@ async function loadMembresAnciens() {
 // Affichage tableau Anciens Membres
 // -----------------------------
 function displayMembresAnciens(list, mouvements) {
+	console.log("Fonction : client.js - displayMembresAnciens(list, mouvements)");
 
     const container = document.getElementById("listeMembres");
     container.innerHTML = "";
@@ -287,6 +289,7 @@ function displayMembresAnciens(list, mouvements) {
 ================================ */
 
 function calcAnciennete(dateStr) {
+	console.log("Fonction : client.js - calcAnciennete(dateStr)");
 
 	if (!dateStr) return "";
 
@@ -305,6 +308,7 @@ function calcAnciennete(dateStr) {
 
 // Calcule le total de présence d'un membre en jours
 function calcTotalPresence(membreId, mouvements) {
+	console.log("Fonction : client.js - calcTotalPresence(membreId, mouvements)");
     // filtre uniquement les mouvements du membre
     const mv = mouvements.filter(m => m.MembreID === membreId);
 
@@ -338,6 +342,7 @@ function calcTotalPresence(membreId, mouvements) {
 
 // Récupère la première date d'entrée pour un membre
 function getPremiereEntree(membreId, mouvements) {
+	console.log("Fonction : client.js - getPremiereEntree(membreId, mouvements)");
     const entrees = mouvements.filter(m => m.MembreID === membreId && m.TypeMouvement === "ENTREE");
     if (!entrees.length) return "";
     entrees.sort((a,b) => new Date(a.DateEffective) - new Date(b.DateEffective));
@@ -347,6 +352,7 @@ function getPremiereEntree(membreId, mouvements) {
 
 // Récupère la dernière sortie pour un membre
 function getDerniereSortie(membreId, mouvements) {
+	console.log("Fonction : client.js - getDerniereSortie(membreId, mouvements)");
     const sorties = mouvements.filter(m => 
         m.MembreID === membreId &&
         (m.TypeMouvement === "SORTIE" || m.TypeMouvement === "BANNISSEMENT" || m.TypeMouvement === "DEMISSION" || m.TypeMouvement === "DESERTION")
@@ -359,12 +365,14 @@ function getDerniereSortie(membreId, mouvements) {
 
 // Format date jj/mm/yyyy
 function formatDate(date) {
+	console.log("Fonction : client.js - formatDate(date)");
     return ("0"+date.getDate()).slice(-2)+"/"+
            ("0"+(date.getMonth()+1)).slice(-2)+"/"+
            date.getFullYear();
 }
 
 async function sendDiscordWebhook(payload) {
+	console.log("Fonction : client.js - sendDiscordWebhook(payload)");
     try {
         // Si c'est une chaîne de caractères, on l'envoie en tant que content
         const body = typeof payload === "string"
@@ -388,6 +396,7 @@ async function sendDiscordWebhook(payload) {
 // CHARGEMENT FICHE
 // ================================
 async function loadFiche(membreId) {
+	console.log("Fonction : client.js - loadFiche(membreId)");
   const container = document.getElementById("ficheMembre");
   container.innerHTML = "Chargement...";
 
@@ -409,6 +418,7 @@ async function loadFiche(membreId) {
 // AFFICHAGE FICHE
 // ================================
 function displayFiche(container, membre, mouvements) {
+	console.log("Fonction : client.js - displayFiche(container, membre, mouvements)");
   container.innerHTML = "";
 
   if (!membre) {
@@ -424,6 +434,7 @@ function displayFiche(container, membre, mouvements) {
 // CARTE MEMBRE
 // ================================
 function buildCardMembre(m) {
+	console.log("Fonction : client.js - buildCardMembre(m)");
 
     const container = document.createElement("div");
 
@@ -582,6 +593,7 @@ function buildCardMembre(m) {
 // CARTE HISTORIQUE
 // ================================
 function buildCardHistorique(mouvements) {
+	console.log("Fonction : client.js - buildCardHistorique(mouvements)");
   const card = document.createElement("div");
   card.className = "card";
 
@@ -627,6 +639,7 @@ function buildCardHistorique(mouvements) {
 }
 
 async function loadMouvementsMensuels() {
+	console.log("Fonction : client.js - loadMouvementsMensuels()");
 
 	const container = document.getElementById("mouvementsContainer");
 	container.innerHTML = "Chargement...";
@@ -647,6 +660,7 @@ async function loadMouvementsMensuels() {
 }
 
 function displayMouvementsMensuels(container, mouvements) {
+	console.log("Fonction : client.js - displayMouvementsMensuels(container, mouvements)");
 
 	const entrees = [];
 	const sorties = [];
@@ -723,6 +737,7 @@ function displayMouvementsMensuels(container, mouvements) {
 }
 
 function buildCardListe(titre, items){
+	console.log("Fonction : client.js - buildCardListe(titre, items)");
 
 	const card = document.createElement("div");
 	card.className = "card";
@@ -772,6 +787,7 @@ if(storedMois !== null && storedAnnee !== null){
 }
 
 function renderMouvements(){
+	console.log("Fonction : client.js - renderMouvements()");
 
 	const container = document.getElementById("mouvementsContainer");
 	container.innerHTML = "";
@@ -794,6 +810,7 @@ function renderMouvements(){
 }
 
 function buildCardFiltre(){
+	console.log("Fonction : client.js - buildCardFiltre()");
 
 	const card = document.createElement("div");
 	card.className = "card";
