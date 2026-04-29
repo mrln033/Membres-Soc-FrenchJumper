@@ -677,7 +677,7 @@ function displayMouvementsMensuels(container, mouvements) {
 				label: `${m.nom} (${date})`
 			});
 
-		if (m.type === "SORTIE" || m.type === "BANISSEMENT" || m.type === "DEMISSION")
+		if (m.type === "SORTIE" || m.type === "BANNISSEMENT" || m.type === "DEMISSION")
 			sorties.push({
 				id: m.id,
 				label: `${m.nom} (${date})`
