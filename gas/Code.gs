@@ -664,7 +664,10 @@ function applyMembreAction(data) {
     sheetH.appendRow(histRow);
 
     const membrePourDiscord = getMembreById(membreId);
-    const syncDiscord = syncDiscordMembre_(membrePourDiscord);
+    const syncOptions = transition.typeMouvement === "SORTIE"
+      ? { removeRoleIds: ["1189173135380058133"] }
+      : {};
+    const syncDiscord = syncDiscordMembre_(membrePourDiscord, syncOptions);
 
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
@@ -807,8 +810,10 @@ function parseDateEffective_(value) {
   return date;
 }
 
-function syncDiscordMembre_(membre) {
+function syncDiscordMembre_(membre, options) {
   try {
+    options = options || {};
+
     if (!membre) {
       return {
         success: false,
@@ -841,9 +846,12 @@ function syncDiscordMembre_(membre) {
     const result = JSON.parse(response.getContentText());
 
     if (result.success) {
+      const removedRoles = removeDiscordRoles_(membre.discordId, options.removeRoleIds || []);
+
       return {
         success: true,
-        message: "Synchronisation envoyée pour " + membre.nomAvatar
+        message: "Synchronisation envoyée pour " + membre.nomAvatar,
+        removedRoles: removedRoles
       };
     }
 
@@ -858,6 +866,62 @@ function syncDiscordMembre_(membre) {
       error: err.message
     };
   }
+}
+
+function removeDiscordRoles_(discordId, roleIds) {
+  const results = [];
+
+  if (!roleIds.length) {
+    return results;
+  }
+
+  const config = getConfig();
+
+  if (!config.BOT_TOKEN || !config.GUILD_ID) {
+    return roleIds.map(roleId => ({
+      roleId: roleId,
+      success: false,
+      error: "Configuration Discord manquante"
+    }));
+  }
+
+  roleIds.forEach(roleId => {
+    try {
+      const response = UrlFetchApp.fetch(
+        "https://discord.com/api/v10/guilds/" +
+          config.GUILD_ID +
+          "/members/" +
+          discordId +
+          "/roles/" +
+          roleId,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: "Bot " + config.BOT_TOKEN
+          },
+          muteHttpExceptions: true
+        }
+      );
+
+      const status = response.getResponseCode();
+
+      results.push({
+        roleId: roleId,
+        success: status === 204,
+        status: status,
+        error: status === 204 ? "" : response.getContentText()
+      });
+
+    } catch (err) {
+      results.push({
+        roleId: roleId,
+        success: false,
+        error: err.message
+      });
+    }
+  });
+
+  return results;
 }
 
 function createOrOpenMembre(data) {
