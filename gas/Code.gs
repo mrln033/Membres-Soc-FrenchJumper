@@ -762,10 +762,12 @@ function parseDateEffective_(value) {
     throw new Error("Date effective manquante");
   }
 
-  const match = String(value).match(/^(\d{2})-(\d{2})-(\d{4}) (\d{2}):(\d{2})(?::(\d{2}))?$/);
+  const rawValue = String(value);
+  const normalizedValue = rawValue.trim().replace(/\s+/g, " ");
+  const match = normalizedValue.match(/^([0-9]{2})[-\/]([0-9]{2})[-\/]([0-9]{4}) ([0-9]{2}):([0-9]{2})(?::([0-9]{2}))?$/);
 
   if (!match) {
-    throw new Error("Date effective invalide");
+    throw new Error("Date effective invalide : " + rawValue);
   }
 
   const day = Number(match[1]);
@@ -774,6 +776,17 @@ function parseDateEffective_(value) {
   const hours = Number(match[4]);
   const minutes = Number(match[5]);
   const seconds = match[6] === undefined ? 0 : Number(match[6]);
+
+  if (
+    month < 1 || month > 12 ||
+    day < 1 || day > 31 ||
+    hours < 0 || hours > 23 ||
+    minutes < 0 || minutes > 59 ||
+    seconds < 0 || seconds > 59
+  ) {
+    throw new Error("Date effective invalide : " + rawValue);
+  }
+
   const date = new Date(year, month - 1, day, hours, minutes, seconds);
 
   if (
@@ -784,7 +797,7 @@ function parseDateEffective_(value) {
     date.getMinutes() !== minutes ||
     date.getSeconds() !== seconds
   ) {
-    throw new Error("Date effective invalide");
+    throw new Error("Date effective invalide : " + rawValue);
   }
 
   return date;

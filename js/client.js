@@ -747,7 +747,7 @@ function openMembreActionModal(actionLabel, membre) {
 		function confirmAction() {
 			const dateEffective = input.value.trim();
 
-			if (!/^\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}$/.test(dateEffective)) {
+			if (!/^\d{2}[-\/]\d{2}[-\/]\d{4} \d{2}:\d{2}:\d{2}$/.test(dateEffective)) {
 				error.innerText = "Format attendu : JJ-MM-AAAA HH:MM:SS";
 				input.focus();
 				return;
