@@ -641,6 +641,10 @@ function applyMembreAction(data) {
 
     sheetM.getRange(membreRowIndex, mapM["GradeID"] + 1).setValue(transition.nouveauGrade.id);
 
+    if (transition.typeMouvement === "SORTIE" && mapM["RegleSoc"] !== undefined) {
+      sheetM.getRange(membreRowIndex, mapM["RegleSoc"] + 1).setValue(false);
+    }
+
     if (
       actionType === "ENTREE" &&
       mapM["DatePremiereEntree"] !== undefined &&
