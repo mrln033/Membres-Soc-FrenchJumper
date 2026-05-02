@@ -628,7 +628,8 @@ function getNowInputValue() {
 		("0" + (now.getMonth() + 1)).slice(-2) + "-" +
 		now.getFullYear() + " " +
 		("0" + now.getHours()).slice(-2) + ":" +
-		("0" + now.getMinutes()).slice(-2);
+		("0" + now.getMinutes()).slice(-2) + ":" +
+		("0" + now.getSeconds()).slice(-2);
 }
 
 function getMembreActionType(actionLabel) {
@@ -718,7 +719,7 @@ function openMembreActionModal(actionLabel, membre) {
 		input.className = "modal-date-input";
 		input.type = "text";
 		input.value = getNowInputValue();
-		input.placeholder = "JJ-MM-AAAA HH:MM";
+		input.placeholder = "JJ-MM-AAAA HH:MM:SS";
 
 		const error = document.createElement("div");
 		error.className = "modal-error";
@@ -746,8 +747,8 @@ function openMembreActionModal(actionLabel, membre) {
 		function confirmAction() {
 			const dateEffective = input.value.trim();
 
-			if (!/^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/.test(dateEffective)) {
-				error.innerText = "Format attendu : JJ-MM-AAAA HH:MM";
+			if (!/^\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}$/.test(dateEffective)) {
+				error.innerText = "Format attendu : JJ-MM-AAAA HH:MM:SS";
 				input.focus();
 				return;
 			}
