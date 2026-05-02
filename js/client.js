@@ -1081,6 +1081,28 @@ function renderMouvements(){
 
 }
 
+function getMoisIndex(mois, annee) {
+	return annee * 12 + mois;
+}
+
+function getPremierMoisJournalise() {
+	let premier = null;
+
+	mouvementsData.forEach(m => {
+		const d = new Date(m.date);
+
+		if (isNaN(d.getTime())) return;
+
+		const index = getMoisIndex(d.getMonth(), d.getFullYear());
+
+		if (premier === null || index < premier) {
+			premier = index;
+		}
+	});
+
+	return premier;
+}
+
 function buildCardFiltre(){
 	console.log("Fonction : client.js - buildCardFiltre()");
 
@@ -1097,52 +1119,68 @@ function buildCardFiltre(){
 	header.style.fontSize = "1.2em";
 	header.style.fontWeight = "bold";
 
+	const moisAffiche = getMoisIndex(moisCourant, anneeCourante);
+	const moisActuel = getMoisIndex(new Date().getMonth(), new Date().getFullYear());
+	const premierMois = getPremierMoisJournalise();
+	const canGoPrev = premierMois === null || moisAffiche > premierMois;
+	const canGoNext = moisAffiche < moisActuel;
+
 	const prev = document.createElement("span");
 	prev.innerHTML = "&#9664;&#9664;";
 	prev.style.cursor = "pointer";
 	prev.style.marginRight = "20px";
 
-prev.onclick = ()=>{
+	if (canGoPrev) {
+		prev.onclick = ()=>{
 
-	moisCourant--;
+			moisCourant--;
 
-	if(moisCourant < 0){
-		moisCourant = 11;
-		anneeCourante--;
+			if(moisCourant < 0){
+				moisCourant = 11;
+				anneeCourante--;
+			}
+
+			sessionStorage.setItem("mouvementsMois", moisCourant);
+			sessionStorage.setItem("mouvementsAnnee", anneeCourante);
+
+			renderMouvements();
+		};
 	}
-
-	sessionStorage.setItem("mouvementsMois", moisCourant);
-	sessionStorage.setItem("mouvementsAnnee", anneeCourante);
-
-	renderMouvements();
-};
 
 	const next = document.createElement("span");
 	next.innerHTML = "&#9654;&#9654;";
 	next.style.cursor = "pointer";
 	next.style.marginLeft = "20px";
 
-next.onclick = ()=>{
+	if (canGoNext) {
+		next.onclick = ()=>{
 
-	moisCourant++;
+			moisCourant++;
 
-	if(moisCourant > 11){
-		moisCourant = 0;
-		anneeCourante++;
+			if(moisCourant > 11){
+				moisCourant = 0;
+				anneeCourante++;
+			}
+
+			sessionStorage.setItem("mouvementsMois", moisCourant);
+			sessionStorage.setItem("mouvementsAnnee", anneeCourante);
+
+			renderMouvements();
+		};
 	}
-
-	sessionStorage.setItem("mouvementsMois", moisCourant);
-	sessionStorage.setItem("mouvementsAnnee", anneeCourante);
-
-	renderMouvements();
-};
 
 	const label = document.createElement("span");
 	label.innerText = moisNoms[moisCourant] + " " + anneeCourante;
 
-	header.appendChild(prev);
+	if (canGoPrev) {
+		header.appendChild(prev);
+	}
+
 	header.appendChild(label);
-	header.appendChild(next);
+
+	if (canGoNext) {
+		header.appendChild(next);
+	}
 
 	card.appendChild(header);
 
