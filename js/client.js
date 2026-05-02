@@ -621,12 +621,14 @@ function buildCardMembre(m) {
     return container;
 }
 
-function getTodayInputValue() {
+function getNowInputValue() {
 	const now = new Date();
 
-	return now.getFullYear() + "-" +
+	return ("0" + now.getDate()).slice(-2) + "-" +
 		("0" + (now.getMonth() + 1)).slice(-2) + "-" +
-		("0" + now.getDate()).slice(-2);
+		now.getFullYear() + " " +
+		("0" + now.getHours()).slice(-2) + ":" +
+		("0" + now.getMinutes()).slice(-2);
 }
 
 function getMembreActionType(actionLabel) {
@@ -650,22 +652,9 @@ async function handleMembreAction(actionLabel, membre, btn) {
 		return;
 	}
 
-	const defaultDate = getTodayInputValue();
-	const dateEffective = prompt(
-		"Date effective pour l'action \"" + actionLabel + "\" (format AAAA-MM-JJ)",
-		defaultDate
-	);
+	const dateEffective = await openMembreActionModal(actionLabel, membre);
 
-	if (dateEffective === null) {
-		return;
-	}
-
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(dateEffective)) {
-		alert("Date invalide. Format attendu : AAAA-MM-JJ");
-		return;
-	}
-
-	if (!confirm("Confirmer : " + actionLabel + " pour " + membre.nom + " à la date du " + dateEffective + " ?")) {
+	if (!dateEffective) {
 		return;
 	}
 
@@ -704,6 +693,101 @@ async function handleMembreAction(actionLabel, membre, btn) {
 			btn.innerText = initialText;
 		}, 2000);
 	}
+}
+
+function openMembreActionModal(actionLabel, membre) {
+	return new Promise(resolve => {
+		const overlay = document.createElement("div");
+		overlay.className = "modal-overlay";
+
+		const modal = document.createElement("div");
+		modal.className = "modal-action";
+
+		const title = document.createElement("h2");
+		title.innerText = actionLabel;
+
+		const details = document.createElement("p");
+		details.className = "modal-action-details";
+		details.innerHTML = "<b>Membre :</b> " + membre.nom + "<br><b>Grade actuel :</b> " + (membre.grade || "");
+
+		const label = document.createElement("label");
+		label.className = "modal-field-label";
+		label.innerText = "Date effective";
+
+		const input = document.createElement("input");
+		input.className = "modal-date-input";
+		input.type = "text";
+		input.value = getNowInputValue();
+		input.placeholder = "JJ-MM-AAAA HH:MM";
+
+		const error = document.createElement("div");
+		error.className = "modal-error";
+		error.innerText = "";
+
+		const buttons = document.createElement("div");
+		buttons.className = "modal-buttons";
+
+		const cancelBtn = document.createElement("button");
+		cancelBtn.className = "btn-modal btn-modal-secondary";
+		cancelBtn.type = "button";
+		cancelBtn.innerText = "Annuler";
+
+		const confirmBtn = document.createElement("button");
+		confirmBtn.className = "btn-modal btn-modal-primary";
+		confirmBtn.type = "button";
+		confirmBtn.innerText = "Confirmer";
+
+		function close(value) {
+			document.removeEventListener("keydown", onKeyDown);
+			overlay.remove();
+			resolve(value);
+		}
+
+		function confirmAction() {
+			const dateEffective = input.value.trim();
+
+			if (!/^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/.test(dateEffective)) {
+				error.innerText = "Format attendu : JJ-MM-AAAA HH:MM";
+				input.focus();
+				return;
+			}
+
+			close(dateEffective);
+		}
+
+		function onKeyDown(event) {
+			if (event.key === "Escape") {
+				close(null);
+			}
+
+			if (event.key === "Enter") {
+				confirmAction();
+			}
+		}
+
+		cancelBtn.onclick = () => close(null);
+		confirmBtn.onclick = confirmAction;
+		overlay.onclick = event => {
+			if (event.target === overlay) {
+				close(null);
+			}
+		};
+
+		buttons.appendChild(cancelBtn);
+		buttons.appendChild(confirmBtn);
+		modal.appendChild(title);
+		modal.appendChild(details);
+		modal.appendChild(label);
+		modal.appendChild(input);
+		modal.appendChild(error);
+		modal.appendChild(buttons);
+		overlay.appendChild(modal);
+		document.body.appendChild(overlay);
+		document.addEventListener("keydown", onKeyDown);
+
+		input.focus();
+		input.select();
+	});
 }
 
 // ================================
