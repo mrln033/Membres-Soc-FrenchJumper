@@ -491,7 +491,10 @@ function buildCardMembre(m) {
 			actions = ["Promotion", "Sortie"];
 		} else if (gradeActuel === "Aventurier Expérimenté") {
 			actions = ["Rétrogradation", "Sortie"];
-		} else if (gradeActuel !== "Chef d'Expédition") {
+		} else if (
+			gradeActuel !== "Chef d'Expédition" &&
+			gradeActuel !== "Conseiller d'Expédition"
+		) {
 			actions = ["Promotion", "Rétrogradation", "Sortie"];
 		}
 
