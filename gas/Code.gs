@@ -101,6 +101,10 @@ function doPost(e) {
     return applyMembreAction(data);
   }
 
+  if (data.action === "createOrOpenMembre") {
+    return createOrOpenMembre(data);
+  }
+
   // Cas par défaut
   return ContentService
     .createTextOutput(JSON.stringify({ success:false, error:"Action inconnue" }))
@@ -854,6 +858,113 @@ function syncDiscordMembre_(membre) {
       error: err.message
     };
   }
+}
+
+function createOrOpenMembre(data) {
+  try {
+    const nomAvatar = String(data.nomAvatar || "").trim();
+    const dateEffective = parseDateEffective_(data.dateEffective);
+
+    if (!nomAvatar) {
+      throw new Error("Nom d'Avatar obligatoire");
+    }
+
+    const ss = SpreadsheetApp.getActive();
+    const sheetM = ss.getSheetByName("MEMBRES_SOC");
+    const sheetG = ss.getSheetByName("GRADES");
+    const sheetH = ss.getSheetByName("HISTORIQUE_MOUVEMENTS");
+
+    const membres = sheetM.getDataRange().getValues();
+    const grades = sheetG.getDataRange().getValues();
+    const mapM = getColumnMap(sheetM);
+    const mapG = getColumnMap(sheetG);
+    const mapH = getColumnMap(sheetH);
+    const normalizedNom = normalizeNomAvatar_(nomAvatar);
+
+    for (let i = 1; i < membres.length; i++) {
+      const existingNom = normalizeNomAvatar_(membres[i][mapM["NomAvatar"]]);
+
+      if (existingNom === normalizedNom) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: true,
+          existing: true,
+          membreId: membres[i][mapM["MembreID"]]
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
+    const voyageur = getGradeByName_(grades, mapG, "Voyageur");
+
+    if (!voyageur) {
+      throw new Error("Grade Voyageur introuvable");
+    }
+
+    const membreId = Utilities.getUuid();
+    const membreHeaders = sheetM.getRange(1, 1, 1, sheetM.getLastColumn()).getValues()[0];
+    const membreRow = new Array(membreHeaders.length).fill("");
+
+    membreRow[mapM["MembreID"]] = membreId;
+    membreRow[mapM["NomAvatar"]] = nomAvatar;
+    membreRow[mapM["GradeID"]] = voyageur.id;
+
+    if (mapM["DatePremiereEntree"] !== undefined) {
+      membreRow[mapM["DatePremiereEntree"]] = dateEffective;
+    }
+
+    if (mapM["DateCreationFiche"] !== undefined) {
+      membreRow[mapM["DateCreationFiche"]] = new Date();
+    }
+
+    sheetM.appendRow(membreRow);
+
+    const histHeaders = sheetH.getRange(1, 1, 1, sheetH.getLastColumn()).getValues()[0];
+    const histRow = new Array(histHeaders.length).fill("");
+
+    histRow[mapH["MouvementID"]] = Utilities.getUuid();
+    histRow[mapH["MembreID"]] = membreId;
+    histRow[mapH["DateHeureSaisie"]] = new Date();
+    histRow[mapH["DateEffective"]] = dateEffective;
+    histRow[mapH["TypeMouvement"]] = "ENTREE";
+
+    if (mapH["AncienGradeID"] !== undefined) {
+      histRow[mapH["AncienGradeID"]] = "";
+    }
+
+    histRow[mapH["NouveauGradeID"]] = voyageur.id;
+    histRow[mapH["Commentaire"]] = "Création fiche et nouvelle entrée comme Voyageur";
+
+    sheetH.appendRow(histRow);
+
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      existing: false,
+      membreId: membreId
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: err.message
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function normalizeNomAvatar_(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function getGradeByName_(grades, mapG, nomGrade) {
+  for (let i = 1; i < grades.length; i++) {
+    if (grades[i][mapG["NomGrade"]] === nomGrade) {
+      return {
+        id: grades[i][mapG["GradeID"]],
+        nom: grades[i][mapG["NomGrade"]],
+        niveau: Number(grades[i][mapG["Niveau"]])
+      };
+    }
+  }
+
+  return null;
 }
 
 function syncDiscordFromWeb(data) {

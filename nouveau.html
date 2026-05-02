@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Nouveau Membre</title>
+<link rel="icon" href="./favicon.ico">
+
+<link rel="stylesheet" href="css/style.css">
+
+<script>console.log("Page = nouveau.html")</script>
+
+<script src="js/config.js"></script>
+<script src="js/client.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", initNouveauMembreForm);
+</script>
+</head>
+
+<body>
+
+<div class="header">
+  <h1>Nouveau Membre</h1>
+  <a href="actifs.html" class="link-header">
+    <h3>Membres Soc >></h3>
+  </a>
+</div>
+
+<div class="card form-card">
+  <form id="nouveauMembreForm">
+    <label class="form-label" for="nomAvatar">Nom d'Avatar</label>
+    <input id="nomAvatar" class="form-input" type="text" autocomplete="off" required>
+
+    <label class="form-label" for="dateEffective">Date effective</label>
+    <input id="dateEffective" class="form-input" type="text" placeholder="JJ-MM-AAAA HH:MM:SS" required>
+
+    <div id="nouveauMembreMessage" class="form-message"></div>
+
+    <div class="form-actions">
+      <button id="btnCreerMembre" class="btn-fiche-action" type="submit">✅ Valider</button>
+    </div>
+  </form>
+</div>
+
+</body>
+</html>

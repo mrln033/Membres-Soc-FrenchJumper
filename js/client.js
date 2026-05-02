@@ -791,6 +791,76 @@ function openMembreActionModal(actionLabel, membre) {
 	});
 }
 
+function initNouveauMembreForm() {
+	console.log("Fonction : client.js - initNouveauMembreForm()");
+
+	if (!isAdmin) {
+		document.body.innerHTML = "<p>Accès admin requis.</p>";
+		return;
+	}
+
+	const form = document.getElementById("nouveauMembreForm");
+	const nomInput = document.getElementById("nomAvatar");
+	const dateInput = document.getElementById("dateEffective");
+	const message = document.getElementById("nouveauMembreMessage");
+	const submitBtn = document.getElementById("btnCreerMembre");
+
+	dateInput.value = getNowInputValue();
+	nomInput.focus();
+
+	form.addEventListener("submit", async event => {
+		event.preventDefault();
+
+		const nomAvatar = nomInput.value.trim();
+		const dateEffective = dateInput.value.trim();
+
+		message.className = "form-message";
+		message.innerText = "";
+
+		if (!nomAvatar) {
+			message.className = "form-message form-message-error";
+			message.innerText = "Nom d'Avatar obligatoire.";
+			nomInput.focus();
+			return;
+		}
+
+		if (!/^\d{2}[-\/]\d{2}[-\/]\d{4} \d{2}:\d{2}:\d{2}$/.test(dateEffective)) {
+			message.className = "form-message form-message-error";
+			message.innerText = "Format attendu : JJ-MM-AAAA HH:MM:SS";
+			dateInput.focus();
+			return;
+		}
+
+		submitBtn.disabled = true;
+		submitBtn.innerText = "⏳ Vérification...";
+
+		try {
+			const result = await apiRequest("createOrOpenMembre", {
+				nomAvatar: nomAvatar,
+				dateEffective: dateEffective
+			}, "POST");
+
+			if (result.success === false) {
+				throw new Error(result.error || "Erreur inconnue");
+			}
+
+			message.className = "form-message form-message-ok";
+			message.innerText = result.existing ? "Membre déjà présent, ouverture de la fiche..." : "Membre créé, ouverture de la fiche...";
+
+			setTimeout(() => {
+				window.location.href = "fiche.html?id=" + result.membreId;
+			}, 500);
+
+		} catch (err) {
+			console.error(err);
+			message.className = "form-message form-message-error";
+			message.innerText = err.message || "Erreur lors de la création.";
+			submitBtn.disabled = false;
+			submitBtn.innerText = "✅ Valider";
+		}
+	});
+}
+
 // ================================
 // CARTE HISTORIQUE
 // ================================

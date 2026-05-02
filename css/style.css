@@ -369,3 +369,51 @@ border-bottom:1px solid #ddd;
     background-color: #ddd;
 }
 
+.form-card {
+    max-width: 520px;
+    margin: 0 auto 20px auto;
+}
+
+.form-label {
+    display: block;
+    margin: 14px 0 6px 0;
+    font-weight: bold;
+}
+
+.form-input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 15px;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74,144,226,0.2);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 18px;
+}
+
+.form-message {
+    min-height: 20px;
+    margin-top: 12px;
+    text-align: center;
+    font-size: 0.95em;
+}
+
+.form-message-error {
+    color: #e74c3c;
+}
+
+.form-message-ok {
+    color: #2ecc71;
+    font-weight: bold;
+}
+

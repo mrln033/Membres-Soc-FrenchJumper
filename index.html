@@ -73,6 +73,7 @@ iframe{
         <ul class="menu">
 			<li onclick="loadPage('actifs.html')">Membres Actifs</li>
 			<li onclick="loadPage('anciens.html')">Anciens Membres</li>
+			<li id="menuNouveauMembre" onclick="loadPage('nouveau.html')" style="display:none;">Nouveau Membre</li>
 			<li onclick="loadPage('mouvements.html')">Mouvements</li>
 		</ul>
 
@@ -95,6 +96,7 @@ function checkAdminParam() {
 
     if (params.get("admin") === "1") {
         sessionStorage.setItem("admin", "true");
+        document.getElementById("menuNouveauMembre").style.display = "";
     } else {
         sessionStorage.removeItem("admin");
     }
