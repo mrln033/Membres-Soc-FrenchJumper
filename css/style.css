@@ -258,6 +258,10 @@ border-bottom:1px solid #ddd;
 
 .btn-fiche-action,
 .btn-sync-discord {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 190px;
     background-color: #4a90e2;
     color: white;
     border: none;

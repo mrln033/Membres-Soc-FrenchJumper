@@ -483,6 +483,12 @@ function buildCardMembre(m) {
 		btnDiv.className = "fiche-actions-admin";
 
 		const gradeActuel = (m.grade || "").trim();
+		const actionIcons = {
+			"Nouvelle Entrée": "✅",
+			"Promotion": "⬆️",
+			"Rétrogradation": "⬇️",
+			"Sortie": "❌"
+		};
 		let actions = [];
 
 		if (gradeActuel === "Ancien Membre") {
@@ -501,7 +507,7 @@ function buildCardMembre(m) {
 		actions.forEach(actionLabel => {
 			const actionBtn = document.createElement("button");
 			actionBtn.className = "btn-fiche-action";
-			actionBtn.innerText = actionLabel;
+			actionBtn.innerText = `${actionIcons[actionLabel]} ${actionLabel}`;
 			actionBtn.type = "button";
 			btnDiv.appendChild(actionBtn);
 		});
