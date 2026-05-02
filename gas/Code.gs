@@ -97,6 +97,10 @@ function doPost(e) {
     return syncDiscordFromWeb(data);
   }
 
+  if (data.action === "applyMembreAction") {
+    return applyMembreAction(data);
+  }
+
   // Cas par défaut
   return ContentService
     .createTextOutput(JSON.stringify({ success:false, error:"Action inconnue" }))
@@ -565,6 +569,260 @@ function getMouvementsMensuels() {
 }
 
 
+
+function applyMembreAction(data) {
+  try {
+    const membreId = data.membreId;
+    const actionType = data.membreAction;
+    const dateEffective = parseDateEffective_(data.dateEffective);
+
+    if (!membreId) {
+      throw new Error("MembreID manquant");
+    }
+
+    if (!actionType) {
+      throw new Error("Action membre manquante");
+    }
+
+    const ss = SpreadsheetApp.getActive();
+    const sheetM = ss.getSheetByName("MEMBRES_SOC");
+    const sheetG = ss.getSheetByName("GRADES");
+    const sheetH = ss.getSheetByName("HISTORIQUE_MOUVEMENTS");
+
+    const membres = sheetM.getDataRange().getValues();
+    const grades = sheetG.getDataRange().getValues();
+    const mapM = getColumnMap(sheetM);
+    const mapG = getColumnMap(sheetG);
+    const mapH = getColumnMap(sheetH);
+
+    const gradeById = {};
+    const gradeByName = {};
+    const gradesByNiveau = {};
+
+    for (let i = 1; i < grades.length; i++) {
+      const grade = {
+        id: grades[i][mapG["GradeID"]],
+        nom: grades[i][mapG["NomGrade"]],
+        niveau: Number(grades[i][mapG["Niveau"]])
+      };
+
+      gradeById[grade.id] = grade;
+      gradeByName[grade.nom] = grade;
+      gradesByNiveau[grade.niveau] = grade;
+    }
+
+    let membreRowIndex = -1;
+    let membreRow = null;
+
+    for (let i = 1; i < membres.length; i++) {
+      if (membres[i][mapM["MembreID"]] === membreId) {
+        membreRowIndex = i + 1;
+        membreRow = membres[i];
+        break;
+      }
+    }
+
+    if (!membreRow) {
+      throw new Error("Membre introuvable");
+    }
+
+    const ancienGradeId = membreRow[mapM["GradeID"]];
+    const ancienGrade = gradeById[ancienGradeId];
+
+    if (!ancienGrade) {
+      throw new Error("Grade actuel introuvable");
+    }
+
+    const transition = getMembreActionTransition_(actionType, ancienGrade, gradeByName, gradesByNiveau);
+
+    sheetM.getRange(membreRowIndex, mapM["GradeID"] + 1).setValue(transition.nouveauGrade.id);
+
+    if (
+      actionType === "ENTREE" &&
+      mapM["DatePremiereEntree"] !== undefined &&
+      !membreRow[mapM["DatePremiereEntree"]]
+    ) {
+      sheetM.getRange(membreRowIndex, mapM["DatePremiereEntree"] + 1).setValue(dateEffective);
+    }
+
+    const histHeaders = sheetH.getRange(1, 1, 1, sheetH.getLastColumn()).getValues()[0];
+    const histRow = new Array(histHeaders.length).fill("");
+
+    histRow[mapH["MouvementID"]] = Utilities.getUuid();
+    histRow[mapH["MembreID"]] = membreId;
+    histRow[mapH["DateHeureSaisie"]] = new Date();
+    histRow[mapH["DateEffective"]] = dateEffective;
+    histRow[mapH["TypeMouvement"]] = transition.typeMouvement;
+    histRow[mapH["AncienGradeID"]] = ancienGrade.id;
+    histRow[mapH["NouveauGradeID"]] = transition.nouveauGrade.id;
+    histRow[mapH["Commentaire"]] = transition.commentaire;
+
+    sheetH.appendRow(histRow);
+
+    const membrePourDiscord = getMembreById(membreId);
+    const syncDiscord = syncDiscordMembre_(membrePourDiscord);
+
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      ancienGrade: ancienGrade.nom,
+      nouveauGrade: transition.nouveauGrade.nom,
+      typeMouvement: transition.typeMouvement,
+      syncDiscord: syncDiscord
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: err.message
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function getMembreActionTransition_(actionType, ancienGrade, gradeByName, gradesByNiveau) {
+  const ancienMembre = gradeByName["Ancien Membre"];
+  const voyageur = gradeByName["Voyageur"];
+
+  if (!ancienMembre || !voyageur) {
+    throw new Error("Grades de base introuvables");
+  }
+
+  if (actionType === "ENTREE") {
+    if (ancienGrade.nom !== "Ancien Membre") {
+      throw new Error("Nouvelle entrée autorisée uniquement pour un ancien membre");
+    }
+
+    return {
+      typeMouvement: "ENTREE",
+      nouveauGrade: voyageur,
+      commentaire: "Nouvelle entrée comme Voyageur"
+    };
+  }
+
+  if (actionType === "SORTIE") {
+    if (ancienGrade.nom === "Ancien Membre") {
+      throw new Error("Sortie impossible pour un ancien membre");
+    }
+
+    if (ancienGrade.nom === "Chef d'Expédition") {
+      throw new Error("Aucune action possible pour le Chef d'Expédition");
+    }
+
+    return {
+      typeMouvement: "SORTIE",
+      nouveauGrade: ancienMembre,
+      commentaire: "Sortie vers Ancien Membre"
+    };
+  }
+
+  if (actionType === "PROMOTION") {
+    const nouveauGrade = gradesByNiveau[Number(ancienGrade.niveau) + 1];
+
+    if (
+      !nouveauGrade ||
+      ancienGrade.nom === "Ancien Membre" ||
+      ancienGrade.nom === "Aventurier Expérimenté" ||
+      ancienGrade.nom === "Conseiller d'Expédition" ||
+      ancienGrade.nom === "Chef d'Expédition"
+    ) {
+      throw new Error("Promotion non autorisée pour ce grade");
+    }
+
+    return {
+      typeMouvement: "PROMOTION",
+      nouveauGrade: nouveauGrade,
+      commentaire: "Promotion vers " + nouveauGrade.nom
+    };
+  }
+
+  if (actionType === "RETROGRADATION") {
+    const nouveauGrade = gradesByNiveau[Number(ancienGrade.niveau) - 1];
+
+    if (
+      !nouveauGrade ||
+      ancienGrade.nom === "Ancien Membre" ||
+      ancienGrade.nom === "Voyageur" ||
+      ancienGrade.nom === "Conseiller d'Expédition" ||
+      ancienGrade.nom === "Chef d'Expédition"
+    ) {
+      throw new Error("Rétrogradation non autorisée pour ce grade");
+    }
+
+    return {
+      typeMouvement: "RETROGRADATION",
+      nouveauGrade: nouveauGrade,
+      commentaire: "Rétrogradation vers " + nouveauGrade.nom
+    };
+  }
+
+  throw new Error("Action membre inconnue");
+}
+
+function parseDateEffective_(value) {
+  if (!value) {
+    throw new Error("Date effective manquante");
+  }
+
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (!match) {
+    throw new Error("Date effective invalide");
+  }
+
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12, 0, 0);
+}
+
+function syncDiscordMembre_(membre) {
+  try {
+    if (!membre) {
+      return {
+        success: false,
+        error: "Membre introuvable"
+      };
+    }
+
+    if (!membre.discordId) {
+      return {
+        success: false,
+        error: "ID Discord manquant pour ce membre"
+      };
+    }
+
+    const response = UrlFetchApp.fetch(
+      "https://discord-proxy.merlin-merzhin-lesage.workers.dev/sync",
+      {
+        method: "POST",
+        contentType: "application/json",
+        payload: JSON.stringify({
+          discordId: membre.discordId,
+          nomAvatar: membre.nomAvatar,
+          niveau: membre.niveau,
+          secret: "12062006"
+        }),
+        muteHttpExceptions: true
+      }
+    );
+
+    const result = JSON.parse(response.getContentText());
+
+    if (result.success) {
+      return {
+        success: true,
+        message: "Synchronisation envoyée pour " + membre.nomAvatar
+      };
+    }
+
+    return {
+      success: false,
+      error: result.error || "Erreur inconnue côté Worker"
+    };
+
+  } catch (err) {
+    return {
+      success: false,
+      error: err.message
+    };
+  }
+}
 
 function syncDiscordFromWeb(data) {
   try {

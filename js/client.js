@@ -509,6 +509,7 @@ function buildCardMembre(m) {
 			actionBtn.className = "btn-fiche-action";
 			actionBtn.innerText = `${actionIcons[actionLabel]} ${actionLabel}`;
 			actionBtn.type = "button";
+			actionBtn.onclick = () => handleMembreAction(actionLabel, m, actionBtn);
 			btnDiv.appendChild(actionBtn);
 		});
 
@@ -618,6 +619,91 @@ function buildCardMembre(m) {
 	}
 
     return container;
+}
+
+function getTodayInputValue() {
+	const now = new Date();
+
+	return now.getFullYear() + "-" +
+		("0" + (now.getMonth() + 1)).slice(-2) + "-" +
+		("0" + now.getDate()).slice(-2);
+}
+
+function getMembreActionType(actionLabel) {
+	const actionTypes = {
+		"Nouvelle Entrée": "ENTREE",
+		"Promotion": "PROMOTION",
+		"Rétrogradation": "RETROGRADATION",
+		"Sortie": "SORTIE"
+	};
+
+	return actionTypes[actionLabel] || "";
+}
+
+async function handleMembreAction(actionLabel, membre, btn) {
+	console.log("Fonction : client.js - handleMembreAction(actionLabel, membre, btn)");
+
+	const actionType = getMembreActionType(actionLabel);
+
+	if (!actionType) {
+		alert("Action inconnue");
+		return;
+	}
+
+	const defaultDate = getTodayInputValue();
+	const dateEffective = prompt(
+		"Date effective pour l'action \"" + actionLabel + "\" (format AAAA-MM-JJ)",
+		defaultDate
+	);
+
+	if (dateEffective === null) {
+		return;
+	}
+
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(dateEffective)) {
+		alert("Date invalide. Format attendu : AAAA-MM-JJ");
+		return;
+	}
+
+	if (!confirm("Confirmer : " + actionLabel + " pour " + membre.nom + " à la date du " + dateEffective + " ?")) {
+		return;
+	}
+
+	const initialText = btn.innerText;
+	btn.disabled = true;
+	btn.innerText = "⏳ Traitement...";
+
+	try {
+		const result = await apiRequest("applyMembreAction", {
+			membreId: membre.id,
+			membreAction: actionType,
+			dateEffective: dateEffective
+		}, "POST");
+
+		if (result.success === false) {
+			throw new Error(result.error || "Erreur inconnue");
+		}
+
+		btn.innerText = "✅ OK";
+
+		if (result.syncDiscord && result.syncDiscord.success === false) {
+			alert("Action enregistrée, mais synchronisation Discord non effectuée : " + result.syncDiscord.error);
+		}
+
+		setTimeout(() => {
+			loadFiche(membre.id);
+		}, 500);
+
+	} catch (err) {
+		console.error(err);
+		btn.innerText = "❌ Erreur";
+		alert(err.message || "Erreur lors du traitement");
+
+		setTimeout(() => {
+			btn.disabled = false;
+			btn.innerText = initialText;
+		}, 2000);
+	}
 }
 
 // ================================
