@@ -479,17 +479,37 @@ function buildCardMembre(m) {
     container.appendChild(card2);
 	
 	if (isAdmin) {
+		const btnDiv = document.createElement("div");
+		btnDiv.className = "fiche-actions-admin";
+
+		const gradeActuel = (m.grade || "").trim();
+		let actions = [];
+
+		if (gradeActuel === "Ancien Membre") {
+			actions = ["Nouvelle Entrée"];
+		} else if (gradeActuel === "Voyageur") {
+			actions = ["Promotion", "Sortie"];
+		} else if (gradeActuel === "Aventurier Expérimenté") {
+			actions = ["Rétrogradation", "Sortie"];
+		} else if (gradeActuel !== "Chef d'Expédition") {
+			actions = ["Promotion", "Rétrogradation", "Sortie"];
+		}
+
+		actions.forEach(actionLabel => {
+			const actionBtn = document.createElement("button");
+			actionBtn.className = "btn-fiche-action";
+			actionBtn.innerText = actionLabel;
+			actionBtn.type = "button";
+			btnDiv.appendChild(actionBtn);
+		});
 
 		// -----------------------------
 		// Bouton Synchroniser Discord
 		// -----------------------------
-		if(m.IDDiscord) {
-			const btnDiv = document.createElement("div");
-			btnDiv.style.textAlign = "center";
-			btnDiv.style.margin = "20px 0";
-	
+		if(m.IDDiscord && gradeActuel !== "Chef d'Expédition") {
 			const btn = document.createElement("button");
-			btn.className = "btn-sync-discord";
+			btn.className = "btn-fiche-action btn-sync-discord";
+			btn.type = "button";
 			btn.innerText = "🔄 Synchroniser Discord";
 
 			btn.onclick = async () => {
@@ -580,8 +600,10 @@ function buildCardMembre(m) {
 
 			};
 
-
 			btnDiv.appendChild(btn);
+		}
+
+		if (btnDiv.children.length) {
 			container.appendChild(btnDiv);
 		}
 	}
