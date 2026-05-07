@@ -653,9 +653,9 @@ async function handleMembreAction(actionLabel, membre, btn) {
 		return;
 	}
 
-	const dateEffective = await openMembreActionModal(actionLabel, membre);
+	const actionData = await openMembreActionModal(actionLabel, membre, actionType);
 
-	if (!dateEffective) {
+	if (!actionData) {
 		return;
 	}
 
@@ -666,8 +666,8 @@ async function handleMembreAction(actionLabel, membre, btn) {
 	try {
 		const result = await apiRequest("applyMembreAction", {
 			membreId: membre.id,
-			membreAction: actionType,
-			dateEffective: dateEffective
+			membreAction: actionData.membreAction,
+			dateEffective: actionData.dateEffective
 		}, "POST");
 
 		if (result.success === false) {
@@ -696,7 +696,7 @@ async function handleMembreAction(actionLabel, membre, btn) {
 	}
 }
 
-function openMembreActionModal(actionLabel, membre) {
+function openMembreActionModal(actionLabel, membre, defaultActionType) {
 	return new Promise(resolve => {
 		const overlay = document.createElement("div");
 		overlay.className = "modal-overlay";
@@ -720,6 +720,32 @@ function openMembreActionModal(actionLabel, membre) {
 		input.type = "text";
 		input.value = getNowInputValue();
 		input.placeholder = "JJ-MM-AAAA HH:MM:SS";
+
+		const motifWrapper = document.createElement("div");
+		let motifSelect = null;
+
+		if (actionLabel === "Sortie") {
+			const motifLabel = document.createElement("label");
+			motifLabel.className = "modal-field-label";
+			motifLabel.innerText = "Motif";
+
+			motifSelect = document.createElement("select");
+			motifSelect.className = "modal-select";
+
+			const motifs = membre.grade === "Voyageur"
+				? ["SORTIE", "DESERTION", "BANNISSEMENT"]
+				: ["SORTIE", "BANNISSEMENT"];
+
+			motifs.forEach(motif => {
+				const option = document.createElement("option");
+				option.value = motif;
+				option.innerText = motif;
+				motifSelect.appendChild(option);
+			});
+
+			motifWrapper.appendChild(motifLabel);
+			motifWrapper.appendChild(motifSelect);
+		}
 
 		const error = document.createElement("div");
 		error.className = "modal-error";
@@ -753,7 +779,10 @@ function openMembreActionModal(actionLabel, membre) {
 				return;
 			}
 
-			close(dateEffective);
+			close({
+				dateEffective: dateEffective,
+				membreAction: motifSelect ? motifSelect.value : defaultActionType
+			});
 		}
 
 		function onKeyDown(event) {
@@ -780,6 +809,7 @@ function openMembreActionModal(actionLabel, membre) {
 		modal.appendChild(details);
 		modal.appendChild(label);
 		modal.appendChild(input);
+		modal.appendChild(motifWrapper);
 		modal.appendChild(error);
 		modal.appendChild(buttons);
 		overlay.appendChild(modal);

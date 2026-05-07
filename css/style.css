@@ -313,7 +313,8 @@ border-bottom:1px solid #ddd;
     font-weight: bold;
 }
 
-.modal-date-input {
+.modal-date-input,
+.modal-select {
     box-sizing: border-box;
     width: 100%;
     padding: 10px;
@@ -322,7 +323,8 @@ border-bottom:1px solid #ddd;
     font-size: 15px;
 }
 
-.modal-date-input:focus {
+.modal-date-input:focus,
+.modal-select:focus {
     outline: none;
     border-color: #4a90e2;
     box-shadow: 0 0 0 2px rgba(74,144,226,0.2);

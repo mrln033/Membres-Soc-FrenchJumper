@@ -641,7 +641,7 @@ function applyMembreAction(data) {
 
     sheetM.getRange(membreRowIndex, mapM["GradeID"] + 1).setValue(transition.nouveauGrade.id);
 
-    if (transition.typeMouvement === "SORTIE" && mapM["RegleSoc"] !== undefined) {
+    if (isTypeSortie_(transition.typeMouvement) && mapM["RegleSoc"] !== undefined) {
       sheetM.getRange(membreRowIndex, mapM["RegleSoc"] + 1).setValue(false);
     }
 
@@ -668,7 +668,7 @@ function applyMembreAction(data) {
     sheetH.appendRow(histRow);
 
     const membrePourDiscord = getMembreById(membreId);
-    const syncOptions = transition.typeMouvement === "SORTIE"
+    const syncOptions = isTypeSortie_(transition.typeMouvement)
       ? { removeRoleIds: ["1189173135380058133"] }
       : {};
     const syncDiscord = syncDiscordMembre_(membrePourDiscord, syncOptions);
@@ -709,7 +709,7 @@ function getMembreActionTransition_(actionType, ancienGrade, gradeByName, grades
     };
   }
 
-  if (actionType === "SORTIE") {
+  if (isTypeSortie_(actionType)) {
     if (ancienGrade.nom === "Ancien Membre") {
       throw new Error("Sortie impossible pour un ancien membre");
     }
@@ -718,10 +718,14 @@ function getMembreActionTransition_(actionType, ancienGrade, gradeByName, grades
       throw new Error("Aucune action possible pour le Chef d'Expédition");
     }
 
+    if (actionType === "DESERTION" && ancienGrade.nom !== "Voyageur") {
+      throw new Error("Désertion autorisée uniquement pour un Voyageur");
+    }
+
     return {
-      typeMouvement: "SORTIE",
+      typeMouvement: actionType,
       nouveauGrade: ancienMembre,
-      commentaire: "Sortie vers Ancien Membre"
+      commentaire: getCommentaireSortie_(actionType)
     };
   }
 
@@ -766,6 +770,22 @@ function getMembreActionTransition_(actionType, ancienGrade, gradeByName, grades
   }
 
   throw new Error("Action membre inconnue");
+}
+
+function isTypeSortie_(typeMouvement) {
+  return ["SORTIE", "DESERTION", "BANNISSEMENT"].includes(typeMouvement);
+}
+
+function getCommentaireSortie_(typeMouvement) {
+  if (typeMouvement === "DESERTION") {
+    return "Désertion vers Ancien Membre";
+  }
+
+  if (typeMouvement === "BANNISSEMENT") {
+    return "Bannissement vers Ancien Membre";
+  }
+
+  return "Sortie vers Ancien Membre";
 }
 
 function parseDateEffective_(value) {
