@@ -302,6 +302,28 @@ border-bottom:1px solid #ddd;
     text-align: center;
 }
 
+.modal-title-success {
+    color: #2ecc71;
+}
+
+.modal-title-warning {
+    color: #d68910;
+}
+
+.modal-title-error {
+    color: #e74c3c;
+}
+
+.modal-message-box {
+    max-width: 460px;
+}
+
+.modal-message-text {
+    margin: 0 0 8px 0;
+    line-height: 1.5;
+    text-align: center;
+}
+
 .modal-action-details {
     margin: 0 0 18px 0;
     line-height: 1.5;

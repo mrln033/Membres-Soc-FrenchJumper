@@ -649,7 +649,7 @@ async function handleMembreAction(actionLabel, membre, btn) {
 	const actionType = getMembreActionType(actionLabel);
 
 	if (!actionType) {
-		alert("Action inconnue");
+		await openInfoModal("Erreur", "Action inconnue", "error");
 		return;
 	}
 
@@ -677,7 +677,11 @@ async function handleMembreAction(actionLabel, membre, btn) {
 		btn.innerText = "✅ OK";
 
 		if (result.syncDiscord && result.syncDiscord.success === false) {
-			alert("Action enregistrée, mais synchronisation Discord non effectuée : " + result.syncDiscord.error);
+			await openInfoModal(
+				"Synchronisation Discord",
+				"Action enregistrée, mais synchronisation Discord non effectuée : " + result.syncDiscord.error,
+				"warning"
+			);
 		}
 
 		setTimeout(() => {
@@ -687,13 +691,67 @@ async function handleMembreAction(actionLabel, membre, btn) {
 	} catch (err) {
 		console.error(err);
 		btn.innerText = "❌ Erreur";
-		alert(err.message || "Erreur lors du traitement");
+		await openInfoModal("Erreur", err.message || "Erreur lors du traitement", "error");
 
 		setTimeout(() => {
 			btn.disabled = false;
 			btn.innerText = initialText;
 		}, 2000);
 	}
+}
+
+function openInfoModal(titleText, messageText, type) {
+	return new Promise(resolve => {
+		const overlay = document.createElement("div");
+		overlay.className = "modal-overlay";
+
+		const modal = document.createElement("div");
+		modal.className = "modal-action modal-message-box";
+
+		const title = document.createElement("h2");
+		title.className = type ? "modal-title-" + type : "";
+		title.innerText = titleText;
+
+		const message = document.createElement("p");
+		message.className = "modal-message-text";
+		message.innerText = messageText;
+
+		const buttons = document.createElement("div");
+		buttons.className = "modal-buttons";
+
+		const okBtn = document.createElement("button");
+		okBtn.className = "btn-modal btn-modal-primary";
+		okBtn.type = "button";
+		okBtn.innerText = "OK";
+
+		function close() {
+			document.removeEventListener("keydown", onKeyDown);
+			overlay.remove();
+			resolve();
+		}
+
+		function onKeyDown(event) {
+			if (event.key === "Escape" || event.key === "Enter") {
+				close();
+			}
+		}
+
+		okBtn.onclick = close;
+		overlay.onclick = event => {
+			if (event.target === overlay) {
+				close();
+			}
+		};
+
+		buttons.appendChild(okBtn);
+		modal.appendChild(title);
+		modal.appendChild(message);
+		modal.appendChild(buttons);
+		overlay.appendChild(modal);
+		document.body.appendChild(overlay);
+		document.addEventListener("keydown", onKeyDown);
+		okBtn.focus();
+	});
 }
 
 function openMembreActionModal(actionLabel, membre, defaultActionType) {
@@ -825,7 +883,10 @@ function initNouveauMembreForm() {
 	console.log("Fonction : client.js - initNouveauMembreForm()");
 
 	if (!isAdmin) {
-		document.body.innerHTML = "<p>Accès admin requis.</p>";
+		document.body.innerHTML = "";
+		openInfoModal("Accès refusé", "Accès admin requis.", "error").then(() => {
+			window.location.href = "actifs.html";
+		});
 		return;
 	}
 
@@ -848,15 +909,13 @@ function initNouveauMembreForm() {
 		message.innerText = "";
 
 		if (!nomAvatar) {
-			message.className = "form-message form-message-error";
-			message.innerText = "Nom d'Avatar obligatoire.";
+			await openInfoModal("Formulaire incomplet", "Nom d'Avatar obligatoire.", "error");
 			nomInput.focus();
 			return;
 		}
 
 		if (!/^\d{2}[-\/]\d{2}[-\/]\d{4} \d{2}:\d{2}:\d{2}$/.test(dateEffective)) {
-			message.className = "form-message form-message-error";
-			message.innerText = "Format attendu : JJ-MM-AAAA HH:MM:SS";
+			await openInfoModal("Date invalide", "Format attendu : JJ-MM-AAAA HH:MM:SS", "error");
 			dateInput.focus();
 			return;
 		}
@@ -874,17 +933,17 @@ function initNouveauMembreForm() {
 				throw new Error(result.error || "Erreur inconnue");
 			}
 
-			message.className = "form-message form-message-ok";
-			message.innerText = result.existing ? "Membre déjà présent, ouverture de la fiche..." : "Membre créé, ouverture de la fiche...";
+			await openInfoModal(
+				result.existing ? "Membre déjà présent" : "Membre créé",
+				result.existing ? "Ouverture de la fiche existante." : "Ouverture de la nouvelle fiche.",
+				"success"
+			);
 
-			setTimeout(() => {
-				window.location.href = "fiche.html?id=" + result.membreId;
-			}, 500);
+			window.location.href = "fiche.html?id=" + result.membreId;
 
 		} catch (err) {
 			console.error(err);
-			message.className = "form-message form-message-error";
-			message.innerText = err.message || "Erreur lors de la création.";
+			await openInfoModal("Erreur", err.message || "Erreur lors de la création.", "error");
 			submitBtn.disabled = false;
 			submitBtn.innerText = "✅ Valider";
 		}
