@@ -790,6 +790,13 @@ function openMembreActionModal(actionLabel, membre, defaultActionType) {
 			motifSelect = document.createElement("select");
 			motifSelect.className = "modal-select";
 
+			const placeholder = document.createElement("option");
+			placeholder.value = "";
+			placeholder.innerText = "Indiquer le motif de Sortie";
+			placeholder.disabled = true;
+			placeholder.selected = true;
+			motifSelect.appendChild(placeholder);
+
 			const motifs = membre.grade === "Voyageur"
 				? ["SORTIE", "DESERTION", "BANNISSEMENT"]
 				: ["SORTIE", "BANNISSEMENT"];
@@ -834,6 +841,12 @@ function openMembreActionModal(actionLabel, membre, defaultActionType) {
 			if (!/^\d{2}[-\/]\d{2}[-\/]\d{4} \d{2}:\d{2}:\d{2}$/.test(dateEffective)) {
 				error.innerText = "Format attendu : JJ-MM-AAAA HH:MM:SS";
 				input.focus();
+				return;
+			}
+
+			if (motifSelect && !motifSelect.value) {
+				error.innerText = "Veuillez indiquer le motif réel de sortie.";
+				motifSelect.focus();
 				return;
 			}
 
