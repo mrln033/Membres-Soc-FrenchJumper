@@ -900,7 +900,6 @@ function openMembreActionModal(actionLabel, membre, defaultActionType) {
 		confirmBtn.innerText = "Confirmer";
 
 		function close(value) {
-			document.removeEventListener("keydown", onKeyDown);
 			overlay.remove();
 			resolve(value);
 		}
@@ -1045,19 +1044,8 @@ function openEditMembreInfosModal(membre) {
 			});
 		}
 
-		function onKeyDown(event) {
-			if (event.key === "Escape") {
-				close(null);
-			}
-		}
-
 		cancelBtn.onclick = () => close(null);
 		confirmBtn.onclick = confirmAction;
-		overlay.onclick = event => {
-			if (event.target === overlay) {
-				close(null);
-			}
-		};
 
 		buttons.appendChild(cancelBtn);
 		buttons.appendChild(confirmBtn);
@@ -1073,7 +1061,6 @@ function openEditMembreInfosModal(membre) {
 		modal.appendChild(buttons);
 		overlay.appendChild(modal);
 		document.body.appendChild(overlay);
-		document.addEventListener("keydown", onKeyDown);
 
 		nomInput.focus();
 		nomInput.select();
