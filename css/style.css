@@ -186,6 +186,14 @@ vertical-align:middle;
 
 }
 
+.fiche-discord-info div {
+  margin-top: 4px;
+}
+
+.fiche-discord-info span {
+  font-weight: bold;
+}
+
 .historique-table{
 
 width:100%;
@@ -333,6 +341,10 @@ border-bottom:1px solid #ddd;
     display: block;
     margin-bottom: 6px;
     font-weight: bold;
+}
+
+.modal-field-label-spaced {
+    margin-top: 12px;
 }
 
 .modal-date-input,

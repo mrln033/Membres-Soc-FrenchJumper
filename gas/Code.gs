@@ -105,6 +105,10 @@ function doPost(e) {
     return createOrOpenMembre(data);
   }
 
+  if (data.action === "updateMembreInfos") {
+    return updateMembreInfos(data);
+  }
+
   // Cas par défaut
   return ContentService
     .createTextOutput(JSON.stringify({ success:false, error:"Action inconnue" }))
@@ -679,6 +683,55 @@ function applyMembreAction(data) {
       nouveauGrade: transition.nouveauGrade.nom,
       typeMouvement: transition.typeMouvement,
       syncDiscord: syncDiscord
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: err.message
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function updateMembreInfos(data) {
+  try {
+    const membreId = data.membreId;
+
+    if (!membreId) {
+      throw new Error("MembreID manquant");
+    }
+
+    const ss = SpreadsheetApp.getActive();
+    const sheetM = ss.getSheetByName("MEMBRES_SOC");
+    const membres = sheetM.getDataRange().getValues();
+    const mapM = getColumnMap(sheetM);
+
+    const requiredColumns = ["NomDiscord", "IDDiscord", "RegleSoc"];
+    requiredColumns.forEach(function(columnName) {
+      if (mapM[columnName] === undefined) {
+        throw new Error("Colonne manquante : " + columnName);
+      }
+    });
+
+    let membreRowIndex = -1;
+
+    for (let i = 1; i < membres.length; i++) {
+      if (membres[i][mapM["MembreID"]] === membreId) {
+        membreRowIndex = i + 1;
+        break;
+      }
+    }
+
+    if (membreRowIndex === -1) {
+      throw new Error("Membre introuvable");
+    }
+
+    sheetM.getRange(membreRowIndex, mapM["NomDiscord"] + 1).setValue((data.nomDiscord || "").trim());
+    sheetM.getRange(membreRowIndex, mapM["IDDiscord"] + 1).setValue((data.IDDiscord || "").trim());
+    sheetM.getRange(membreRowIndex, mapM["RegleSoc"] + 1).setValue(data.regleSoc === true || data.regleSoc === "true");
+
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true
     })).setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {

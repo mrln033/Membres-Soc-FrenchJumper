@@ -41,6 +41,15 @@ async function apiRequest(action, data = null, method = "GET") {
     }
 }
 
+function escapeHtml(value) {
+	return String(value)
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#039;");
+}
+
 async function fetchMembres() {
 	console.log("Fonction : client.js - fetchMembres()");
     return await apiRequest("getMembres");
@@ -458,15 +467,27 @@ function buildCardMembre(m) {
     const card2 = document.createElement("div");
     card2.className = "card";
 
+    const nomDiscord = m.nomDiscord ? String(m.nomDiscord).trim() : "";
+    const idDiscord = m.IDDiscord ? String(m.IDDiscord).trim() : "";
+    const nomDiscordHtml = escapeHtml(nomDiscord);
+    const idDiscordHtml = escapeHtml(idDiscord);
+
     card2.innerHTML = `
         <h2>Informations</h2>
         <div class="fiche-grid">
             <div><b>Première entrée :</b> ${m.datePremiere ? formatDate(new Date(m.datePremiere)) : ""}</div>
-            <div>
+            <div class="fiche-discord-info">
                 <b>Discord :</b>
-                ${m.IDDiscord ?
-                    `<img src="images/icon-discord.png" class="icon-discord"> ${m.IDDiscord}` :
-                    "non renseigné"}
+                <div>
+                    <span>Nom :</span>
+                    ${nomDiscord ?
+                        `<img src="images/icon-discord.png" class="icon-discord"> ${nomDiscordHtml}` :
+                        "non renseigné"}
+                </div>
+                <div>
+                    <span>ID :</span>
+                    ${idDiscordHtml || "non renseigné"}
+                </div>
             </div>
             <div>
                 <b>Règles SOC :</b>
@@ -613,6 +634,13 @@ function buildCardMembre(m) {
 			btnDiv.appendChild(btn);
 		}
 
+		const editInfoBtn = document.createElement("button");
+		editInfoBtn.className = "btn-fiche-action";
+		editInfoBtn.type = "button";
+		editInfoBtn.innerText = "Modifier infos";
+		editInfoBtn.onclick = () => handleEditMembreInfos(m, editInfoBtn);
+		btnDiv.appendChild(editInfoBtn);
+
 		if (btnDiv.children.length) {
 			container.appendChild(btnDiv);
 		}
@@ -692,6 +720,48 @@ async function handleMembreAction(actionLabel, membre, btn) {
 		console.error(err);
 		btn.innerText = "❌ Erreur";
 		await openInfoModal("Erreur", err.message || "Erreur lors du traitement", "error");
+
+		setTimeout(() => {
+			btn.disabled = false;
+			btn.innerText = initialText;
+		}, 2000);
+	}
+}
+
+async function handleEditMembreInfos(membre, btn) {
+	console.log("Fonction : client.js - handleEditMembreInfos(membre, btn)");
+
+	const formData = await openEditMembreInfosModal(membre);
+
+	if (!formData) {
+		return;
+	}
+
+	const initialText = btn.innerText;
+	btn.disabled = true;
+	btn.innerText = "Traitement...";
+
+	try {
+		const result = await apiRequest("updateMembreInfos", {
+			membreId: membre.id,
+			nomDiscord: formData.nomDiscord,
+			IDDiscord: formData.IDDiscord,
+			regleSoc: formData.regleSoc
+		}, "POST");
+
+		if (result.success === false) {
+			throw new Error(result.error || "Erreur inconnue");
+		}
+
+		btn.innerText = "OK";
+		setTimeout(() => {
+			loadFiche(membre.id);
+		}, 500);
+
+	} catch (err) {
+		console.error(err);
+		btn.innerText = "Erreur";
+		await openInfoModal("Erreur", err.message || "Erreur lors de la modification", "error");
 
 		setTimeout(() => {
 			btn.disabled = false;
@@ -889,6 +959,124 @@ function openMembreActionModal(actionLabel, membre, defaultActionType) {
 
 		input.focus();
 		input.select();
+	});
+}
+
+function openEditMembreInfosModal(membre) {
+	return new Promise(resolve => {
+		const overlay = document.createElement("div");
+		overlay.className = "modal-overlay";
+
+		const modal = document.createElement("div");
+		modal.className = "modal-action";
+
+		const title = document.createElement("h2");
+		title.innerText = "Modifier les informations";
+
+		const details = document.createElement("p");
+		details.className = "modal-action-details";
+		details.innerText = membre.nom || "";
+
+		const nomLabel = document.createElement("label");
+		nomLabel.className = "modal-field-label";
+		nomLabel.innerText = "Nom Discord";
+
+		const nomInput = document.createElement("input");
+		nomInput.className = "modal-date-input";
+		nomInput.type = "text";
+		nomInput.value = membre.nomDiscord || "";
+
+		const idLabel = document.createElement("label");
+		idLabel.className = "modal-field-label modal-field-label-spaced";
+		idLabel.innerText = "ID Discord";
+
+		const idInput = document.createElement("input");
+		idInput.className = "modal-date-input";
+		idInput.type = "text";
+		idInput.value = membre.IDDiscord || "";
+
+		const regleLabel = document.createElement("label");
+		regleLabel.className = "modal-field-label modal-field-label-spaced";
+		regleLabel.innerText = "Règles SOC";
+
+		const regleSelect = document.createElement("select");
+		regleSelect.className = "modal-select";
+
+		const ouiOption = document.createElement("option");
+		ouiOption.value = "true";
+		ouiOption.innerText = "Oui";
+
+		const nonOption = document.createElement("option");
+		nonOption.value = "false";
+		nonOption.innerText = "Non";
+
+		regleSelect.appendChild(ouiOption);
+		regleSelect.appendChild(nonOption);
+		regleSelect.value = membre.regleSoc ? "true" : "false";
+
+		const error = document.createElement("div");
+		error.className = "modal-error";
+		error.innerText = "";
+
+		const buttons = document.createElement("div");
+		buttons.className = "modal-buttons";
+
+		const cancelBtn = document.createElement("button");
+		cancelBtn.className = "btn-modal btn-modal-secondary";
+		cancelBtn.type = "button";
+		cancelBtn.innerText = "Annuler";
+
+		const confirmBtn = document.createElement("button");
+		confirmBtn.className = "btn-modal btn-modal-primary";
+		confirmBtn.type = "button";
+		confirmBtn.innerText = "Enregistrer";
+
+		function close(value) {
+			document.removeEventListener("keydown", onKeyDown);
+			overlay.remove();
+			resolve(value);
+		}
+
+		function confirmAction() {
+			close({
+				nomDiscord: nomInput.value.trim(),
+				IDDiscord: idInput.value.trim(),
+				regleSoc: regleSelect.value === "true"
+			});
+		}
+
+		function onKeyDown(event) {
+			if (event.key === "Escape") {
+				close(null);
+			}
+		}
+
+		cancelBtn.onclick = () => close(null);
+		confirmBtn.onclick = confirmAction;
+		overlay.onclick = event => {
+			if (event.target === overlay) {
+				close(null);
+			}
+		};
+
+		buttons.appendChild(cancelBtn);
+		buttons.appendChild(confirmBtn);
+		modal.appendChild(title);
+		modal.appendChild(details);
+		modal.appendChild(nomLabel);
+		modal.appendChild(nomInput);
+		modal.appendChild(idLabel);
+		modal.appendChild(idInput);
+		modal.appendChild(regleLabel);
+		modal.appendChild(regleSelect);
+		modal.appendChild(error);
+		modal.appendChild(buttons);
+		overlay.appendChild(modal);
+		document.body.appendChild(overlay);
+		document.addEventListener("keydown", onKeyDown);
+
+		nomInput.focus();
+		nomInput.select();
 	});
 }
 
