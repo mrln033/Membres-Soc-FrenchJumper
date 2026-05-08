@@ -543,13 +543,13 @@ function buildCardMembre(m, mouvements) {
             </div>
             <div class="fiche-info-panel fiche-discord-info">
                 <div class="fiche-info-title">Discord</div>
-                <div class="fiche-info-line fiche-info-child">
+                <div class="fiche-info-line">
                     <span>Nom</span>
                     ${nomDiscord ?
                         `<img src="images/icon-discord.png" class="icon-discord"> ${nomDiscordHtml}` :
                         "non renseigné"}
                 </div>
-                <div class="fiche-info-line fiche-info-child">
+                <div class="fiche-info-line">
                     <span>ID</span>
                     ${idDiscordHtml || "non renseigné"}
                 </div>
