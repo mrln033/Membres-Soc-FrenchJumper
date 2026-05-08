@@ -554,11 +554,11 @@ function buildCardMembre(m, mouvements) {
                     ${idDiscordHtml || "non renseigné"}
                 </div>
             </div>
-            <div class="fiche-info-panel">
+            <div class="fiche-info-panel fiche-regle-info">
                 <div class="fiche-info-title">Règles SOC</div>
                 ${m.regleSoc ?
-                    '<span class="regle-ok">Oui</span>' :
-                    '<span class="regle-ko">Non</span>'}
+                    '<span class="regle-ok">Acceptées</span>' :
+                    '<span class="regle-ko">Non Acceptées</span>'}
             </div>
         </div>
     `;

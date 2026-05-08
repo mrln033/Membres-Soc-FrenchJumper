@@ -211,6 +211,10 @@ gap:10px;
   font-weight: bold;
 }
 
+.fiche-regle-info {
+  text-align: center;
+}
+
 .icon-discord{
 
 height:16px;
