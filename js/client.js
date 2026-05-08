@@ -349,6 +349,55 @@ function calcTotalPresence(membreId, mouvements) {
     return Math.round(total) + " j";
 }
 
+function parseFicheDate(value) {
+	const date = new Date(value);
+	return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getFicheEntrees(mouvements) {
+	if (!Array.isArray(mouvements)) return [];
+
+	return mouvements
+		.filter(m => m.type === "ENTREE" && parseFicheDate(m.date))
+		.sort((a,b) => parseFicheDate(a.date) - parseFicheDate(b.date));
+}
+
+function calcJoursDepuisDate(date) {
+	if (!date) return "";
+
+	const diff = new Date() - date;
+	const jours = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+	return jours + " j";
+}
+
+function calcTotalPresenceFiche(mouvements) {
+	if (!Array.isArray(mouvements)) return "";
+
+	const mv = mouvements
+		.filter(m => parseFicheDate(m.date))
+		.sort((a,b) => parseFicheDate(a.date) - parseFicheDate(b.date));
+
+	let total = 0;
+	let entreeDate = null;
+
+	mv.forEach(m => {
+		const date = parseFicheDate(m.date);
+
+		if (m.type === "ENTREE") {
+			entreeDate = date;
+		} else if (["SORTIE", "BANNISSEMENT", "DEMISSION", "DESERTION"].includes(m.type) && entreeDate) {
+			total += (date - entreeDate) / (1000 * 60 * 60 * 24);
+			entreeDate = null;
+		}
+	});
+
+	if (entreeDate) {
+		total += (new Date() - entreeDate) / (1000 * 60 * 60 * 24);
+	}
+
+	return Math.round(Math.max(0, total)) + " j";
+}
+
 // Récupère la première date d'entrée pour un membre
 function getPremiereEntree(membreId, mouvements) {
 	console.log("Fonction : client.js - getPremiereEntree(membreId, mouvements)");
@@ -435,15 +484,15 @@ function displayFiche(container, membre, mouvements) {
     return;
   }
 
-  container.appendChild(buildCardMembre(membre));
+  container.appendChild(buildCardMembre(membre, mouvements));
   container.appendChild(buildCardHistorique(mouvements)); // <== on passe tout l’historique
 }
 
 // ================================
 // CARTE MEMBRE
 // ================================
-function buildCardMembre(m) {
-	console.log("Fonction : client.js - buildCardMembre(m)");
+function buildCardMembre(m, mouvements) {
+	console.log("Fonction : client.js - buildCardMembre(m, mouvements)");
 
     const container = document.createElement("div");
 
@@ -471,26 +520,40 @@ function buildCardMembre(m) {
     const idDiscord = m.IDDiscord ? String(m.IDDiscord).trim() : "";
     const nomDiscordHtml = escapeHtml(nomDiscord);
     const idDiscordHtml = escapeHtml(idDiscord);
+    const entrees = getFicheEntrees(mouvements);
+    const premiereEntree = m.datePremiere ? formatDate(new Date(m.datePremiere)) : "";
+    const derniereEntreeDate = entrees.length > 1 ? parseFicheDate(entrees[entrees.length - 1].date) : null;
+    const derniereEntree = derniereEntreeDate ? formatDate(derniereEntreeDate) : "";
+    const ancienneteActuelle = derniereEntreeDate ? calcJoursDepuisDate(derniereEntreeDate) : "";
+    const totalPresence = calcTotalPresenceFiche(mouvements);
 
     card2.innerHTML = `
         <h2>Informations</h2>
-        <div class="fiche-grid">
-            <div><b>Première entrée :</b> ${m.datePremiere ? formatDate(new Date(m.datePremiere)) : ""}</div>
-            <div class="fiche-discord-info">
-                <b>Discord :</b>
-                <div>
+        <div class="fiche-info-grid">
+            <div class="fiche-info-panel">
+                <div class="fiche-info-title">Présence SOC</div>
+                <div class="fiche-info-line"><span>Première entrée :</span> ${premiereEntree}</div>
+                <div class="fiche-info-line"><span>Présence totale :</span> ${totalPresence}</div>
+                ${derniereEntree ? `
+                    <div class="fiche-info-line"><span>Dernière entrée :</span> ${derniereEntree}</div>
+                    <div class="fiche-info-line"><span>Ancienneté actuelle :</span> ${ancienneteActuelle}</div>
+                ` : ""}
+            </div>
+            <div class="fiche-info-panel fiche-discord-info">
+                <div class="fiche-info-title">Discord</div>
+                <div class="fiche-info-line fiche-info-child">
                     <span>Nom :</span>
                     ${nomDiscord ?
                         `<img src="images/icon-discord.png" class="icon-discord"> ${nomDiscordHtml}` :
                         "non renseigné"}
                 </div>
-                <div>
+                <div class="fiche-info-line fiche-info-child">
                     <span>ID :</span>
                     ${idDiscordHtml || "non renseigné"}
                 </div>
             </div>
-            <div>
-                <b>Règles SOC :</b>
+            <div class="fiche-info-panel">
+                <div class="fiche-info-title">Règles SOC</div>
                 ${m.regleSoc ?
                     '<span class="regle-ok">Oui</span>' :
                     '<span class="regle-ko">Non</span>'}

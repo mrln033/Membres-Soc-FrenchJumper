@@ -179,19 +179,42 @@ gap:10px;
 
 }
 
+.fiche-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.fiche-info-panel {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fafafa;
+}
+
+.fiche-info-title {
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.fiche-info-line {
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+.fiche-info-line span {
+  font-weight: bold;
+}
+
+.fiche-info-child {
+  padding-left: 14px;
+}
+
 .icon-discord{
 
 height:16px;
 vertical-align:middle;
 
-}
-
-.fiche-discord-info div {
-  margin-top: 4px;
-}
-
-.fiche-discord-info span {
-  font-weight: bold;
 }
 
 .historique-table{
