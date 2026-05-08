@@ -534,23 +534,23 @@ function buildCardMembre(m, mouvements) {
         <div class="fiche-info-grid">
             <div class="fiche-info-panel">
                 <div class="fiche-info-title">Présence SOC</div>
-                <div class="fiche-info-line"><span>Date d'entrée</span> ${derniereEntree}</div>
-                <div class="fiche-info-line"><span>Ancienneté</span> ${anciennete}</div>
+                <div class="fiche-info-line"><span>Date d'entrée : </span> ${derniereEntree}</div>
+                <div class="fiche-info-line"><span>Ancienneté : </span> ${anciennete}</div>
                 ${hasMultipleEntrees ? `
-                    <div class="fiche-info-line"><span>Première entrée</span> ${premiereEntree}</div>
-                    <div class="fiche-info-line"><span>Présence totale</span> ${totalPresence}</div>
+                    <div class="fiche-info-line"><span>Première entrée : </span> ${premiereEntree}</div>
+                    <div class="fiche-info-line"><span>Présence totale : </span> ${totalPresence}</div>
                 ` : ""}
             </div>
             <div class="fiche-info-panel fiche-discord-info">
                 <div class="fiche-info-title">Discord</div>
                 <div class="fiche-info-line">
-                    <span>Nom</span>
+                    <span>Nom : </span>
                     ${nomDiscord ?
                         `<img src="images/icon-discord.png" class="icon-discord"> ${nomDiscordHtml}` :
                         "non renseigné"}
                 </div>
                 <div class="fiche-info-line">
-                    <span>ID</span>
+                    <span>ID : </span>
                     ${idDiscordHtml || "non renseigné"}
                 </div>
             </div>
