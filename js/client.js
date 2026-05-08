@@ -528,18 +528,25 @@ function buildCardMembre(m, mouvements) {
     const anciennete = derniereEntreeDate ? calcJoursDepuisDate(derniereEntreeDate) : "";
     const totalPresence = calcTotalPresenceFiche(mouvements);
     const hasMultipleEntrees = entrees.length > 1;
+    const isAncienMembre = (m.grade || "").trim() === "Ancien Membre";
+    const presenceSocHtml = isAncienMembre ? `
+        <div class="fiche-info-line"><span>Périodes : </span> ${entrees.length}</div>
+        <div class="fiche-info-line"><span>Présence totale : </span> ${totalPresence}</div>
+    ` : `
+        <div class="fiche-info-line"><span>Date d'entrée : </span> ${derniereEntree}</div>
+        <div class="fiche-info-line"><span>Ancienneté : </span> ${anciennete}</div>
+        ${hasMultipleEntrees ? `
+            <div class="fiche-info-line"><span>Première entrée : </span> ${premiereEntree}</div>
+            <div class="fiche-info-line"><span>Présence totale : </span> ${totalPresence}</div>
+        ` : ""}
+    `;
 
     card2.innerHTML = `
         <h2>Informations</h2>
         <div class="fiche-info-grid">
             <div class="fiche-info-panel">
                 <div class="fiche-info-title">Présence SOC</div>
-                <div class="fiche-info-line"><span>Date d'entrée : </span> ${derniereEntree}</div>
-                <div class="fiche-info-line"><span>Ancienneté : </span> ${anciennete}</div>
-                ${hasMultipleEntrees ? `
-                    <div class="fiche-info-line"><span>Première entrée : </span> ${premiereEntree}</div>
-                    <div class="fiche-info-line"><span>Présence totale : </span> ${totalPresence}</div>
-                ` : ""}
+                ${presenceSocHtml}
             </div>
             <div class="fiche-info-panel fiche-discord-info">
                 <div class="fiche-info-title">Discord</div>
