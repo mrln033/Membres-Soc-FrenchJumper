@@ -367,7 +367,7 @@ function calcJoursDepuisDate(date) {
 
 	const diff = new Date() - date;
 	const jours = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-	return jours + " j";
+	return jours + " jours";
 }
 
 function calcTotalPresenceFiche(mouvements) {
@@ -395,7 +395,7 @@ function calcTotalPresenceFiche(mouvements) {
 		total += (new Date() - entreeDate) / (1000 * 60 * 60 * 24);
 	}
 
-	return Math.round(Math.max(0, total)) + " j";
+	return Math.round(Math.max(0, total)) + " jours";
 }
 
 // Récupère la première date d'entrée pour un membre
@@ -521,34 +521,36 @@ function buildCardMembre(m, mouvements) {
     const nomDiscordHtml = escapeHtml(nomDiscord);
     const idDiscordHtml = escapeHtml(idDiscord);
     const entrees = getFicheEntrees(mouvements);
-    const premiereEntree = m.datePremiere ? formatDate(new Date(m.datePremiere)) : "";
-    const derniereEntreeDate = entrees.length > 1 ? parseFicheDate(entrees[entrees.length - 1].date) : null;
+    const premiereEntreeDate = entrees.length ? parseFicheDate(entrees[0].date) : parseFicheDate(m.datePremiere);
+    const premiereEntree = premiereEntreeDate ? formatDate(premiereEntreeDate) : "";
+    const derniereEntreeDate = entrees.length ? parseFicheDate(entrees[entrees.length - 1].date) : premiereEntreeDate;
     const derniereEntree = derniereEntreeDate ? formatDate(derniereEntreeDate) : "";
-    const ancienneteActuelle = derniereEntreeDate ? calcJoursDepuisDate(derniereEntreeDate) : "";
+    const anciennete = derniereEntreeDate ? calcJoursDepuisDate(derniereEntreeDate) : "";
     const totalPresence = calcTotalPresenceFiche(mouvements);
+    const hasMultipleEntrees = entrees.length > 1;
 
     card2.innerHTML = `
         <h2>Informations</h2>
         <div class="fiche-info-grid">
             <div class="fiche-info-panel">
                 <div class="fiche-info-title">Présence SOC</div>
-                <div class="fiche-info-line"><span>Première entrée :</span> ${premiereEntree}</div>
-                <div class="fiche-info-line"><span>Présence totale :</span> ${totalPresence}</div>
-                ${derniereEntree ? `
-                    <div class="fiche-info-line"><span>Dernière entrée :</span> ${derniereEntree}</div>
-                    <div class="fiche-info-line"><span>Ancienneté actuelle :</span> ${ancienneteActuelle}</div>
+                <div class="fiche-info-line"><span>Date d'entrée</span> ${derniereEntree}</div>
+                <div class="fiche-info-line"><span>Ancienneté</span> ${anciennete}</div>
+                ${hasMultipleEntrees ? `
+                    <div class="fiche-info-line"><span>Première entrée</span> ${premiereEntree}</div>
+                    <div class="fiche-info-line"><span>Présence totale</span> ${totalPresence}</div>
                 ` : ""}
             </div>
             <div class="fiche-info-panel fiche-discord-info">
                 <div class="fiche-info-title">Discord</div>
                 <div class="fiche-info-line fiche-info-child">
-                    <span>Nom :</span>
+                    <span>Nom</span>
                     ${nomDiscord ?
                         `<img src="images/icon-discord.png" class="icon-discord"> ${nomDiscordHtml}` :
                         "non renseigné"}
                 </div>
                 <div class="fiche-info-line fiche-info-child">
-                    <span>ID :</span>
+                    <span>ID</span>
                     ${idDiscordHtml || "non renseigné"}
                 </div>
             </div>
