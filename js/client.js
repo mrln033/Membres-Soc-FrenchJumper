@@ -965,6 +965,7 @@ function openMembreActionModal(actionLabel, membre, defaultActionType) {
 		confirmBtn.innerText = "Confirmer";
 
 		function close(value) {
+			document.removeEventListener("keydown", onKeyDown);
 			overlay.remove();
 			resolve(value);
 		}
@@ -1096,7 +1097,6 @@ function openEditMembreInfosModal(membre) {
 		confirmBtn.innerText = "Enregistrer";
 
 		function close(value) {
-			document.removeEventListener("keydown", onKeyDown);
 			overlay.remove();
 			resolve(value);
 		}
