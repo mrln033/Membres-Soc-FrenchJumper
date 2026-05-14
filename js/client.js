@@ -111,7 +111,7 @@ function displayMembresActifs(list) {
 	<th>Nom Avatar</th>
 	<th>Date entrée</th>
 	<th>Ancienneté</th>
-	<th>Règles</th>
+	<th>Serveur + Règles</th>
 	</tr>
 	</thead>
 	`;
@@ -558,7 +558,7 @@ function buildCardMembre(m, mouvements) {
                 <div class="fiche-info-line">
                     <span>Nom : </span>
                     ${nomDiscord ?
-                        `<img src="images/icon-discord.png" class="icon-discord"> ${nomDiscordHtml}` :
+                        nomDiscordHtml :
                         "non renseigné"}
                 </div>
                 <div class="fiche-info-line">
@@ -567,7 +567,7 @@ function buildCardMembre(m, mouvements) {
                 </div>
             </div>
             <div class="fiche-info-panel fiche-regle-info">
-                <div class="fiche-info-title">SOC</div>
+                <div class="fiche-info-title">Serveur SOC</div>
                 <div class="fiche-info-line">
                     <span>Discord : </span>
                     ${isServeurFRJ ?

@@ -212,11 +212,7 @@ gap:10px;
 }
 
 .fiche-regle-info {
-  text-align: left;
-}
-
-.fiche-regle-info .fiche-info-title {
-  text-align: left;
+  text-align: center;
 }
 
 .icon-discord{
