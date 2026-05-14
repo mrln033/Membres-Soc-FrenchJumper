@@ -1082,25 +1082,6 @@ function openEditMembreInfosModal(membre) {
 		idInput.type = "text";
 		idInput.value = membre.IDDiscord || "";
 
-		const regleLabel = document.createElement("label");
-		regleLabel.className = "modal-field-label modal-field-label-spaced";
-		regleLabel.innerText = "Règles SOC";
-
-		const regleSelect = document.createElement("select");
-		regleSelect.className = "modal-select";
-
-		const ouiOption = document.createElement("option");
-		ouiOption.value = "true";
-		ouiOption.innerText = "Oui";
-
-		const nonOption = document.createElement("option");
-		nonOption.value = "false";
-		nonOption.innerText = "Non";
-
-		regleSelect.appendChild(ouiOption);
-		regleSelect.appendChild(nonOption);
-		regleSelect.value = membre.regleSoc ? "true" : "false";
-
 		const serveurLabel = document.createElement("label");
 		serveurLabel.className = "modal-field-label modal-field-label-spaced";
 		serveurLabel.innerText = "Serveur FRJ";
@@ -1119,6 +1100,25 @@ function openEditMembreInfosModal(membre) {
 		serveurSelect.appendChild(inscritOption);
 		serveurSelect.appendChild(nonInscritOption);
 		serveurSelect.value = isTrueField(membre.serveurFRJ) ? "true" : "false";
+
+		const regleLabel = document.createElement("label");
+		regleLabel.className = "modal-field-label modal-field-label-spaced";
+		regleLabel.innerText = "Règles SOC";
+
+		const regleSelect = document.createElement("select");
+		regleSelect.className = "modal-select";
+
+		const ouiOption = document.createElement("option");
+		ouiOption.value = "true";
+		ouiOption.innerText = "Oui";
+
+		const nonOption = document.createElement("option");
+		nonOption.value = "false";
+		nonOption.innerText = "Non";
+
+		regleSelect.appendChild(ouiOption);
+		regleSelect.appendChild(nonOption);
+		regleSelect.value = membre.regleSoc ? "true" : "false";
 
 		const error = document.createElement("div");
 		error.className = "modal-error";
@@ -1162,10 +1162,10 @@ function openEditMembreInfosModal(membre) {
 		modal.appendChild(nomInput);
 		modal.appendChild(idLabel);
 		modal.appendChild(idInput);
-		modal.appendChild(regleLabel);
-		modal.appendChild(regleSelect);
 		modal.appendChild(serveurLabel);
 		modal.appendChild(serveurSelect);
+		modal.appendChild(regleLabel);
+		modal.appendChild(regleSelect);
 		modal.appendChild(error);
 		modal.appendChild(buttons);
 		overlay.appendChild(modal);
