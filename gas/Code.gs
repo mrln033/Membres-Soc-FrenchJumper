@@ -215,6 +215,7 @@ function getMembres() {
       date: date,
       entreeCount: entreeCount,
       regleSoc: membres[i][mapM["RegleSoc"]],
+      serveurFRJ: membres[i][mapM["ServeurFRJ"]],
       IDDiscord: membres[i][mapM["IDDiscord"]],
       grade: grade.nom,
       niveau: grade.niveau
@@ -345,6 +346,7 @@ function getFiche(membreId) {
         nomDiscord: membres[i][mapM["NomDiscord"]],
         IDDiscord: membres[i][mapM["IDDiscord"]],
         regleSoc: membres[i][mapM["RegleSoc"]],
+        serveurFRJ: membres[i][mapM["ServeurFRJ"]],
         grade: grade ? grade.nom : "",
         niveau: grade ? grade.niveau : ""
       };
@@ -706,7 +708,7 @@ function updateMembreInfos(data) {
     const membres = sheetM.getDataRange().getValues();
     const mapM = getColumnMap(sheetM);
 
-    const requiredColumns = ["NomDiscord", "IDDiscord", "RegleSoc"];
+    const requiredColumns = ["NomDiscord", "IDDiscord", "RegleSoc", "ServeurFRJ"];
     requiredColumns.forEach(function(columnName) {
       if (mapM[columnName] === undefined) {
         throw new Error("Colonne manquante : " + columnName);
@@ -729,6 +731,7 @@ function updateMembreInfos(data) {
     sheetM.getRange(membreRowIndex, mapM["NomDiscord"] + 1).setValue((data.nomDiscord || "").trim());
     sheetM.getRange(membreRowIndex, mapM["IDDiscord"] + 1).setValue((data.IDDiscord || "").trim());
     sheetM.getRange(membreRowIndex, mapM["RegleSoc"] + 1).setValue(data.regleSoc === true || data.regleSoc === "true");
+    sheetM.getRange(membreRowIndex, mapM["ServeurFRJ"] + 1).setValue(data.serveurFRJ === true || data.serveurFRJ === "true");
 
     return ContentService.createTextOutput(JSON.stringify({
       success: true

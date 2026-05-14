@@ -50,6 +50,10 @@ function escapeHtml(value) {
 		.replace(/'/g, "&#039;");
 }
 
+function isTrueField(value) {
+	return value === true || String(value).trim().toUpperCase() === "TRUE";
+}
+
 async function fetchMembres() {
 	console.log("Fonction : client.js - fetchMembres()");
     return await apiRequest("getMembres");
@@ -159,7 +163,7 @@ function displayMembresActifs(list) {
 			<td>${m.date ? m.date + " (" + m.entreeCount + ")" : ""}</td>
 			<td>${calcAnciennete(m.date)}</td>
 			<td class="regle-cell">
-				${m.IDDiscord ? '<span><img src="images/icon-discord.png" alt="Discord"></span> + ' : ''}
+				${isTrueField(m.serveurFRJ) ? '<span><img src="images/icon-discord.png" alt="Discord"></span> + ' : ''}
 				${m.regleSoc ? '<span class="regle-ok">Oui</span>' : '<span class="regle-ko">Non</span>'}
 			</td>
 		`;
@@ -520,6 +524,7 @@ function buildCardMembre(m, mouvements) {
     const idDiscord = m.IDDiscord ? String(m.IDDiscord).trim() : "";
     const nomDiscordHtml = escapeHtml(nomDiscord);
     const idDiscordHtml = escapeHtml(idDiscord);
+    const isServeurFRJ = isTrueField(m.serveurFRJ);
     const entrees = getFicheEntrees(mouvements);
     const premiereEntreeDate = entrees.length ? parseFicheDate(entrees[0].date) : parseFicheDate(m.datePremiere);
     const premiereEntree = premiereEntreeDate ? formatDate(premiereEntreeDate) : "";
@@ -562,10 +567,19 @@ function buildCardMembre(m, mouvements) {
                 </div>
             </div>
             <div class="fiche-info-panel fiche-regle-info">
-                <div class="fiche-info-title">Règles SOC</div>
+                <div class="fiche-info-title">SOC</div>
+                <div class="fiche-info-line">
+                    <span>Discord : </span>
+                    ${isServeurFRJ ?
+                        '<span class="regle-ok">Inscrit</span>' :
+                        '<span class="regle-ko">Non Inscrit</span>'}
+                </div>
+                <div class="fiche-info-line">
+                    <span>Règle Soc : </span>
                 ${m.regleSoc ?
                     '<span class="regle-ok">Acceptées</span>' :
                     '<span class="regle-ko">Non Acceptées</span>'}
+                </div>
             </div>
         </div>
     `;
@@ -818,7 +832,8 @@ async function handleEditMembreInfos(membre, btn) {
 			membreId: membre.id,
 			nomDiscord: formData.nomDiscord,
 			IDDiscord: formData.IDDiscord,
-			regleSoc: formData.regleSoc
+			regleSoc: formData.regleSoc,
+			serveurFRJ: formData.serveurFRJ
 		}, "POST");
 
 		if (result.success === false) {
@@ -1086,6 +1101,25 @@ function openEditMembreInfosModal(membre) {
 		regleSelect.appendChild(nonOption);
 		regleSelect.value = membre.regleSoc ? "true" : "false";
 
+		const serveurLabel = document.createElement("label");
+		serveurLabel.className = "modal-field-label modal-field-label-spaced";
+		serveurLabel.innerText = "Serveur FRJ";
+
+		const serveurSelect = document.createElement("select");
+		serveurSelect.className = "modal-select";
+
+		const inscritOption = document.createElement("option");
+		inscritOption.value = "true";
+		inscritOption.innerText = "Inscrit";
+
+		const nonInscritOption = document.createElement("option");
+		nonInscritOption.value = "false";
+		nonInscritOption.innerText = "Non Inscrit";
+
+		serveurSelect.appendChild(inscritOption);
+		serveurSelect.appendChild(nonInscritOption);
+		serveurSelect.value = isTrueField(membre.serveurFRJ) ? "true" : "false";
+
 		const error = document.createElement("div");
 		error.className = "modal-error";
 		error.innerText = "";
@@ -1112,7 +1146,8 @@ function openEditMembreInfosModal(membre) {
 			close({
 				nomDiscord: nomInput.value.trim(),
 				IDDiscord: idInput.value.trim(),
-				regleSoc: regleSelect.value === "true"
+				regleSoc: regleSelect.value === "true",
+				serveurFRJ: serveurSelect.value === "true"
 			});
 		}
 
@@ -1129,6 +1164,8 @@ function openEditMembreInfosModal(membre) {
 		modal.appendChild(idInput);
 		modal.appendChild(regleLabel);
 		modal.appendChild(regleSelect);
+		modal.appendChild(serveurLabel);
+		modal.appendChild(serveurSelect);
 		modal.appendChild(error);
 		modal.appendChild(buttons);
 		overlay.appendChild(modal);
