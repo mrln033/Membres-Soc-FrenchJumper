@@ -553,7 +553,7 @@ function buildCardMembre(m, mouvements) {
                 <div class="fiche-info-title">Présence SOC</div>
                 ${presenceSocHtml}
             </div>
-            <div class="fiche-info-panel fiche-discord-info">
+            ${isAdmin ? `<div class="fiche-info-panel fiche-discord-info">
                 <div class="fiche-info-title">Discord</div>
                 <div class="fiche-info-line">
                     <span>Nom : </span>
@@ -565,7 +565,7 @@ function buildCardMembre(m, mouvements) {
                     <span>ID : </span>
                     ${idDiscordHtml || "non renseigné"}
                 </div>
-            </div>
+            </div>` : ""}
             <div class="fiche-info-panel fiche-regle-info">
                 <div class="fiche-info-title">Serveur SOC</div>
                 <div class="fiche-info-line">
