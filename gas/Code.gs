@@ -24,6 +24,16 @@ function getConfig(){
   };
 }
 
+function getRequiredScriptProperty_(name) {
+  const value = PropertiesService.getScriptProperties().getProperty(name);
+
+  if (!value) {
+    throw new Error("Propriété Apps Script manquante : " + name);
+  }
+
+  return value;
+}
+
 function doGet(e) {
   const action = e.parameter.action;
 
@@ -908,6 +918,8 @@ function syncDiscordMembre_(membre, options) {
       };
     }
 
+    const proxySecret = getRequiredScriptProperty_("DISCORD_PROXY_SECRET");
+
     const response = UrlFetchApp.fetch(
       "https://discord-proxy.merlin-merzhin-lesage.workers.dev/sync",
       {
@@ -917,7 +929,7 @@ function syncDiscordMembre_(membre, options) {
           discordId: membre.discordId,
           nomAvatar: membre.nomAvatar,
           niveau: membre.niveau,
-          secret: "12062006"
+          secret: proxySecret
         }),
         muteHttpExceptions: true
       }
@@ -1112,12 +1124,13 @@ function getGradeByName_(grades, mapG, nomGrade) {
 }
 
 function syncDiscordFromWeb(data) {
-  try {
+  let membre = null;
 
+  try {
     const membreId = data.membreId;
 
-    // Récupération du membre
-    const membre = getMembreById(membreId);
+    // Les données Discord sont toujours relues côté serveur.
+    membre = getMembreById(membreId);
 
     if (!membre) {
       return ContentService.createTextOutput(JSON.stringify({
@@ -1133,6 +1146,8 @@ function syncDiscordFromWeb(data) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
+    const proxySecret = getRequiredScriptProperty_("DISCORD_PROXY_SECRET");
+
     // Appel vers Worker Cloudflare
     const response = UrlFetchApp.fetch(
       "https://discord-proxy.merlin-merzhin-lesage.workers.dev/sync",
@@ -1143,32 +1158,104 @@ function syncDiscordFromWeb(data) {
           discordId: membre.discordId,
           nomAvatar: membre.nomAvatar,
           niveau: membre.niveau,
-          secret: "12062006"
+          secret: proxySecret
         }),
         muteHttpExceptions: true
       }
     );
 
     const result = JSON.parse(response.getContentText());
-
+    notifyDiscordSyncLog_(membre, result.success === true);
 
     if (result.success) {
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
         message: `✅ Synchronisation envoyée pour ${membre.nomAvatar}`
       })).setMimeType(ContentService.MimeType.JSON);
-    } else {
-      return ContentService.createTextOutput(JSON.stringify({
-        success: false,
-        error: result.error || "Erreur inconnue côté Worker"
-      })).setMimeType(ContentService.MimeType.JSON);
     }
 
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: result.error || "Erreur inconnue côté Worker"
+    })).setMimeType(ContentService.MimeType.JSON);
+
   } catch (err) {
+    if (membre) {
+      notifyDiscordSyncLog_(membre, false);
+    }
+
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       error: err.message
     })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function notifyDiscordSyncLog_(membre, success) {
+  try {
+    const webhookUrl = getRequiredScriptProperty_("DISCORD_WEBHOOK_RH");
+    const now = new Date();
+    const dateStr = Utilities.formatDate(
+      now,
+      "Europe/Paris",
+      "dd/MM/yyyy HH:mm"
+    );
+
+    const embed = {
+      title: "🔄 Synchronisation Discord (pour vérification)",
+      description: success
+        ? "✅ Synchronisation effectuée"
+        : "❌ Erreur lors de la synchronisation\n\nRôle notifié : <@&464706697408020482>",
+      color: success ? 0x2ecc71 : 0xe74c3c,
+      fields: [
+        {
+          name: "Membre",
+          value: String(membre.nomAvatar || "N/A"),
+          inline: true
+        },
+        {
+          name: "Discord",
+          value: membre.discordId ? `<@${membre.discordId}>` : "N/A",
+          inline: true
+        },
+        {
+          name: "Grade",
+          value: String(membre.grade || "N/A"),
+          inline: true
+        },
+        {
+          name: "Date",
+          value: dateStr,
+          inline: true
+        },
+        {
+          name: "Rôle notifié",
+          value: "<@&464706697408020482>",
+          inline: false
+        }
+      ],
+      footer: {
+        text: "Log automatique - Notification R.H."
+      },
+      timestamp: now.toISOString()
+    };
+
+    const response = UrlFetchApp.fetch(webhookUrl, {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify({ embeds: [embed] }),
+      muteHttpExceptions: true
+    });
+
+    const status = response.getResponseCode();
+    if (status < 200 || status >= 300) {
+      console.error(
+        "Erreur webhook Discord " + status + " : " + response.getContentText()
+      );
+    }
+  } catch (err) {
+    // Une panne de notification ne doit pas transformer une synchronisation réussie en échec.
+    console.error("Webhook Discord ERROR: " + err.message);
   }
 }
 
@@ -1194,7 +1281,8 @@ function getMembreById(membreId) {
         membreId: membreId,
         nomAvatar: membres[i][mapM["NomAvatar"]],
         discordId: membres[i][mapM["IDDiscord"]],
-        niveau: grade ? Number(grade[mapG["Niveau"]]) : 0
+        niveau: grade ? Number(grade[mapG["Niveau"]]) : 0,
+        grade: grade ? grade[mapG["NomGrade"]] : ""
       };
       break;
     }

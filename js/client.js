@@ -433,27 +433,6 @@ function formatDate(date) {
            date.getFullYear();
 }
 
-async function sendDiscordWebhook(payload) {
-	console.log("Fonction : client.js - sendDiscordWebhook(payload)");
-    try {
-        // Si c'est une chaîne de caractères, on l'envoie en tant que content
-        const body = typeof payload === "string"
-            ? { content: payload }
-            : payload; // si c'est déjà un objet (embed)
-
-        await fetch(WH_NOTIF_RH, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(body)
-        });
-
-    } catch (err) {
-        console.error("Webhook Discord ERROR:", err);
-    }
-}
-
 // ================================
 // CHARGEMENT FICHE
 // ================================
@@ -633,17 +612,12 @@ function buildCardMembre(m, mouvements) {
 
 				btn.disabled = true;
 				btn.innerText = "⏳ Synchronisation...";
-				let success = false
-
 				try {
 
-					const data = await apiRequest("syncDiscordFromWeb", {
-						membreId: m.id,
-						nomAvatar: m.nom,
-						discordId: m.IDDiscord
+					await apiRequest("syncDiscordFromWeb", {
+						membreId: m.id
 					}, "POST");
 
-					success = true
 					btn.innerText = "✅ OK";
 
 				} catch(err) {
@@ -656,62 +630,6 @@ function buildCardMembre(m, mouvements) {
 						btn.disabled = false;
 						btn.innerText = "🔄 Synchroniser Discord";
 					}, 2000);
-				
-					// 🔥 Construction embed
-					const now = new Date();
-
-					const dateStr =
-						("0"+now.getDate()).slice(-2) + "/" +
-						("0"+(now.getMonth()+1)).slice(-2) + "/" +
-						now.getFullYear() + " " +
-						("0"+now.getHours()).slice(-2) + ":" +
-						("0"+now.getMinutes()).slice(-2);
-
-					// couleur : vert = succès, rouge = erreur
-					const color = success ? 0x2ecc71 : 0xe74c3c;
-
-					const embed = {
-						title: "🔄 Synchronisation Discord (pour vérification)",
-						description: success
-							? '✅ Synchronisation effectuée'
-							: '❌ Erreur lors de la synchronisation\n\nRôle notifié : <@&464706697408020482>',
-						color: color,
-						fields: [
-							{
-								name: "Membre",
-								value: m.nom,
-								inline: true
-							},
-							{
-								name: "Discord",
-								value: `<@${m.IDDiscord}>`,
-								inline: true
-							},
-							{
-								name: "Grade",
-								value: m.grade || "N/A",
-								inline: true
-							},
-							{
-								name: "Date",
-								value: dateStr,
-								inline: true
-							},
-							{ 
-								name: "Rôle notifié", 
-								value: `<@&464706697408020482>`, 
-								inline: false
-							}
-						],
-						footer: {
-							text: "Log automatique - Notification R.H."
-						},
-						timestamp: new Date()
-					};
-
-					sendDiscordWebhook({ 
-						embeds: [embed] 
-					});
 
 				}
 

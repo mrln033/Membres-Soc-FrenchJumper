@@ -2,26 +2,30 @@
 
 Ce depot GitHub Pages ne doit contenir aucun secret: pas de webhook Discord, pas de token, pas de cle admin.
 
-## Webhook Discord
+## Secrets Discord
 
 Le webhook qui etait dans `js/config.js` doit etre considere comme expose. A faire une seule fois:
 
 1. Regenerer ou supprimer l'ancien webhook dans Discord.
 2. Creer un nouveau webhook.
-3. Le stocker dans les proprietes du projet Apps Script:
+3. Stocker le nouveau webhook et le secret du proxy dans les proprietes du projet Apps Script:
 
 ```js
-PropertiesService.getScriptProperties().setProperty(
-  "DISCORD_WEBHOOK_RH",
-  "https://discord.com/api/webhooks/..."
-);
+DISCORD_WEBHOOK_RH = https://discord.com/api/webhooks/...
+DISCORD_PROXY_SECRET = valeur_du_secret_du_worker
 ```
 
-Ensuite, la notification doit etre declenchee cote GAS, idealement directement dans `syncDiscordFromWeb_`. Le webhook reste cote serveur et le front ne l'appelle jamais.
+`syncDiscordFromWeb` declenche maintenant la notification cote GAS. Le webhook reste cote serveur et le front ne l'appelle jamais. Le front transmet uniquement le `membreId`; le nom, l'identifiant Discord et le grade sont relus dans la feuille cote serveur.
 
-## Action GAS attendue
+## Implementation GAS
 
-Ajouter la notification cote Apps Script, soit dans `syncDiscordFromWeb_`, soit via une action POST admin separee:
+La fonction `notifyDiscordSyncLog_` de `gas/Code.gs` reproduit le rendu historique du webhook et lit `DISCORD_WEBHOOK_RH` dans les proprietes du script. Les appels au Worker lisent `DISCORD_PROXY_SECRET` au meme endroit.
+
+Apres toute modification de `gas/Code.gs`, mettre a jour le deploiement de l'application Web. Une nouvelle URL `/exec` n'est necessaire que si Google en genere une.
+
+## Exemple de routage admin futur
+
+Les actions sensibles devront a terme etre protegees par une authentification serveur:
 
 ```js
 function doPost(e) {
@@ -32,59 +36,9 @@ function doPost(e) {
       requireAdmin_(payload);
       return json_(syncDiscordFromWeb_(payload));
 
-    case "notifyDiscordSyncLog":
-      requireAdmin_(payload);
-      return json_(notifyDiscordSyncLog_(payload));
-
     default:
       return json_({ error: "Action POST inconnue" });
   }
-}
-
-function notifyDiscordSyncLog_(payload) {
-  const webhookUrl = PropertiesService
-    .getScriptProperties()
-    .getProperty("DISCORD_WEBHOOK_RH");
-
-  if (!webhookUrl) {
-    throw new Error("Webhook Discord non configure");
-  }
-
-  const success = payload.success === true;
-  const now = new Date();
-  const dateStr = Utilities.formatDate(
-    now,
-    Session.getScriptTimeZone(),
-    "dd/MM/yyyy HH:mm"
-  );
-
-  const embed = {
-    title: "Synchronisation Discord (pour verification)",
-    description: success
-      ? "Synchronisation effectuee"
-      : "Erreur lors de la synchronisation\n\nRole notifie : <@&464706697408020482>",
-    color: success ? 0x2ecc71 : 0xe74c3c,
-    fields: [
-      { name: "Membre", value: String(payload.nomAvatar || "N/A"), inline: true },
-      { name: "Discord", value: payload.discordId ? "<@" + payload.discordId + ">" : "N/A", inline: true },
-      { name: "Grade", value: String(payload.grade || "N/A"), inline: true },
-      { name: "Date", value: dateStr, inline: true },
-      { name: "Role notifie", value: "<@&464706697408020482>", inline: false }
-    ],
-    footer: {
-      text: "Log automatique - Notification R.H."
-    },
-    timestamp: now.toISOString()
-  };
-
-  UrlFetchApp.fetch(webhookUrl, {
-    method: "post",
-    contentType: "application/json",
-    payload: JSON.stringify({ embeds: [embed] }),
-    muteHttpExceptions: true
-  });
-
-  return { ok: true };
 }
 
 function json_(data) {
