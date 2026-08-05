@@ -83,22 +83,26 @@ function doPost(e) {
 
   // Commande slash /sync-frj depuis Discord
   if (data.data && data.data.name === "sync-frj") {
-    const user = data.data.options?.[0]?.user;
-    if (!user) {
+    const userOption = findDiscordUserOption_(data.data.options);
+    const legacyUser = userOption && userOption.user ? userOption.user : null;
+    const discordId = String(
+      (userOption && userOption.value) ||
+      (legacyUser && legacyUser.id) ||
+      ""
+    ).trim();
+
+    if (!discordId) {
       return ContentService.createTextOutput(JSON.stringify({
         type: 4,
         data: { content: "Erreur : utilisateur non fourni" }
       })).setMimeType(ContentService.MimeType.JSON);
     }
-    const discordId = user.id;
-    const nick = user.username;
-    const nomAvatar = nick;
 
-    syncFRJ(nomAvatar, discordId, nick);
+    const result = syncFRJ(discordId);
 
     return ContentService.createTextOutput(JSON.stringify({
       type: 4,
-      data: { content: "⌛ Synchronisation en cours..." }
+      data: { content: result }
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
@@ -123,6 +127,30 @@ function doPost(e) {
   return ContentService
     .createTextOutput(JSON.stringify({ success:false, error:"Action inconnue" }))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function findDiscordUserOption_(options) {
+  if (!Array.isArray(options)) {
+    return null;
+  }
+
+  for (const option of options) {
+    if (!option) {
+      continue;
+    }
+
+    // Type 6 = option USER dans une commande d'application Discord.
+    if (option.type === 6 || option.user) {
+      return option;
+    }
+
+    const nestedOption = findDiscordUserOption_(option.options);
+    if (nestedOption) {
+      return nestedOption;
+    }
+  }
+
+  return null;
 }
 
 function getMembres() {
@@ -278,36 +306,58 @@ function getMouvements() {
 
 
 
-function syncFRJ(nomAvatar, discordId, nick) {
+function syncFRJ(discordId) {
   const SHEET_ID = "1zLPKU-rfIU2tPnvnCaRwCC87MqOpOZ2EXjs9ANDBDBs";
   const SHEET_NAME = "MEMBRES_SOC";
+  const targetDiscordId = String(discordId || "").trim();
+
+  if (!targetDiscordId) {
+    return "❌ Erreur : ID Discord manquant.";
+  }
 
   const ss = SpreadsheetApp.openById(SHEET_ID);
   const sheet = ss.getSheetByName(SHEET_NAME);
 
   // Lecture uniquement de l'entête pour retrouver les index
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const idxNomAvatar = headers.indexOf("NomAvatar");
+  const idxMembreID = headers.indexOf("MembreID");
   const idxIDDiscord = headers.indexOf("IDDiscord");
 
-  if (idxNomAvatar === -1 || idxIDDiscord === -1) {
-    return "Erreur : colonnes NomAvatar ou IDDiscord non trouvées.";
+  if (idxMembreID === -1 || idxIDDiscord === -1) {
+    return "❌ Erreur : colonnes MembreID ou IDDiscord non trouvées.";
   }
 
   // Lecture des données
-  const values = sheet.getRange(2, 1, sheet.getLastRow()-1, headers.length).getValues();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return "⚠️ Aucun membre enregistré.";
+  }
 
-  // Recherche du membre
+  const values = sheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
+
+  // Recherche stricte du membre à partir de son ID Discord.
   for (let i = 0; i < values.length; i++) {
-    if (values[i][idxNomAvatar] === nomAvatar) {
-      // Mise à jour IDDiscord
-      sheet.getRange(i + 2, idxIDDiscord + 1).setValue(discordId);
-      return `✅ Synchronisation réussie pour ${nomAvatar} (Discord : ${nick})`;
+    const storedDiscordId = String(values[i][idxIDDiscord] || "").trim();
+
+    if (storedDiscordId === targetDiscordId) {
+      const membreId = values[i][idxMembreID];
+      const membre = getMembreById(membreId);
+
+      if (!membre) {
+        return "❌ Erreur : fiche membre introuvable.";
+      }
+
+      const syncResult = syncDiscordMembre_(membre);
+
+      if (!syncResult.success) {
+        return `❌ Synchronisation impossible pour ${membre.nomAvatar} : ${syncResult.error}`;
+      }
+
+      return `✅ Synchronisation réussie pour ${membre.nomAvatar} (<@${targetDiscordId}>)`;
     }
   }
 
-  // Si pas trouvé
-  return `⚠️ Membre introuvable : ${nomAvatar}`;
+  return `⚠️ Aucun membre trouvé avec l'ID Discord ${targetDiscordId}.`;
 }
 
 
