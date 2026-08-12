@@ -1,5 +1,14 @@
 import { EXIT_TYPES, getMemberTransition, normalizeAvatarName, parseEffectiveDate } from "./domain.js";
 import { removeDiscordRole } from "./discord.js";
+import {
+  flushPendingMutations,
+  getSyncStatus,
+  handleSyncQueue,
+  receiveGasMutation,
+  recordD1Mutation,
+  runSyncAudit,
+  SyncError
+} from "./sync.js";
 
 const MAX_BODY_BYTES = 32_000;
 
@@ -23,20 +32,32 @@ export default {
       }
 
       if (request.method === "GET") {
+        if (url.searchParams.get("action") === "getSyncStatus") {
+          if (!(await isAuthorized(request, env.ADMIN_TOKEN))) {
+            return withCors(json({ error: "Unauthorized" }, 401), origin, env);
+          }
+          return withCors(json(await getSyncStatus(env)), origin, env);
+        }
         return withCors(await handleGet(url, env), origin, env);
       }
 
       if (request.method === "POST") {
+        const data = await readJson(request);
+        if (data.action === "replicateFromGas") {
+          if (!(await isSyncAuthorized(data.syncSecret, env.SYNC_SHARED_SECRET))) {
+            return withCors(json({ error: "Unauthorized" }, 401), origin, env);
+          }
+          return withCors(json(await receiveGasMutation(env, data)), origin, env);
+        }
         if (!(await isAuthorized(request, env.ADMIN_TOKEN))) {
           return withCors(json({ error: "Unauthorized" }, 401), origin, env);
         }
-        const data = await readJson(request);
         return withCors(await handlePost(data, env), origin, env);
       }
 
       return withCors(json({ error: "Method not allowed" }, 405), origin, env);
     } catch (error) {
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError || error instanceof SyncError) {
         return withCors(json({ error: error.message }, error.status), origin, env);
       }
 
@@ -48,6 +69,14 @@ export default {
       }));
       return withCors(json({ error: "Erreur interne" }, 500), origin, env);
     }
+  },
+
+  async queue(batch, env) {
+    await handleSyncQueue(batch, env);
+  },
+
+  async scheduled(_controller, env) {
+    await Promise.all([flushPendingMutations(env), runSyncAudit(env)]);
   }
 };
 
@@ -154,6 +183,11 @@ async function handlePost(data, env) {
   if (data.action === "updateMembreInfos") return updateMemberInfo(data, env);
   if (data.action === "applyMembreAction") return applyMemberAction(data, env);
   if (data.action === "syncDiscordFromWeb") return syncDiscordFromWeb(data, env);
+  if (data.action === "getSyncStatus") return json(await getSyncStatus(env));
+  if (data.action === "runSyncAudit") return json(await runSyncAudit(env));
+  if (data.action === "retryPendingSync") {
+    return json({ success: true, queued: await flushPendingMutations(env) });
+  }
   return json({ success: false, error: "Action inconnue" }, 400);
 }
 
@@ -185,7 +219,14 @@ async function createOrOpenMember(data, env) {
     `).bind(movementId, memberId, now, effectiveAt, traveler.id)
   ]);
 
-  return json({ success: true, existing: false, membreId: memberId });
+  const sync = await safelyRecordD1Mutation(env, {
+    entityType: "MEMBER_AND_MOVEMENT",
+    entityId: memberId,
+    operation: "CREATE",
+    changedAt: new Date().toISOString(),
+    payload: await getMemberSyncPayload(env, memberId, movementId)
+  });
+  return json({ success: true, existing: false, membreId: memberId, sync });
 }
 
 async function updateMemberInfo(data, env) {
@@ -206,7 +247,14 @@ async function updateMemberInfo(data, env) {
   ).run();
 
   if (!result.meta.changes) throw new ApiError(404, "Membre introuvable");
-  return json({ success: true });
+  const sync = await safelyRecordD1Mutation(env, {
+    entityType: "MEMBER",
+    entityId: memberId,
+    operation: "UPDATE_INFO",
+    changedAt: new Date().toISOString(),
+    payload: await getMemberSyncPayload(env, memberId)
+  });
+  return json({ success: true, sync });
 }
 
 async function applyMemberAction(data, env) {
@@ -232,6 +280,7 @@ async function applyMemberAction(data, env) {
   const rulesAccepted = EXIT_TYPES.has(transition.movementType) ? 0 : null;
   const now = localIsoNow();
 
+  const movementId = crypto.randomUUID();
   await env.DB.batch([
     env.DB.prepare(`
       UPDATE members
@@ -245,7 +294,7 @@ async function applyMemberAction(data, env) {
         id, member_id, recorded_at, effective_at, movement_type, old_grade_id, new_grade_id, comment
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      crypto.randomUUID(), memberId, now, effectiveAt, transition.movementType,
+      movementId, memberId, now, effectiveAt, transition.movementType,
       currentGrade.id, transition.newGrade.id, transition.comment
     )
   ]);
@@ -257,12 +306,21 @@ async function applyMemberAction(data, env) {
     removeExitRole: EXIT_TYPES.has(transition.movementType)
   }, env);
 
+  const sync = await safelyRecordD1Mutation(env, {
+    entityType: "MEMBER_AND_MOVEMENT",
+    entityId: memberId,
+    operation: transition.movementType,
+    changedAt: new Date().toISOString(),
+    payload: await getMemberSyncPayload(env, memberId, movementId)
+  });
+
   return json({
     success: true,
     ancienGrade: currentGrade.name,
     nouveauGrade: transition.newGrade.name,
     typeMouvement: transition.movementType,
-    syncDiscord
+    syncDiscord,
+    sync
   });
 }
 
@@ -409,6 +467,74 @@ async function isAuthorized(request, expectedToken) {
     crypto.subtle.digest("SHA-256", encoder.encode(expectedToken))
   ]);
   return crypto.subtle.timingSafeEqual(left, right);
+}
+
+async function isSyncAuthorized(suppliedToken, expectedToken) {
+  if (!expectedToken || !suppliedToken) return false;
+  const encoder = new TextEncoder();
+  const [left, right] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(String(suppliedToken))),
+    crypto.subtle.digest("SHA-256", encoder.encode(String(expectedToken)))
+  ]);
+  return crypto.subtle.timingSafeEqual(left, right);
+}
+
+async function safelyRecordD1Mutation(env, mutation) {
+  try {
+    const mutationId = await recordD1Mutation(env, mutation);
+    return { accepted: true, mutationId, mode: env.SYNC_MODE || "observe" };
+  } catch (error) {
+    console.error(JSON.stringify({
+      message: "Unable to record D1 sync mutation",
+      entityId: mutation.entityId,
+      error: error instanceof Error ? error.message : String(error)
+    }));
+    return { accepted: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+async function getMemberSyncPayload(env, memberId, movementId = null) {
+  const member = await env.DB.prepare(`
+    SELECT id, avatar_name, grade_id, first_entry_at, created_at, updated_at,
+           discord_name, discord_id, on_frj_server, rules_accepted
+    FROM members WHERE id = ?
+  `).bind(memberId).first();
+  if (!member) throw new ApiError(404, "Membre introuvable");
+
+  let movement = null;
+  if (movementId) {
+    movement = await env.DB.prepare(`
+      SELECT id, member_id, recorded_at, effective_at, movement_type,
+             old_grade_id, new_grade_id, comment, manager_id
+      FROM movements WHERE id = ?
+    `).bind(movementId).first();
+  }
+
+  return {
+    member: {
+      id: member.id,
+      avatarName: member.avatar_name,
+      gradeId: member.grade_id,
+      firstEntryAt: member.first_entry_at,
+      createdAt: member.created_at,
+      updatedAt: member.updated_at,
+      discordName: member.discord_name,
+      discordId: member.discord_id,
+      onFrjServer: Boolean(member.on_frj_server),
+      rulesAccepted: Boolean(member.rules_accepted)
+    },
+    movement: movement ? {
+      id: movement.id,
+      memberId: movement.member_id,
+      recordedAt: movement.recorded_at,
+      effectiveAt: movement.effective_at,
+      movementType: movement.movement_type,
+      oldGradeId: movement.old_grade_id,
+      newGradeId: movement.new_grade_id,
+      comment: movement.comment,
+      managerId: movement.manager_id
+    } : null
+  };
 }
 
 function publicJson(data) {

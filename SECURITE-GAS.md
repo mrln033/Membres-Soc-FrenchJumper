@@ -74,3 +74,33 @@ function requireAdmin_(payload) {
 ```
 
 Cette cle simple est suffisante pour remplacer temporairement `?admin=1`, mais l'etape suivante la plus propre sera une authentification Google ou Discord OAuth si l'interface admin devient vraiment sensible.
+
+## Synchronisation bidirectionnelle GAS / D1
+
+La synchronisation est volontairement sans effet tant que la propriete `SYNC_ENABLED` ne vaut pas `true`.
+Une panne de synchronisation ne doit jamais annuler une ecriture GAS deja reussie : la mutation est placee dans
+la feuille masquee `SYNC_OUTBOX` et sera reessayee par le trigger `flushSyncOutbox`.
+
+Fichiers a publier dans le meme projet Apps Script :
+
+- `gas/Code.gs` ;
+- `gas/Sync.gs` dans un second fichier de script `Sync`.
+
+Proprietes Apps Script necessaires :
+
+```text
+D1_SYNC_URL = https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev
+SYNC_SHARED_SECRET = valeur identique au secret Cloudflare
+SYNC_ENABLED = false
+```
+
+Ordre d'activation :
+
+1. Ajouter les deux fichiers et les proprietes ci-dessus avec `SYNC_ENABLED=false`.
+2. Deployer une nouvelle version de l'application Web en conservant l'URL `/exec` actuelle.
+3. Executer manuellement `setupBidirectionalSync` une fois depuis l'editeur Apps Script et accepter les autorisations.
+4. Verifier le tableau `sync.html?backend=d1&admin=1`.
+5. Passer `SYNC_ENABLED=true`, puis activer `SYNC_MODE=active` dans le Worker seulement apres un test controle.
+
+Les mutations recues de D1 mettent a jour les feuilles sans appeler Discord et sans creer une mutation inverse.
+Le trigger installable `syncMemberManualEdit` capture uniquement les modifications manuelles de `MEMBRES_SOC`.

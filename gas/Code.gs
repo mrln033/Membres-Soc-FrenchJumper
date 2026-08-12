@@ -107,6 +107,14 @@ function doPost(e) {
   }
 
   // Cas front web
+  if (data.action === "replicateFromD1") {
+    return replicateFromD1_(data);
+  }
+
+  if (data.action === "getGasSyncSnapshot") {
+    return getGasSyncSnapshot_(data);
+  }
+
   if (data.action === "syncDiscordFromWeb") {
     return syncDiscordFromWeb(data);
   }
@@ -722,7 +730,8 @@ function applyMembreAction(data) {
     const histHeaders = sheetH.getRange(1, 1, 1, sheetH.getLastColumn()).getValues()[0];
     const histRow = new Array(histHeaders.length).fill("");
 
-    histRow[mapH["MouvementID"]] = Utilities.getUuid();
+    const mouvementId = Utilities.getUuid();
+    histRow[mapH["MouvementID"]] = mouvementId;
     histRow[mapH["MembreID"]] = membreId;
     histRow[mapH["DateHeureSaisie"]] = new Date();
     histRow[mapH["DateEffective"]] = dateEffective;
@@ -738,13 +747,20 @@ function applyMembreAction(data) {
       ? { removeRoleIds: ["1189173135380058133"] }
       : {};
     const syncDiscord = syncDiscordMembre_(membrePourDiscord, syncOptions);
+    const syncReplication = enqueueGasMemberMutation_(
+      membreId,
+      mouvementId,
+      "GAS",
+      transition.typeMouvement
+    );
 
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
       ancienGrade: ancienGrade.nom,
       nouveauGrade: transition.nouveauGrade.nom,
       typeMouvement: transition.typeMouvement,
-      syncDiscord: syncDiscord
+      syncDiscord: syncDiscord,
+      syncReplication: syncReplication
     })).setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {
@@ -793,8 +809,11 @@ function updateMembreInfos(data) {
     sheetM.getRange(membreRowIndex, mapM["RegleSoc"] + 1).setValue(data.regleSoc === true || data.regleSoc === "true");
     sheetM.getRange(membreRowIndex, mapM["ServeurFRJ"] + 1).setValue(data.serveurFRJ === true || data.serveurFRJ === "true");
 
+    const syncReplication = enqueueGasMemberMutation_(membreId, null, "GAS", "UPDATE_INFO");
+
     return ContentService.createTextOutput(JSON.stringify({
-      success: true
+      success: true,
+      syncReplication: syncReplication
     })).setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {
@@ -1126,7 +1145,8 @@ function createOrOpenMembre(data) {
     const histHeaders = sheetH.getRange(1, 1, 1, sheetH.getLastColumn()).getValues()[0];
     const histRow = new Array(histHeaders.length).fill("");
 
-    histRow[mapH["MouvementID"]] = Utilities.getUuid();
+    const mouvementId = Utilities.getUuid();
+    histRow[mapH["MouvementID"]] = mouvementId;
     histRow[mapH["MembreID"]] = membreId;
     histRow[mapH["DateHeureSaisie"]] = new Date();
     histRow[mapH["DateEffective"]] = dateEffective;
@@ -1141,10 +1161,13 @@ function createOrOpenMembre(data) {
 
     sheetH.appendRow(histRow);
 
+    const syncReplication = enqueueGasMemberMutation_(membreId, mouvementId, "GAS", "CREATE");
+
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
       existing: false,
-      membreId: membreId
+      membreId: membreId,
+      syncReplication: syncReplication
     })).setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {

@@ -75,6 +75,7 @@ iframe{
 			<li onclick="loadPage('anciens.html')">Anciens Membres</li>
 			<li id="menuNouveauMembre" onclick="loadPage('nouveau.html')" style="display:none;">Nouveau Membre</li>
 			<li onclick="loadPage('mouvements.html')">Mouvements</li>
+			<li id="menuSynchronisation" onclick="loadPage('sync.html')" style="display:none;">Synchronisation GAS / D1</li>
 		</ul>
 
     </div>
@@ -89,6 +90,7 @@ iframe{
 
 // appel au chargement
 checkAdminParam();
+document.getElementById("mainFrame").src = buildPageUrl("actifs.html");
 
 function checkAdminParam() {
 	console.log("Fonction : index.html - checkAdminParam()");
@@ -97,6 +99,9 @@ function checkAdminParam() {
     if (params.get("admin") === "1") {
         sessionStorage.setItem("admin", "true");
         document.getElementById("menuNouveauMembre").style.display = "";
+        if (preferredBackend === "d1") {
+            document.getElementById("menuSynchronisation").style.display = "";
+        }
     } else {
         sessionStorage.removeItem("admin");
     }
@@ -104,7 +109,14 @@ function checkAdminParam() {
 
 function loadPage(page){
 	console.log("Fonction : index.html - loadPage(page)");
-    document.getElementById("mainFrame").src = page;
+    document.getElementById("mainFrame").src = buildPageUrl(page);
+}
+
+function buildPageUrl(page) {
+    const url = new URL(page, window.location.href);
+    if (preferredBackend === "d1") url.searchParams.set("backend", "d1");
+    if (sessionStorage.getItem("admin") === "true") url.searchParams.set("admin", "1");
+    return url.pathname.split("/").pop() + url.search;
 }
 
 </script>

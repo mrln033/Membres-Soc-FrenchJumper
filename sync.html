@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Synchronisation GAS / D1</title>
+  <link rel="icon" href="./favicon.ico">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/config.js"></script>
+  <script src="js/client.js"></script>
+</head>
+<body>
+  <div class="header">
+    <a href="index.html" class="link-header"><h3>&lt;&lt; Accueil</h3></a>
+    <h3>Synchronisation GAS / D1</h3>
+  </div>
+  <main class="container">
+    <div class="card">
+      <h2>État de la réplication</h2>
+      <p id="syncSummary">Chargement…</p>
+      <button id="auditButton" type="button">Contrôler maintenant</button>
+      <button id="retryButton" type="button">Relancer les attentes</button>
+    </div>
+    <div class="card">
+      <h2>Dernier contrôle</h2>
+      <pre id="syncAudit">Aucun contrôle</pre>
+    </div>
+    <div class="card">
+      <h2>Mutations récentes</h2>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>Date</th><th>Source</th><th>Cible</th><th>Opération</th><th>État</th><th>Essais</th><th>Erreur</th></tr></thead>
+          <tbody id="syncRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+  <script>
+    const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
+    async function loadSyncStatus() {
+      if (!isAdmin || preferredBackend !== "d1") {
+        document.getElementById("syncSummary").textContent = "Ouvrir avec ?backend=d1&admin=1";
+        return;
+      }
+      const data = await apiRequest("getSyncStatus", {}, "POST");
+      document.getElementById("syncSummary").textContent = data.counts.length
+        ? data.counts.map(item => `${item.target} ${item.status}: ${item.count}`).join(" · ")
+        : "Aucune mutation enregistrée";
+      document.getElementById("syncAudit").textContent = data.lastAudit
+        ? JSON.stringify(data.lastAudit, null, 2) : "Aucun contrôle";
+      document.getElementById("syncRows").innerHTML = data.recent.map(item => `<tr>
+        <td>${esc(item.created_at)}</td><td>${esc(item.source)}</td><td>${esc(item.target)}</td>
+        <td>${esc(item.operation)}</td><td>${esc(item.status)}</td><td>${esc(item.attempts)}</td>
+        <td>${esc(item.last_error || "")}</td></tr>`).join("");
+    }
+    document.getElementById("auditButton").onclick = async () => { await apiRequest("runSyncAudit", {}, "POST"); await loadSyncStatus(); };
+    document.getElementById("retryButton").onclick = async () => { await apiRequest("retryPendingSync", {}, "POST"); await loadSyncStatus(); };
+    loadSyncStatus().catch(error => { document.getElementById("syncSummary").textContent = error.message; });
+  </script>
+</body>
+</html>

@@ -21,6 +21,16 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - La synchronisation standard passe par un Service Binding vers le Worker existant `discord-proxy` ; son code et son déploiement ne sont pas modifiés.
 - Le retrait du rôle « Règlement Soc OK » est exécuté directement par ce nouveau Worker, uniquement après une synchronisation standard réussie et uniquement pour un mouvement de sortie.
 
+## Synchronisation bidirectionnelle
+
+- `SYNC_MODE=observe` journalise sans expédier vers GAS ; `active` active la file ; `off` la coupe.
+- `frj-membres-sync` assure les reprises vers GAS et `frj-membres-sync-dlq` conserve les échecs définitifs.
+- Chaque mutation possède un UUID utilisé comme clé d'idempotence.
+- Les mouvements sont append-only et dédupliqués par `MouvementID`.
+- Les réplications ne rappellent jamais Discord et ne réémettent jamais une mutation inverse.
+- Un cron toutes les dix minutes relance les mutations en attente et contrôle les compteurs GAS/D1.
+- Le tableau administrateur est disponible via `sync.html?backend=d1&admin=1`.
+
 ## Contrat HTTP compatible
 
 - `GET /?action=getMembres`
@@ -47,6 +57,7 @@ Avant d'activer les écritures distantes, configurer ces secrets avec `wrangler 
 - `DISCORD_PROXY_SECRET` : secret déjà attendu par `discord-proxy` ;
 - `DISCORD_BOT_TOKEN` : token du bot déjà utilisé par GAS ;
 - `DISCORD_GUILD_ID` : identifiant du serveur Discord.
+- `SYNC_SHARED_SECRET` : secret commun au Worker et aux propriétés Apps Script.
 
 Le token du bot et les autres secrets ne doivent jamais être ajoutés à `wrangler.jsonc` ni à Git.
 
