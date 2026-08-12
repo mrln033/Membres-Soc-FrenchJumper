@@ -38,6 +38,9 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 5. `npm test`
 6. `npm run dev`
 
+Pour tester le site local avec D1 sans publier GitHub Pages, lancer `npm run dev:site`, puis ouvrir
+`http://127.0.0.1:8787/?backend=d1`. Le serveur écoute uniquement sur la machine locale.
+
 Avant d'activer les écritures distantes, configurer ces secrets avec `wrangler secret put` :
 
 - `ADMIN_TOKEN` : jeton réservé à l'interface d'administration D1 ;

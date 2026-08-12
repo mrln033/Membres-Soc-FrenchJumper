@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --local --ip 127.0.0.1 --port 8787",
+    "dev:site": "node tools/serve-site.mjs",
     "test": "node --test",
     "check": "node --check src/index.js && node --check src/domain.js && node --check src/discord.js && node --check tools/build-seed.mjs",
     "build:seed": "node tools/build-seed.mjs seed/source-export.json seed/initial.sql",
