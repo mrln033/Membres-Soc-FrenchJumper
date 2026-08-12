@@ -11,7 +11,8 @@
     }
   },
   "vars": {
-    "PUBLIC_SITE_ORIGIN": "https://mrln033.github.io"
+    "PUBLIC_SITE_ORIGIN": "https://mrln033.github.io",
+    "RULES_ACCEPTED_ROLE_ID": "1189173135380058133"
   },
   "services": [
     {

@@ -1,4 +1,5 @@
 import { EXIT_TYPES, getMemberTransition, normalizeAvatarName, parseEffectiveDate } from "./domain.js";
+import { removeDiscordRole } from "./discord.js";
 
 const MAX_BODY_BYTES = 32_000;
 
@@ -308,7 +309,20 @@ async function syncDiscordMember(member, env) {
     if (!response.ok || result.success !== true) {
       return { success: false, error: result.error || `Proxy Discord HTTP ${response.status}` };
     }
-    return { success: true };
+
+    if (member.removeExitRole) {
+      await removeDiscordRole({
+        discordId: member.discordId,
+        guildId: env.DISCORD_GUILD_ID,
+        roleId: env.RULES_ACCEPTED_ROLE_ID,
+        botToken: env.DISCORD_BOT_TOKEN
+      });
+    }
+
+    return {
+      success: true,
+      removedRulesAcceptedRole: Boolean(member.removeExitRole)
+    };
   } catch (error) {
     console.error(JSON.stringify({ message: "Discord sync failed", error: error.message, memberId: member.discordId }));
     return { success: false, error: error.message };
