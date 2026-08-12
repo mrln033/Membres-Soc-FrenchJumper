@@ -1,44 +1,65 @@
 async function apiRequest(action, data = null, method = "GET") {
 	console.log("Fonction : client.js - apiRequest(action, data = null, method = 'GET')");
+    const normalizedMethod = String(method || "GET").toUpperCase();
+    const isWrite = normalizedMethod !== "GET" && normalizedMethod !== "HEAD";
 
-    try {
-
-        let url = API_URL;
-        let options = { method };
-
-        if (method === "GET") {
-
-            // construction URL avec query params
-            const params = new URLSearchParams({ action, ...data });
-            url += "?" + params.toString();
-
-        } else {
-
-            // POST
-            options.body = JSON.stringify({ action, ...data });
-
-        }
-
-        const res = await fetch(url, options);
-
-        if (!res.ok) {
-            throw new Error("Erreur HTTP : " + res.status);
-        }
-
-        const json = await res.json();
-
-        if (json.error) {
-            throw new Error(json.error);
-        }
-
-        return json;
-
-    } catch (err) {
-
-        console.error("API ERROR:", err);
-        throw err;
-
+    if (isWrite) {
+        return apiRequestToBackend(preferredBackend, action, data, normalizedMethod);
     }
+
+    const fallbackBackend = preferredBackend === "d1" ? "gas" : "d1";
+    let lastError;
+
+    for (const backend of [preferredBackend, fallbackBackend]) {
+        try {
+            return await apiRequestToBackend(backend, action, data, normalizedMethod);
+        } catch (err) {
+            lastError = err;
+            console.warn(`Lecture ${backend.toUpperCase()} indisponible, tentative de repli.`, err);
+        }
+    }
+
+    console.error("API ERROR:", lastError);
+    throw lastError || new Error("Aucun backend disponible");
+}
+
+async function apiRequestToBackend(backend, action, data, method) {
+    let url = API_BACKENDS[backend];
+    const options = { method, headers: {} };
+
+    if (method === "GET") {
+        const params = new URLSearchParams({ action, ...(data || {}) });
+        url += "?" + params.toString();
+    } else {
+        options.headers["Content-Type"] = "application/json";
+        options.body = JSON.stringify({ action, ...(data || {}) });
+
+        if (backend === "d1") {
+            options.headers.Authorization = "Bearer " + getD1AdminToken();
+        }
+    }
+
+    const res = await fetch(url, options);
+
+    if (backend === "d1" && res.status === 401) {
+        clearD1AdminToken();
+        throw new Error("Jeton administrateur D1 refusé. Recharge la page puis saisis le nouveau jeton.");
+    }
+
+    if (!res.ok) {
+        let details = "";
+        try {
+            const errorPayload = await res.json();
+            details = errorPayload.error || "";
+        } catch (err) {
+            details = await res.text().catch(() => "");
+        }
+        throw new Error(details || `Erreur HTTP ${res.status} (${backend.toUpperCase()})`);
+    }
+
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+    return json;
 }
 
 function escapeHtml(value) {

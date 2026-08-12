@@ -1,0 +1,11 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+.env.*
+worker-configuration.d.ts
+
+# Exports et snapshots privés contenant les données membres/Discord.
+*.xlsx
+cloudflare/membres-soc-api/seed/*.json
+cloudflare/membres-soc-api/seed/*.sql

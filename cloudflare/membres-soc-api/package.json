@@ -1,0 +1,22 @@
+{
+  "name": "frj-membres-soc-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local --ip 127.0.0.1 --port 8787",
+    "test": "node --test",
+    "check": "node --check src/index.js && node --check src/domain.js && node --check tools/build-seed.mjs",
+    "build:seed": "node tools/build-seed.mjs seed/source-export.json seed/initial.sql",
+    "db:migrate:local": "wrangler d1 migrations apply frj-membres-soc --local",
+    "db:seed:local": "wrangler d1 execute frj-membres-soc --local --file seed/initial.sql",
+    "db:migrate:remote": "wrangler d1 migrations apply frj-membres-soc --remote",
+    "db:seed:remote": "wrangler d1 execute frj-membres-soc --remote --file seed/initial.sql",
+    "deploy": "wrangler deploy",
+    "deploy:dry": "wrangler deploy --dry-run"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260812.1",
+    "@types/node": "^26.2.0",
+    "wrangler": "^4.0.0"
+  }
+}

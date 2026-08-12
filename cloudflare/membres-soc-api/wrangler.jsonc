@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "frj-membres-soc-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "head_sampling_rate": 1
+    }
+  },
+  "vars": {
+    "PUBLIC_SITE_ORIGIN": "https://mrln033.github.io"
+  },
+  "services": [
+    {
+      "binding": "DISCORD_PROXY",
+      "service": "discord-proxy"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "frj-membres-soc",
+      "database_id": "09b3c024-99f9-4add-a12c-ed214a462df5",
+      "preview_database_id": "local",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
