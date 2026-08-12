@@ -14,7 +14,7 @@
     "PUBLIC_SITE_ORIGIN": "https://mrln033.github.io",
     "RULES_ACCEPTED_ROLE_ID": "1189173135380058133",
     "GAS_SYNC_URL": "https://script.google.com/macros/s/AKfycbzf40jOrUs79_O5PASuc7Y-OOZv_C2RZV1bY7r97WhF8iVVQ6f4nIpBCCRh_0IOIozSew/exec",
-    "SYNC_MODE": "observe"
+    "SYNC_MODE": "active"
   },
   "queues": {
     "producers": [
