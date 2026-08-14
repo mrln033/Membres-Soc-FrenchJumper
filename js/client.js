@@ -31,7 +31,12 @@ async function apiRequestToBackend(backend, action, data, method) {
         const params = new URLSearchParams({ action, ...(data || {}) });
         url += "?" + params.toString();
     } else {
-        options.headers["Content-Type"] = "application/json";
+        // Un POST application/json déclenche un preflight CORS que les Web Apps
+        // Apps Script ne savent pas traiter. Le corps reste du JSON, mais GAS est
+        // envoyé en text/plain afin que la requête reste une requête CORS simple.
+        options.headers["Content-Type"] = backend === "gas"
+            ? "text/plain;charset=UTF-8"
+            : "application/json";
         options.body = JSON.stringify({ action, ...(data || {}) });
 
         if (backend === "d1") {
@@ -642,8 +647,13 @@ function buildCardMembre(m, mouvements) {
 					btn.innerText = "✅ OK";
 
 				} catch(err) {
-				
+					console.error("Synchronisation Discord impossible :", err);
 					btn.innerText = "❌ Erreur";
+					await openInfoModal(
+						"Synchronisation Discord",
+						"Synchronisation impossible : " + (err.message || String(err)),
+						"warning"
+					);
 
 				} finally {
 

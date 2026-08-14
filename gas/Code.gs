@@ -1219,31 +1219,13 @@ function syncDiscordFromWeb(data) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    const proxySecret = getRequiredScriptProperty_("DISCORD_PROXY_SECRET");
-
-    // Appel vers Worker Cloudflare
-    const response = UrlFetchApp.fetch(
-      "https://discord-proxy.merlin-merzhin-lesage.workers.dev/sync",
-      {
-        method: "POST",
-        contentType: "application/json",
-        payload: JSON.stringify({
-          discordId: membre.discordId,
-          nomAvatar: membre.nomAvatar,
-          niveau: membre.niveau,
-          secret: proxySecret
-        }),
-        muteHttpExceptions: true
-      }
-    );
-
-    const result = JSON.parse(response.getContentText());
-    notifyDiscordSyncLog_(membre, result.success === true);
+    const result = syncDiscordMembre_(membre);
+    notifyDiscordSyncLog_(membre, result.success);
 
     if (result.success) {
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
-        message: `✅ Synchronisation envoyée pour ${membre.nomAvatar}`
+        message: result.message
       })).setMimeType(ContentService.MimeType.JSON);
     }
 

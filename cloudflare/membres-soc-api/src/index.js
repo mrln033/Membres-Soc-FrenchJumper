@@ -363,7 +363,16 @@ async function syncDiscordMember(member, env) {
         secret: env.DISCORD_PROXY_SECRET
       })
     });
-    const result = JSON.parse(await readBoundedText(response.body, 2_000) || "{}");
+    const responseText = await readBoundedText(response.body, 2_000);
+    let result;
+    try {
+      result = JSON.parse(responseText || "{}");
+    } catch (_error) {
+      return {
+        success: false,
+        error: `Réponse invalide du proxy Discord (HTTP ${response.status})`
+      };
+    }
     if (!response.ok || result.success !== true) {
       return { success: false, error: result.error || `Proxy Discord HTTP ${response.status}` };
     }
