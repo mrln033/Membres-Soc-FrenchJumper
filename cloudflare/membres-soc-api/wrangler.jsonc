@@ -14,7 +14,7 @@
     "PUBLIC_SITE_ORIGIN": "https://mrln033.github.io",
     // Garde de déploiement : passer à "discord" seulement après avoir posé les
     // secrets OAuth/session et publié la nouvelle version GAS.
-    "ADMIN_AUTH_MODE": "legacy",
+    "ADMIN_AUTH_MODE": "discord",
     // À laisser vrai uniquement durant le chevauchement ancien/nouveau frontend.
     "ALLOW_LEGACY_ADMIN_TOKEN": "true",
     // Identifiant public de l'application Discord utilisée pour OAuth.
