@@ -63,15 +63,16 @@ Secrets historiques nécessaires :
 - `DISCORD_GUILD_ID` : identifiant du serveur Discord.
 - `SYNC_SHARED_SECRET` : secret commun au Worker et aux propriétés Apps Script.
 
-Secrets nécessaires à OAuth Discord :
+Configuration nécessaire à OAuth Discord :
 
-- `DISCORD_OAUTH_CLIENT_ID` : identifiant de l'application Discord ;
+- `DISCORD_OAUTH_CLIENT_ID` : identifiant public de l'application, conservé dans `wrangler.jsonc` ;
 - `DISCORD_OAUTH_CLIENT_SECRET` : secret OAuth de l'application ;
 - `ADMIN_SESSION_SECRET` : secret aléatoire de signature, identique dans les propriétés Apps Script ;
 - `ADMIN_DISCORD_ROLE_IDS` : IDs des rôles autorisés, séparés par des virgules.
 
 Variables non secrètes de migration dans `wrangler.jsonc` :
 
+- `DISCORD_OAUTH_CLIENT_ID` : `1479825051522957462` ;
 - `DISCORD_OAUTH_REDIRECT_URI` : callback déclaré à l'identique dans le portail Discord ;
 - `ADMIN_AUTH_MODE` : `legacy` pendant l'installation, puis `discord` ;
 - `ALLOW_LEGACY_ADMIN_TOKEN` : `true` pendant le chevauchement des frontends, puis impérativement `false`.

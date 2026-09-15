@@ -69,10 +69,10 @@ npx wrangler secret list
 La liste doit déjà contenir au minimum `ADMIN_TOKEN`, `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`,
 `DISCORD_PROXY_SECRET` et `SYNC_SHARED_SECRET`. La commande ne révèle pas leurs valeurs.
 
-Ajouter les nouveaux secrets un par un ; Wrangler demande la valeur sans l'écrire dans le dépôt :
+Le Client ID public est déjà versionné dans `wrangler.jsonc`. Ajouter uniquement les secrets ; Wrangler demande
+leur valeur sans l'écrire dans le dépôt :
 
 ```powershell
-npx wrangler secret put DISCORD_OAUTH_CLIENT_ID
 npx wrangler secret put DISCORD_OAUTH_CLIENT_SECRET
 npx wrangler secret put ADMIN_SESSION_SECRET
 npx wrangler secret put ADMIN_DISCORD_ROLE_IDS
