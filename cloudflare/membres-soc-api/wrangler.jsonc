@@ -12,6 +12,12 @@
   },
   "vars": {
     "PUBLIC_SITE_ORIGIN": "https://mrln033.github.io",
+    // Garde de déploiement : passer à "discord" seulement après avoir posé les
+    // secrets OAuth/session et publié la nouvelle version GAS.
+    "ADMIN_AUTH_MODE": "legacy",
+    // À laisser vrai uniquement durant le chevauchement ancien/nouveau frontend.
+    "ALLOW_LEGACY_ADMIN_TOKEN": "true",
+    "DISCORD_OAUTH_REDIRECT_URI": "https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev/auth/discord/callback",
     "RULES_ACCEPTED_ROLE_ID": "1189173135380058133",
     "GAS_SYNC_URL": "https://script.google.com/macros/s/AKfycbzf40jOrUs79_O5PASuc7Y-OOZv_C2RZV1bY7r97WhF8iVVQ6f4nIpBCCRh_0IOIozSew/exec",
     "SYNC_MODE": "active"

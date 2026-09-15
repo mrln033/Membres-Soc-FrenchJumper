@@ -23,57 +23,38 @@ La fonction `notifyDiscordSyncLog_` de `gas/Code.gs` reproduit le rendu historiq
 
 Apres toute modification de `gas/Code.gs`, mettre a jour le deploiement de l'application Web. Une nouvelle URL `/exec` n'est necessaire que si Google en genere une.
 
-## Exemple de routage admin futur
+## Authentification Admin Discord
 
-Les actions sensibles devront a terme etre protegees par une authentification serveur:
+`?admin=1` reste uniquement un interrupteur d'affichage. Il ne donne aucun droit côté Worker ou GAS.
 
-```js
-function doPost(e) {
-  const payload = JSON.parse(e.postData.contents || "{}");
+Le Worker réalise le parcours OAuth2 Discord avec le scope minimal `identify`, émet une session HMAC-SHA256 de
+30 minutes, puis relit les rôles Discord du demandeur avant chaque action sensible. GAS vérifie la même signature et
+relit également les rôles avant ses écritures de secours.
 
-  switch (payload.action) {
-    case "syncDiscordFromWeb":
-      requireAdmin_(payload);
-      return json_(syncDiscordFromWeb_(payload));
+Propriétés Apps Script à ajouter avant l'activation :
 
-    default:
-      return json_({ error: "Action POST inconnue" });
-  }
-}
-
-function json_(data) {
-  return ContentService
-    .createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+```text
+ADMIN_AUTH_MODE = legacy
+ADMIN_SESSION_SECRET = valeur identique au secret Cloudflare
+ADMIN_DISCORD_ROLE_IDS = id_role_chef,id_role_conseiller
 ```
 
-## Admin a terme
+`BOT_TOKEN` et `GUILD_ID` sont utilisés côté GAS pour interroger le membre Discord. Aucun de ces secrets ne doit être
+transmis dans l'URL ou ajouté au dépôt.
 
-Le parametre `?admin=1` peut rester un interrupteur d'affichage pendant le developpement, mais il ne doit jamais decider des droits.
+Actions protégées dans `doPost` :
 
-La cible recommandee:
+- `syncDiscordFromWeb` ;
+- `applyMembreAction` ;
+- `createOrOpenMembre` ;
+- `updateMembreInfos`.
 
-- Meme fichier HTML pour le public et l'admin.
-- Le front affiche les boutons admin seulement si `getSession` ou `getMe` renvoie `isAdmin: true`.
-- Chaque action sensible cote GAS appelle `requireAdmin_`.
-- Les donnees admin-only ne sont jamais envoyees dans les endpoints publics.
+Les actions `replicateFromD1` et `getGasSyncSnapshot` conservent leur authentification séparée par
+`SYNC_SHARED_SECRET`. Les interactions Discord existantes restent traitées avant le routage Web.
 
-Exemple de garde cote GAS:
-
-```js
-function requireAdmin_(payload) {
-  const adminKey = PropertiesService
-    .getScriptProperties()
-    .getProperty("ADMIN_KEY");
-
-  if (!adminKey || payload.adminKey !== adminKey) {
-    throw new Error("Acces admin refuse");
-  }
-}
-```
-
-Cette cle simple est suffisante pour remplacer temporairement `?admin=1`, mais l'etape suivante la plus propre sera une authentification Google ou Discord OAuth si l'interface admin devient vraiment sensible.
+Le mode `legacy` est volontairement le défaut tant que le nouveau frontend n'est pas publié. Après validation du
+parcours complet, passer `ADMIN_AUTH_MODE=discord` dans GAS. Le guide détaillé et le retour arrière figurent dans
+`DEPLOIEMENT-OAUTH-DISCORD.md`.
 
 ## Synchronisation bidirectionnelle GAS / D1
 
@@ -99,7 +80,7 @@ Ordre d'activation :
 1. Ajouter les deux fichiers et les proprietes ci-dessus avec `SYNC_ENABLED=false`.
 2. Deployer une nouvelle version de l'application Web en conservant l'URL `/exec` actuelle.
 3. Executer manuellement `setupBidirectionalSync` une fois depuis l'editeur Apps Script et accepter les autorisations.
-4. Verifier le tableau `sync.html?backend=d1&admin=1`.
+4. Vérifier le tableau `sync.html?admin=1` (D1 est désormais le backend par défaut).
 5. Passer `SYNC_ENABLED=true`, puis activer `SYNC_MODE=active` dans le Worker seulement apres un test controle.
 
 Les mutations recues de D1 mettent a jour les feuilles sans appeler Discord et sans creer une mutation inverse.

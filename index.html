@@ -92,6 +92,12 @@ iframe{
 checkAdminParam();
 document.getElementById("mainFrame").src = buildPageUrl("actifs.html");
 
+// Vérifie D1 avant toute action et ouvre OAuth tôt en mode Admin, afin que le
+// formulaire Nouveau Membre ne soit jamais interrompu par une demande de login.
+ensurePreferredBackendAvailable()
+    .then(() => prepareAdminAuthentication())
+    .catch(error => console.error("Initialisation :", error));
+
 function checkAdminParam() {
 	console.log("Fonction : index.html - checkAdminParam()");
     const params = new URLSearchParams(window.location.search);
@@ -113,10 +119,7 @@ function loadPage(page){
 }
 
 function buildPageUrl(page) {
-    const url = new URL(page, window.location.href);
-    if (preferredBackend === "d1") url.searchParams.set("backend", "d1");
-    if (sessionStorage.getItem("admin") === "true") url.searchParams.set("admin", "1");
-    return url.pathname.split("/").pop() + url.search;
+    return buildInternalPageUrl(page);
 }
 
 </script>

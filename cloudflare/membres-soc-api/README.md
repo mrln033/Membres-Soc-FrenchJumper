@@ -6,18 +6,22 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 
 - Base D1 distante : `frj-membres-soc` (`09b3c024-99f9-4add-a12c-ed214a462df5`), région WEUR.
 - Worker déployé : <https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev>.
-- Le site publié reste sur GAS par défaut.
-- Tant que `ADMIN_TOKEN` et les secrets Discord ne sont pas configurés, les écritures D1 restent volontairement indisponibles.
+- La version préparée du site utilise D1 par défaut et redirige vers GAS si la sonde `/health` échoue.
+- `ADMIN_AUTH_MODE=legacy` conserve temporairement l'authentification actuelle pendant le déploiement progressif.
+- En mode `discord`, les écritures exigent une session OAuth valide et l'un des rôles Discord autorisés.
 - Lors d'une sortie, d'une désertion ou d'un bannissement, D1 retire aussi le rôle « Règlement Soc OK » (`1189173135380058133`).
 
 ## Sécurité de la migration
 
-- Le site publié continue d'appeler GAS par défaut.
+- L'absence de paramètre `backend` sélectionne D1 ; seul `backend=gas` force le secours GAS.
 - Le Worker D1 possède son propre nom, sa propre configuration et sa propre base.
 - Les exports XLSX et les snapshots SQL/JSON sont ignorés par Git.
 - Les lectures sont publiques pour conserver le contrat actuel.
-- Toutes les écritures exigent `Authorization: Bearer <ADMIN_TOKEN>`.
-- Une écriture ne doit jamais basculer automatiquement vers un autre backend.
+- Toutes les écritures D1 exigent `Authorization: Bearer <session>`.
+- En mode Discord, le Worker relit les rôles du membre avant chaque écriture ; un retrait de rôle est donc immédiat.
+- `ALLOW_LEGACY_ADMIN_TOKEN=true` est exclusivement une garde de migration et doit être remis à `false` après publication.
+- Une écriture n'est jamais rejouée automatiquement vers l'autre backend : un délai réseau ne permet pas de savoir
+  si la première écriture a déjà été appliquée.
 - La synchronisation standard passe par un Service Binding vers le Worker existant `discord-proxy` ; son code et son déploiement ne sont pas modifiés.
 - Le retrait du rôle « Règlement Soc OK » est exécuté directement par ce nouveau Worker, uniquement après une synchronisation standard réussie et uniquement pour un mouvement de sortie.
 
@@ -49,9 +53,9 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 6. `npm run dev`
 
 Pour tester le site local avec D1 sans publier GitHub Pages, lancer `npm run dev:site`, puis ouvrir
-`http://127.0.0.1:8787/?backend=d1`. Le serveur écoute uniquement sur la machine locale.
+`http://127.0.0.1:8787/`. Le serveur écoute uniquement sur la machine locale.
 
-Avant d'activer les écritures distantes, configurer ces secrets avec `wrangler secret put` :
+Secrets historiques nécessaires :
 
 - `ADMIN_TOKEN` : jeton réservé à l'interface d'administration D1 ;
 - `DISCORD_PROXY_SECRET` : secret déjà attendu par `discord-proxy` ;
@@ -59,6 +63,22 @@ Avant d'activer les écritures distantes, configurer ces secrets avec `wrangler 
 - `DISCORD_GUILD_ID` : identifiant du serveur Discord.
 - `SYNC_SHARED_SECRET` : secret commun au Worker et aux propriétés Apps Script.
 
+Secrets nécessaires à OAuth Discord :
+
+- `DISCORD_OAUTH_CLIENT_ID` : identifiant de l'application Discord ;
+- `DISCORD_OAUTH_CLIENT_SECRET` : secret OAuth de l'application ;
+- `ADMIN_SESSION_SECRET` : secret aléatoire de signature, identique dans les propriétés Apps Script ;
+- `ADMIN_DISCORD_ROLE_IDS` : IDs des rôles autorisés, séparés par des virgules.
+
+Variables non secrètes de migration dans `wrangler.jsonc` :
+
+- `DISCORD_OAUTH_REDIRECT_URI` : callback déclaré à l'identique dans le portail Discord ;
+- `ADMIN_AUTH_MODE` : `legacy` pendant l'installation, puis `discord` ;
+- `ALLOW_LEGACY_ADMIN_TOKEN` : `true` pendant le chevauchement des frontends, puis impérativement `false`.
+
 Le token du bot et les autres secrets ne doivent jamais être ajoutés à `wrangler.jsonc` ni à Git.
 
 Le binding local utilise `preview_database_id: "local"`; le binding distant pointe vers la base dédiée ci-dessus.
+
+Le déroulé complet, les contrôles et le retour arrière sont décrits dans
+[`../../DEPLOIEMENT-OAUTH-DISCORD.md`](../../DEPLOIEMENT-OAUTH-DISCORD.md).

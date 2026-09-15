@@ -1,5 +1,6 @@
 import { EXIT_TYPES, getMemberTransition, normalizeAvatarName, parseEffectiveDate } from "./domain.js";
 import { removeDiscordRole } from "./discord.js";
+import { authorizeAdminRequest, handleAuthRoute } from "./auth.js";
 import {
   flushPendingMutations,
   getSyncStatus,
@@ -21,6 +22,11 @@ export default {
     try {
       const url = new URL(request.url);
 
+      // Les routes OAuth ne dépendent pas de D1 : une panne de la base ne doit
+      // pas empêcher l'ouverture ou la vérification d'une session Admin.
+      const authResponse = await handleAuthRoute(request, url, env);
+      if (authResponse) return withCors(authResponse, origin, env);
+
       if (url.pathname === "/health" && request.method === "GET") {
         const counts = await env.DB.prepare(`
           SELECT
@@ -33,7 +39,8 @@ export default {
 
       if (request.method === "GET") {
         if (url.searchParams.get("action") === "getSyncStatus") {
-          if (!(await isAuthorized(request, env.ADMIN_TOKEN))) {
+          const authorization = await authorizeAdminRequest(request, env);
+          if (!authorization.authorized) {
             return withCors(json({ error: "Unauthorized" }, 401), origin, env);
           }
           return withCors(json(await getSyncStatus(env)), origin, env);
@@ -49,7 +56,8 @@ export default {
           }
           return withCors(json(await receiveGasMutation(env, data)), origin, env);
         }
-        if (!(await isAuthorized(request, env.ADMIN_TOKEN))) {
+        const authorization = await authorizeAdminRequest(request, env);
+        if (!authorization.authorized) {
           return withCors(json({ error: "Unauthorized" }, 401), origin, env);
         }
         return withCors(await handlePost(data, env), origin, env);
@@ -463,19 +471,6 @@ async function readBoundedText(body, limit) {
 
   chunks.push(decoder.decode());
   return chunks.join("");
-}
-
-async function isAuthorized(request, expectedToken) {
-  if (!expectedToken) return false;
-  const header = request.headers.get("Authorization") || "";
-  const supplied = header.startsWith("Bearer ") ? header.slice(7) : "";
-  if (!supplied) return false;
-  const encoder = new TextEncoder();
-  const [left, right] = await Promise.all([
-    crypto.subtle.digest("SHA-256", encoder.encode(supplied)),
-    crypto.subtle.digest("SHA-256", encoder.encode(expectedToken))
-  ]);
-  return crypto.subtle.timingSafeEqual(left, right);
 }
 
 async function isSyncAuthorized(suppliedToken, expectedToken) {

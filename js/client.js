@@ -3,27 +3,27 @@ async function apiRequest(action, data = null, method = "GET") {
     const normalizedMethod = String(method || "GET").toUpperCase();
     const isWrite = normalizedMethod !== "GET" && normalizedMethod !== "HEAD";
 
+    // La sonde précède aussi les écritures : si D1 ne répond pas, on navigue
+    // vers GAS sans rejouer une mutation dont le résultat serait incertain.
+    await ensurePreferredBackendAvailable();
+
     if (isWrite) {
-        return apiRequestToBackend(preferredBackend, action, data, normalizedMethod);
+        const adminAuthorization = await getAdminAuthorization();
+        return apiRequestToBackend(preferredBackend, action, data, normalizedMethod, adminAuthorization);
     }
 
-    const fallbackBackend = preferredBackend === "d1" ? "gas" : "d1";
-    let lastError;
-
-    for (const backend of [preferredBackend, fallbackBackend]) {
-        try {
-            return await apiRequestToBackend(backend, action, data, normalizedMethod);
-        } catch (err) {
-            lastError = err;
-            console.warn(`Lecture ${backend.toUpperCase()} indisponible, tentative de repli.`, err);
+    try {
+        return await apiRequestToBackend(preferredBackend, action, data, normalizedMethod);
+    } catch (error) {
+        if (preferredBackend === "d1" && isBackendUnavailableError(error)) {
+            redirectToGas(error);
+            throw new Error("D1 indisponible, redirection vers GAS…");
         }
+        throw error;
     }
-
-    console.error("API ERROR:", lastError);
-    throw lastError || new Error("Aucun backend disponible");
 }
 
-async function apiRequestToBackend(backend, action, data, method) {
+async function apiRequestToBackend(backend, action, data, method, adminAuthorization = "") {
     let url = API_BACKENDS[backend];
     const options = { method, headers: {} };
 
@@ -37,18 +37,25 @@ async function apiRequestToBackend(backend, action, data, method) {
         options.headers["Content-Type"] = backend === "gas"
             ? "text/plain;charset=UTF-8"
             : "application/json";
-        options.body = JSON.stringify({ action, ...(data || {}) });
+        // GAS ne donne pas accès aux en-têtes Authorization dans doPost. La
+        // même session signée est donc aussi placée dans le corps JSON.
+        options.body = JSON.stringify({ action, ...(data || {}), adminSession: adminAuthorization });
 
         if (backend === "d1") {
-            options.headers.Authorization = "Bearer " + getD1AdminToken();
+            options.headers.Authorization = "Bearer " + adminAuthorization;
         }
     }
 
-    const res = await fetch(url, options);
+    let res;
+    try {
+        res = await fetch(url, options);
+    } catch (error) {
+        throw new ApiRequestError(`Connexion ${backend.toUpperCase()} impossible`, 0, backend, error);
+    }
 
     if (backend === "d1" && res.status === 401) {
-        clearD1AdminToken();
-        throw new Error("Jeton administrateur D1 refusé. Recharge la page puis saisis le nouveau jeton.");
+        clearAdminAuthorization();
+        throw new ApiRequestError("Session administrateur refusée ou expirée. Réessaie l'action pour te reconnecter.", 401, backend);
     }
 
     if (!res.ok) {
@@ -59,12 +66,26 @@ async function apiRequestToBackend(backend, action, data, method) {
         } catch (err) {
             details = await res.text().catch(() => "");
         }
-        throw new Error(details || `Erreur HTTP ${res.status} (${backend.toUpperCase()})`);
+        throw new ApiRequestError(details || `Erreur HTTP ${res.status} (${backend.toUpperCase()})`, res.status, backend);
     }
 
     const json = await res.json();
+    if (json.authRequired === true) clearAdminAuthorization();
     if (json.error) throw new Error(json.error);
     return json;
+}
+
+function isBackendUnavailableError(error) {
+    return error instanceof ApiRequestError && (error.status === 0 || error.status >= 500);
+}
+
+class ApiRequestError extends Error {
+    constructor(message, status, backend, cause) {
+        super(message, cause ? { cause } : undefined);
+        this.name = "ApiRequestError";
+        this.status = status;
+        this.backend = backend;
+    }
 }
 
 function escapeHtml(value) {
@@ -195,7 +216,7 @@ function displayMembresActifs(list) {
 		`;
 
 		tr.addEventListener("click", () => {
-			window.location.href = "fiche.html?id=" + tr.dataset.id;
+			window.location.href = buildInternalPageUrl("fiche.html", { id: tr.dataset.id });
 		});
 
 		tbody.appendChild(tr);
@@ -312,7 +333,7 @@ function displayMembresAnciens(list, mouvements) {
         `;
 
         tr.addEventListener("click", () => {
-            window.location.href = "fiche.html?id=" + tr.dataset.id;
+            window.location.href = buildInternalPageUrl("fiche.html", { id: tr.dataset.id });
         });
 
         tbody.appendChild(tr);
@@ -1125,14 +1146,23 @@ function openEditMembreInfosModal(membre) {
 	});
 }
 
-function initNouveauMembreForm() {
+async function initNouveauMembreForm() {
 	console.log("Fonction : client.js - initNouveauMembreForm()");
 
 	if (!isAdmin) {
 		document.body.innerHTML = "";
 		openInfoModal("Accès refusé", "Accès admin requis.", "error").then(() => {
-			window.location.href = "actifs.html";
+			window.location.href = buildInternalPageUrl("actifs.html");
 		});
+		return;
+	}
+
+	// Sur un accès direct à nouveau.html, authentifie avant toute saisie afin
+	// qu'une redirection OAuth ne fasse pas perdre le contenu du formulaire.
+	try {
+		if (!(await prepareAdminAuthentication())) return;
+	} catch (error) {
+		await openInfoModal("Connexion Admin", error.message || "Connexion Discord impossible.", "error");
 		return;
 	}
 
@@ -1185,7 +1215,7 @@ function initNouveauMembreForm() {
 				"success"
 			);
 
-			window.location.href = "fiche.html?id=" + result.membreId;
+			window.location.href = buildInternalPageUrl("fiche.html", { id: result.membreId });
 
 		} catch (err) {
 			console.error(err);
@@ -1365,7 +1395,7 @@ function buildCardListe(titre, items){
 		li.dataset.id = i.id;
 
 		li.addEventListener("click", function(){
-			window.location.href = "fiche.html?id=" + li.dataset.id;
+			window.location.href = buildInternalPageUrl("fiche.html", { id: li.dataset.id });
 		});
 
 		ul.appendChild(li);

@@ -34,6 +34,95 @@ function getRequiredScriptProperty_(name) {
   return value;
 }
 
+/**
+ * Valide la session courte émise par le Worker puis relit les rôles Discord du
+ * demandeur. Le mode legacy (valeur par défaut) conserve le comportement actuel
+ * pendant le déploiement progressif et permet un retour arrière immédiat.
+ */
+function requireAdminSession_(data) {
+  const properties = PropertiesService.getScriptProperties();
+  const mode = String(properties.getProperty("ADMIN_AUTH_MODE") || "legacy").toLowerCase();
+  if (mode !== "discord") return { id: "legacy", name: "Legacy admin" };
+
+  const secret = properties.getProperty("ADMIN_SESSION_SECRET");
+  if (!secret) throw new Error("Propriété Apps Script manquante : ADMIN_SESSION_SECRET");
+  const token = String(data.adminSession || "");
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new Error("Session administrateur absente ou invalide");
+
+  const signingInput = parts[0] + "." + parts[1];
+  const expectedSignature = Utilities.base64EncodeWebSafe(
+    Utilities.computeHmacSha256Signature(signingInput, secret, Utilities.Charset.UTF_8)
+  ).replace(/=+$/g, "");
+  if (!constantTimeStringEquals_(parts[2], expectedSignature)) {
+    throw new Error("Session administrateur invalide");
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(
+      Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[1])).getDataAsString("UTF-8")
+    );
+  } catch (err) {
+    throw new Error("Session administrateur invalide");
+  }
+  if (
+    payload.aud !== "frj-membres-admin" ||
+    !/^\d{17,20}$/.test(String(payload.sub || "")) ||
+    !isFinite(Number(payload.exp)) ||
+    Number(payload.exp) * 1000 <= Date.now()
+  ) {
+    throw new Error("Session administrateur expirée ou invalide");
+  }
+
+  requireCurrentAdminDiscordRole_(String(payload.sub), properties);
+  return { id: String(payload.sub), name: String(payload.name || "Discord") };
+}
+
+/** Compare sans arrêt anticipé afin de ne pas divulguer la signature attendue. */
+function constantTimeStringEquals_(left, right) {
+  left = String(left || "");
+  right = String(right || "");
+  let difference = left.length ^ right.length;
+  const length = Math.max(left.length, right.length);
+  for (let i = 0; i < length; i++) {
+    difference |= (left.charCodeAt(i) || 0) ^ (right.charCodeAt(i) || 0);
+  }
+  return difference === 0;
+}
+
+/** Vérifie en temps réel qu'au moins un rôle d'administration est encore porté. */
+function requireCurrentAdminDiscordRole_(userId, properties) {
+  const guildId = String(properties.getProperty("GUILD_ID") || "");
+  const botToken = properties.getProperty("BOT_TOKEN");
+  const allowedRoleIds = String(properties.getProperty("ADMIN_DISCORD_ROLE_IDS") || "")
+    .split(",")
+    .map(function(id) { return id.trim(); })
+    .filter(function(id) { return /^\d{17,20}$/.test(id); });
+  if (!/^\d{17,20}$/.test(guildId) || !botToken || !allowedRoleIds.length) {
+    throw new Error("Configuration des rôles administrateurs Discord incomplète");
+  }
+
+  const response = UrlFetchApp.fetch(
+    "https://discord.com/api/v10/guilds/" + guildId + "/members/" + userId,
+    {
+      method: "get",
+      headers: { Authorization: "Bot " + botToken },
+      muteHttpExceptions: true
+    }
+  );
+  const status = response.getResponseCode();
+  let member = {};
+  try { member = JSON.parse(response.getContentText() || "{}"); } catch (err) {}
+  if (status < 200 || status >= 300 || !Array.isArray(member.roles)) {
+    throw new Error("Vérification des rôles Discord impossible (HTTP " + status + ")");
+  }
+  const authorized = member.roles.some(function(roleId) {
+    return allowedRoleIds.indexOf(String(roleId)) !== -1;
+  });
+  if (!authorized) throw new Error("Rôle Discord administrateur requis");
+}
+
 function doGet(e) {
   const action = e.parameter.action;
 
@@ -113,6 +202,24 @@ function doPost(e) {
 
   if (data.action === "getGasSyncSnapshot") {
     return getGasSyncSnapshot_(data);
+  }
+
+  // Les réplications disposent de leur secret propre. Seules les actions
+  // provenant de l'interface Web passent par la session Admin Discord.
+  const adminActions = [
+    "syncDiscordFromWeb",
+    "applyMembreAction",
+    "createOrOpenMembre",
+    "updateMembreInfos"
+  ];
+  if (adminActions.indexOf(data.action) !== -1) {
+    try {
+      requireAdminSession_(data);
+    } catch (err) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, authRequired: true, error: err.message }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
   }
 
   if (data.action === "syncDiscordFromWeb") {

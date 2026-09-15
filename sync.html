@@ -39,7 +39,7 @@
     const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
     async function loadSyncStatus() {
       if (!isAdmin || preferredBackend !== "d1") {
-        document.getElementById("syncSummary").textContent = "Ouvrir avec ?backend=d1&admin=1";
+        document.getElementById("syncSummary").textContent = "Ouvrir avec ?admin=1 en utilisant D1";
         return;
       }
       const data = await apiRequest("getSyncStatus", {}, "POST");
