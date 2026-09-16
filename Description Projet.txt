@@ -184,6 +184,11 @@ Le bot 'FrenchJuper Bot' [APP] (id: 1479825051522957462) est dans le role 'Frenc
 Web App GAS :
 https://script.google.com/macros/s/AKfycbzf40jOrUs79_O5PASuc7Y-OOZv_C2RZV1bY7r97WhF8iVVQ6f4nIpBCCRh_0IOIozSew/exec
 
+Projet Apps Script Membres Soc :
+- Script ID : 15s4990apxaNb6Pj4mHcUZ1pixmsjOQ3QAY-trmGeqw7aOBEC5mRFp4fq
+- configuration clasp versionnée dans `.clasp.json`, avec `rootDir=gas` ;
+- manifeste distant conservé dans `gas/appsscript.json`.
+
 Attention : les IDs de serveur et de rôles sont des identifiants publics au sens technique, mais les tokens, secrets OAuth, secrets HMAC et webhooks ne doivent jamais être ajoutés ici.
 
 ------------------------------
@@ -192,6 +197,7 @@ Attention : les IDs de serveur et de rôles sont des identifiants publics au sen
 Variables Cloudflare non secrètes versionnées dans wrangler.jsonc :
 - PUBLIC_SITE_ORIGIN
 - ADMIN_AUTH_MODE
+- AUTH_LOGIN_POLICY
 - ALLOW_LEGACY_ADMIN_TOKEN
 - DISCORD_OAUTH_CLIENT_ID
 - DISCORD_OAUTH_REDIRECT_URI
@@ -254,7 +260,10 @@ Avancement au 16/09/2026 à 13:42 Europe/Paris :
 - absence du serveur identifiée par le seul statut Discord 404, sans session et avec retour public non bloquant ;
 - adaptation de GAS afin qu'un rôle retiré refuse l'écriture sans supprimer à tort une session encore valide ;
 - 24 tests automatisés réussis, dont le nettoyage d'un refus OAuth, la validation anti-rejeu, le déclassement immédiat après retrait d'un rôle et le contrat HTTP 401/403/503, et contrôles de syntaxe Node réussis ;
-- aucun déploiement Worker, GAS ou GitHub Pages effectué ; la recette réelle D1/GAS, l'activation `guild_members` puis la fermeture de `ALLOW_LEGACY_ADMIN_TOKEN` restent à réaliser avant de clôturer D-001.
+- Worker compatible déployé le 16/09/2026 sous la version `c475badb-3424-4b95-84d8-edafb36e6f2b`, avec `AUTH_LOGIN_POLICY=admin_only` et `ALLOW_LEGACY_ADMIN_TOKEN=true` ;
+- GAS publié le 16/09/2026 en version 142 sur le déploiement `/exec` existant ; la version 141 est le retour arrière immédiat ;
+- recette publique réussie : 1 324 membres retournés par GAS et D1, santé D1 valide et absence de session refusée en HTTP 401 ;
+- aucun déploiement GitHub Pages effectué ; la recette réelle des profils Discord, l'activation `guild_members` puis la fermeture de `ALLOW_LEGACY_ADMIN_TOKEN` restent à réaliser avant de clôturer D-001.
 
 Contrôle complémentaire au 16/09/2026 à 13:54 Europe/Paris : les tests frontend simulés prouvent qu'un ancien favori `?admin=1` n'accorde aucun droit, qu'un refus OAuth efface session et cache tout en conservant le message public, qu'une session n'est acceptée que si l'état anti-rejeu correspond et qu'un refus de rôle par D1 ou GAS masque immédiatement les commandes RH sans supprimer la session Discord. Le mapping des refus serveur vers 401, 403 et 503 est également testé directement.
 

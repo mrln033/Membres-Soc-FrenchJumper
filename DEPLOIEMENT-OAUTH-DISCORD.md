@@ -17,9 +17,18 @@ momentanément incompatible avec le Worker ou avec GAS.
 ## Évolution D-003 : état de l'implémentation
 
 Le bouton Connexion/Déconnexion, le retour OAuth compatible iframe, l'état asynchrone et le contrat serveur sont
-implémentés localement. Ils ne sont pas encore déployés. La variable `AUTH_LOGIN_POLICY=admin_only` maintient le
-comportement antérieur tant que le frontend et GAS ne sont pas publiés ensemble. Le passage final à `guild_members`
-n'intervient qu'après cette publication et une recette RH réussie.
+implémentés. Le Worker compatible et GAS v142 sont déployés ; le frontend ne l'est pas encore. La variable
+`AUTH_LOGIN_POLICY=admin_only` maintient le comportement antérieur tant que le frontend n'est pas publié. Le passage
+final à `guild_members` n'intervient qu'après cette publication et une recette RH réussie.
+
+État validé le 16 septembre 2026 à 14:34 Europe/Paris :
+
+- Worker : version `c475badb-3424-4b95-84d8-edafb36e6f2b`, `ADMIN_AUTH_MODE=discord`,
+  `AUTH_LOGIN_POLICY=admin_only`, `ALLOW_LEGACY_ADMIN_TOKEN=true` ;
+- GAS : déploiement existant `AKfycbzf40jOrUs79_O5PASuc7Y-OOZv_C2RZV1bY7r97WhF8iVVQ6f4nIpBCCRh_0IOIozSew`,
+  version 142 ; retour arrière possible vers la version 141 ;
+- recette publique : 1 324 membres lus sur GAS et D1, `/health` valide et `/auth/session` sans jeton refusé en 401 ;
+- frontend GitHub Pages : non fusionné et non publié.
 
 Un compte absent du serveur ne reçoit aucune session : le frontend affiche un message explicite puis reste en
 consultation publique. Les erreurs Discord 401, 403, 429 et 5xx sont traitées comme une indisponibilité temporaire,
@@ -93,8 +102,11 @@ npx wrangler secret put ADMIN_DISCORD_ROLE_IDS
 
 ## 5. Préparer GAS sans activer la protection
 
-1. Copier la nouvelle version de `gas/Code.gs` dans le projet Apps Script.
-2. Dans **Paramètres du projet > Propriétés du script**, ajouter :
+1. Vérifier `clasp show-authorized-user`, puis `clasp show-file-status`. Le projet est associé par `.clasp.json` au
+   Script ID Membres Soc et `rootDir=gas` limite le push à `Code.gs`, `Sync.gs` et `appsscript.json`.
+2. Exécuter `clasp push` seulement après avoir comparé le projet distant ; cette commande remplace tout le contenu du
+   projet Apps Script et ne doit donc jamais être lancée depuis un dossier incomplet.
+3. Dans **Paramètres du projet > Propriétés du script**, ajouter :
 
 ```text
 ADMIN_AUTH_MODE = legacy
@@ -102,16 +114,17 @@ ADMIN_SESSION_SECRET = même valeur que Cloudflare
 ADMIN_DISCORD_ROLE_IDS = id_role_chef,id_role_conseiller
 ```
 
-3. Vérifier que `BOT_TOKEN` et `GUILD_ID` existent déjà.
-4. Créer une nouvelle version du déploiement Web en conservant l'URL `/exec` actuelle.
-5. Tester une lecture et une écriture avec le site actuel. Le mode `legacy` conserve ici le comportement antérieur.
+4. Vérifier que `BOT_TOKEN` et `GUILD_ID` existent déjà.
+5. Lister les déploiements avec `clasp list-deployments`, puis mettre à jour le déploiement Web existant afin de
+   conserver l'URL `/exec` actuelle ; ne pas créer une seconde Web App par défaut.
+6. Tester une lecture et une écriture avec le site actuel. Le mode `legacy` conserve ici le comportement antérieur.
 
 ## 6. Déployer le Worker en mode compatible
 
 Dans `wrangler.jsonc`, conserver à ce stade :
 
 ```jsonc
-"ADMIN_AUTH_MODE": "legacy",
+"ADMIN_AUTH_MODE": "discord",
 "AUTH_LOGIN_POLICY": "admin_only",
 "ALLOW_LEGACY_ADMIN_TOKEN": "true"
 ```

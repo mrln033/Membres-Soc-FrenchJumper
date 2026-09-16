@@ -57,10 +57,11 @@ Le mode `legacy` est volontairement le défaut tant que le nouveau frontend n'es
 parcours complet, passer `ADMIN_AUTH_MODE=discord` dans GAS. Le guide détaillé et le retour arrière figurent dans
 `DEPLOIEMENT-OAUTH-DISCORD.md`.
 
-### Évolution D-003 implémentée localement
+### Évolution D-003 en déploiement progressif
 
-D-003 supprime l'usage de `?admin=1` et ajoute un bouton Connexion/Déconnexion Discord dans le menu. Le code est
-développé et testé localement, mais n'est pas encore publié. Il sépare explicitement :
+D-003 supprime l'usage de `?admin=1` et ajoute un bouton Connexion/Déconnexion Discord dans le menu. Le code backend
+compatible est publié dans GAS v142 et dans le Worker `c475badb-3424-4b95-84d8-edafb36e6f2b` ; le frontend n'est pas
+encore publié. L'évolution sépare explicitement :
 
 - la session Discord, accessible à tout membre du serveur FRJ correctement authentifié, même sans rôle RH ;
 - l'autorisation RH, réservée aux rôles `Chef d'Expédition` et `Conseiller d'Expédition` et relue avant chaque écriture.
@@ -82,7 +83,12 @@ la feuille masquee `SYNC_OUTBOX` et sera reessayee par le trigger `flushSyncOutb
 Fichiers a publier dans le meme projet Apps Script :
 
 - `gas/Code.gs` ;
-- `gas/Sync.gs` dans un second fichier de script `Sync`.
+- `gas/Sync.gs` dans un second fichier de script `Sync` ;
+- `gas/appsscript.json`, copie versionnée du manifeste V8 de la Web App.
+
+Le dépôt est associé au projet Apps Script par `.clasp.json` avec `rootDir=gas`. Avant chaque `clasp push`, exécuter
+`clasp show-file-status` et vérifier que seuls ces trois fichiers sont concernés : un push clasp remplace l'ensemble
+du contenu distant.
 
 Proprietes Apps Script necessaires :
 
