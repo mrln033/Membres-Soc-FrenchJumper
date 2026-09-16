@@ -208,9 +208,10 @@ Le format exact devra être stable et lisible par GAS. Ces champs sont des copie
 - Les rôles `Administrateur`, `Modérateurs`, les grades et les rôles techniques sont explicitement exclus de toute modification par cette nouvelle interface.
 - Les opérations d’ajout et de retrait doivent être idempotentes et journalisées.
 - Les réponses d’erreur Discord doivent être filtrées avant d’être affichées à l’utilisateur.
-- Conformément à l'analyse D-003, une connexion Discord ne donnera pas automatiquement un droit RH : tout compte
-  pourra être authentifié, mais seuls `Chef d'Expédition` et `Conseiller d'Expédition` pourront accéder aux commandes
-  d'administration. Le détail du remplacement futur de `?admin=1` figure dans
+- Conformément à l'analyse D-003, une connexion Discord ne donnera pas automatiquement un droit RH : tout membre du
+  serveur pourra être authentifié, mais seuls `Chef d'Expédition` et `Conseiller d'Expédition` pourront
+  accéder aux commandes d'administration. Un compte absent du serveur ne recevra aucune session ; après un message
+  explicite, il reviendra en consultation publique non authentifiée sans blocage. Le détail du remplacement futur de `?admin=1` figure dans
   `ANALYSE-D003-CONNEXION-DISCORD.md`.
 
 ## 8. Gestion des erreurs

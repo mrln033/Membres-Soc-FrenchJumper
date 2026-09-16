@@ -61,12 +61,16 @@ parcours complet, passer `ADMIN_AUTH_MODE=discord` dans GAS. Le guide détaillé
 D-003 prévoit de supprimer l'usage de `?admin=1` et d'ajouter un bouton Connexion/Déconnexion Discord dans le menu.
 Cette évolution est analysée mais n'est pas encore développée. La cible sépare explicitement :
 
-- la session Discord, accessible à tout utilisateur correctement authentifié ;
+- la session Discord, accessible à tout membre du serveur FRJ correctement authentifié, même sans rôle RH ;
 - l'autorisation RH, réservée aux rôles `Chef d'Expédition` et `Conseiller d'Expédition` et relue avant chaque écriture.
 
 GAS devra continuer à vérifier lui-même la signature, l'expiration et les rôles courants. Un utilisateur connecté sans
 rôle RH restera connecté mais ses écritures seront refusées. Le plan complet, les tests, l'iframe et le déploiement
 progressif sont décrits dans `ANALYSE-D003-CONNEXION-DISCORD.md`.
+
+Un compte absent du serveur Discord ne reçoit aucune session. Le frontend affiche alors un message explicite puis
+revient en consultation publique non authentifiée ; ce refus ne doit jamais bloquer l'application. Une panne Discord
+doit être distinguée d'une absence réelle et aboutir elle aussi à un retour public sûr.
 
 ## Synchronisation bidirectionnelle GAS / D1
 

@@ -51,7 +51,7 @@ Règles d'intervention :
 - la synchronisation bidirectionnelle GAS/D1 est configurée en mode actif dans le Worker ;
 - le cahier des charges des fonctions et activités Discord est rédigé, mais son développement n'a pas commencé ;
 - les informations et choix listés dans D-002 doivent être fournis ou validés avant l'implémentation.
-- l'analyse D-003 sur le remplacement de `?admin=1` est terminée dans ANALYSE-D003-CONNEXION-DISCORD.md ; aucun code de cette évolution n'est encore développé.
+- l'analyse D-003 sur le remplacement de `?admin=1` est terminée dans ANALYSE-D003-CONNEXION-DISCORD.md ; elle impose notamment qu'un compte absent du serveur Discord revienne, après un message explicite, à la consultation publique non authentifiée sans aucun blocage ; aucun code de cette évolution n'est encore développé.
 
 Ordre conseillé :
 1. D-001 — mettre en œuvre le plan D-003, valider complètement OAuth Discord sur D1 et GAS, puis fermer l'ancien accès par jeton ;
@@ -242,7 +242,8 @@ Demande : terminer la migration de l'authentification Admin vers Discord pour D1
 - la configuration et la validation du mode Discord côté GAS doivent être confirmées ;
 - après recette D1 + GAS, passer ALLOW_LEGACY_ADMIN_TOKEN=false, redéployer, contrôler les écritures et seulement ensuite supprimer l'ancien secret ADMIN_TOKEN ;
 - suivre DEPLOIEMENT-OAUTH-DISCORD.md et conserver le point de retour documenté au commit da1060c.
-- intégrer lors de l'implémentation le plan validé par l'analyse D-003 : connexion ouverte à tous les comptes Discord, droits RH accordés uniquement après contrôle des rôles, bouton Connexion/Déconnexion et suppression de la dépendance à `?admin=1`.
+- intégrer lors de l'implémentation le plan validé par l'analyse D-003 : connexion ouverte à tous les membres du serveur Discord FRJ, droits RH accordés uniquement après contrôle des rôles, bouton Connexion/Déconnexion et suppression de la dépendance à `?admin=1`.
+- limiter toutefois l'émission d'une session aux membres présents sur le serveur Discord FRJ : un compte absent doit recevoir un message explicite puis être redirigé vers la consultation publique non authentifiée, sans écran bloqué ni boucle de connexion.
 
 D-002 [ÉVOLUTION] [EN ATTENTE DE VALIDATION]
 Demande : afficher sur la fiche des membres leurs fonctions en jeu, activités en jeu et responsabilités Discord, sans les confondre avec le grade de la Soc ni avec les rôles donnant accès à l'administration du site.
@@ -334,7 +335,13 @@ Demande : Il s'agit d'un complément/modification/ajout à la demande D-001.
 	Analyse cette demande et sa faisabilité, et décris-moi la marche à suivre pour la mise en oeuvre, sans rien casser de l'existant (qui je le rapelle est fonctionnel et en production).
 
 Réalisation :
-[2026-09-16 13:14 Europe/Paris] Analyse de faisabilité complète, sans modification du code ni des services de production. La demande est réalisable sans migration D1. La solution retenue sépare l'authentification Discord, ouverte à tout utilisateur, de l'autorisation RH, réservée aux rôles Chef d'Expédition et Conseiller d'Expédition et systématiquement revalidée côté Worker ou GAS avant chaque écriture. La marche à suivre couvre le nouvel état asynchrone du frontend, le bouton Connexion/Déconnexion toujours visible, la suppression progressive de `?admin=1`, les accès directs, l'intégration dans une iframe d'une autre origine, la distinction HTTP 401/403, la compatibilité GAS, les tests, le déploiement progressif par indicateur de configuration et le retour arrière. Le document ANALYSE-D003-CONNEXION-DISCORD.md contient le détail complet. SECURITE-GAS.md, DEPLOIEMENT-OAUTH-DISCORD.md, CAHIER-DES-CHARGES-ROLES-DISCORD.md, le README du Worker et le présent fichier ont été actualisés. Validation de l'état de référence : 17 tests automatisés réussis et contrôle de syntaxe Node réussi. L'implémentation reste rattachée à D-001 et n'a pas commencé.
+[2026-09-16 13:14 Europe/Paris] Analyse de faisabilité complète, sans modification du code ni des services de production. La demande est réalisable sans migration D1. La solution retenue sépare l'authentification Discord, ouverte à tout membre du serveur FRJ, de l'autorisation RH, réservée aux rôles Chef d'Expédition et Conseiller d'Expédition et systématiquement revalidée côté Worker ou GAS avant chaque écriture. La marche à suivre couvre le nouvel état asynchrone du frontend, le bouton Connexion/Déconnexion toujours visible, la suppression progressive de `?admin=1`, les accès directs, l'intégration dans une iframe d'une autre origine, la distinction HTTP 401/403, la compatibilité GAS, les tests, le déploiement progressif par indicateur de configuration et le retour arrière. Le document ANALYSE-D003-CONNEXION-DISCORD.md contient le détail complet. SECURITE-GAS.md, DEPLOIEMENT-OAUTH-DISCORD.md, CAHIER-DES-CHARGES-ROLES-DISCORD.md, le README du Worker et le présent fichier ont été actualisés. Validation de l'état de référence : 17 tests automatisés réussis et contrôle de syntaxe Node réussi. L'implémentation reste rattachée à D-001 et n'a pas commencé.
+
+Précision complémentaire reçue le 16/09/2026 :
+une authentification refusée (absent du serveur discord) ne doit jamais être blocante : ça doit rediriger vers une consultation public non-authentifiée, après un msg explicite.
+
+Complément de réalisation :
+[2026-09-16 13:28 Europe/Paris] Le comportement cible et le plan D-003 ont été corrigés : seuls les membres présents sur le serveur FRJ reçoivent une session, y compris sans rôle RH. Un compte absent ne reçoit aucune session ; le frontend affiche un message explicite, nettoie le retour OAuth puis restaure automatiquement l'état public anonyme. Les pannes, limitations ou erreurs de permission Discord doivent rester distinctes d'une absence réelle, mais aboutissent elles aussi à un retour public non bloquant avec un message adapté. Les scénarios de test, le déploiement progressif et toutes les documentations concernées ont été alignés. Validation de l'état de référence : 17 tests automatisés réussis et contrôle de syntaxe Node réussi. Aucun code ni service de production n'a été modifié.
 
 ---------------------------
 -= DOCUMENTATION DE RÉFÉRENCE =-

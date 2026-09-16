@@ -14,6 +14,8 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - Lors d'une sortie, d'une désertion ou d'un bannissement, D1 retire aussi le rôle « Règlement Soc OK » (`1189173135380058133`).
 - D-003 prévoit de remplacer `?admin=1` par une connexion explicite dans le menu. Cette évolution est analysée dans
   `../../ANALYSE-D003-CONNEXION-DISCORD.md`, mais elle n'est pas encore implémentée : le comportement courant reste inchangé.
+- Dans la cible D-003, un membre du serveur sans rôle RH pourra se connecter sans obtenir de droit. Un compte absent
+  du serveur ne recevra pas de session et reviendra, après un message explicite, à la consultation publique non bloquante.
 
 ## Sécurité de la migration
 

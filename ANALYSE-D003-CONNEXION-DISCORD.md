@@ -13,7 +13,7 @@ La demande est réalisable sans migration D1 et sans modifier les données méti
 - **authentification** : connaître l'identité Discord de la personne connectée ;
 - **autorisation RH** : vérifier que cette personne porte actuellement le rôle `Chef d'Expédition` ou `Conseiller d'Expédition`.
 
-La cible recommandée permet à tout utilisateur de se connecter avec Discord. Un utilisateur sans rôle RH reste sur l'interface publique, voit son état de connexion et peut se déconnecter, mais ne voit aucun menu ni bouton d'administration. Les écritures continuent d'être refusées côté Worker et côté GAS si le rôle requis n'est pas porté.
+La cible recommandée permet à tout membre du serveur Discord FRJ de se connecter, même sans rôle RH. Un membre sans rôle RH reste sur l'interface publique, voit son état de connexion et peut se déconnecter, mais ne voit aucun menu ni bouton d'administration. Un compte absent du serveur Discord ne reçoit aucune session : après un message explicite, l'application revient automatiquement en consultation publique non authentifiée. Cet échec n'est jamais bloquant. Les écritures continuent d'être refusées côté Worker et côté GAS si le rôle requis n'est pas porté.
 
 La suppression de `?admin=1` est donc possible. Elle doit être faite par étapes afin de ne pas interrompre l'application en production et de conserver le backend GAS de secours.
 
@@ -50,6 +50,7 @@ Cette organisation protège déjà les écritures côté serveur, mais elle peut
 | Situation | Menu public | Identité connectée | Menus/actions RH | Écriture serveur |
 |---|---:|---:|---:|---:|
 | Visiteur non connecté | oui | non | non | refusée |
+| Compte Discord absent du serveur FRJ | oui après message explicite | non | non | refusée |
 | Discord connecté sans rôle RH | oui | oui | non | refusée avec autorisation insuffisante |
 | Discord connecté avec rôle RH | oui | oui | oui | autorisée après relecture des rôles |
 | Rôle RH retiré pendant la session | oui | oui | masqués au prochain contrôle | immédiatement refusée côté serveur |
@@ -62,6 +63,8 @@ Le bouton placé en bas du menu doit toujours être visible :
 - le nom Discord et l'état `Accès RH` pour une session autorisée ;
 - `Déconnexion` dès qu'une personne est connectée.
 
+En cas de compte absent du serveur, le message doit indiquer clairement que la connexion n'a pas été accordée parce que le compte Discord ne fait pas partie du serveur FRJ, puis proposer ou effectuer le retour à l'accueil public. Aucun écran vide, boucle OAuth, modal impossible à fermer ni redirection répétée ne doit en résulter.
+
 ## 4. Architecture recommandée
 
 ### 4.1 Séparer session Discord et autorisation RH dans le Worker
@@ -71,12 +74,14 @@ Créer deux niveaux de contrôle dans `src/auth.js` :
 1. `authenticateDiscordSession` vérifie uniquement la signature, l'audience, l'identité et l'expiration de la session ;
 2. `authorizeAdminRequest` part de cette identité puis relit le membre et ses rôles Discord avant toute opération RH.
 
-Le callback OAuth ne doit plus appeler une fonction qui lève une erreur lorsque le rôle RH manque. Il doit :
+Le callback OAuth ne doit plus refuser un membre uniquement parce que le rôle RH manque. Il doit :
 
 1. échanger le code OAuth ;
 2. lire l'identité avec le scope `identify` ;
-3. émettre une session courte pour tout utilisateur Discord authentifié ;
-4. laisser `/auth/session` déterminer séparément si la personne possède un accès RH.
+3. vérifier avec le bot que le compte appartient au serveur Discord FRJ ;
+4. si le compte est absent, ne créer aucune session et renvoyer un résultat explicite vers le frontend ;
+5. s'il est présent, émettre une session courte même lorsqu'il ne porte aucun rôle RH ;
+6. laisser `/auth/session` déterminer séparément si la personne possède un accès RH.
 
 Réponse cible de `GET /auth/session` pour une session valide :
 
@@ -93,6 +98,8 @@ Réponse cible de `GET /auth/session` pour une session valide :
 ```
 
 Une session absente, invalide ou expirée retourne `401`. Une session valide sans rôle RH ne doit pas être assimilée à une déconnexion : les routes de statut répondent `200` avec `authorized: false`, tandis qu'une tentative d'écriture retourne `403`. Cette distinction permet de masquer les droits sans déconnecter la personne.
+
+L'absence du serveur doit posséder un code fonctionnel stable, par exemple `not_guild_member`, distinct du texte affiché. Le frontend supprime toute ancienne session, affiche un message français compréhensible, nettoie le fragment OAuth puis recharge l'état public. Une réponse Discord `429`, `401`, `403` ou `5xx` ne doit jamais être interprétée à tort comme une absence du serveur : elle produit un message de connexion temporairement impossible, puis le même retour public non bloquant.
 
 Les rôles ne doivent pas être considérés comme fiables s'ils sont seulement présents dans le navigateur ou dans le contenu du jeton. La relecture Discord avant chaque écriture demeure obligatoire.
 
@@ -112,6 +119,8 @@ loading -> anonymous
 ```
 
 Le rendu des menus et boutons RH doit attendre la résolution de cet état afin d'éviter un affichage furtif non autorisé. Les pages `nouveau.html` et `sync.html`, y compris lorsqu'elles sont ouvertes directement, doivent effectuer le même contrôle avant d'afficher leur contenu.
+
+Le traitement du retour OAuth doit toujours avoir une issue publique sûre. En cas de refus, d'annulation, d'absence du serveur ou d'erreur technique, il affiche le message adapté, efface toute session devenue incohérente, retire les paramètres ou fragments techniques de l'URL et remet l'interface dans l'état `anonymous`. Le bouton de connexion reste ensuite disponible pour une nouvelle tentative.
 
 Les fonctions de navigation ne doivent plus ajouter `admin=1`. Si ce paramètre existe dans un ancien favori, il doit être ignoré puis retiré proprement de l'URL avec `history.replaceState`, sans erreur et sans donner de droit.
 
@@ -180,10 +189,10 @@ Conséquence connue : si le Worker OAuth est indisponible, les lectures publique
 - ajouter le callback compatible iframe et ses contrôles `postMessage` ;
 - publier GAS en conservant l'URL `/exec`, puis publier le frontend.
 
-### Étape 3 — ouvrir la connexion à tous
+### Étape 3 — ouvrir la connexion aux membres du serveur
 
-- passer la politique à `AUTH_LOGIN_POLICY=all` ;
-- contrôler un compte RH, un membre sans rôle RH, un compte absent du serveur, une session expirée et un retrait de rôle en cours de session ;
+- passer la politique à `AUTH_LOGIN_POLICY=guild_members` ;
+- contrôler un compte RH, un membre sans rôle RH, un compte absent du serveur avec retour public explicite, une session expirée et un retrait de rôle en cours de session ;
 - vérifier l'appel direct, l'iframe historique, le mobile, D1 et `backend=gas`.
 
 ### Étape 4 — clôturer D-001
@@ -197,8 +206,9 @@ Conséquence connue : si le Worker OAuth est indisponible, les lectures publique
 
 ### Worker
 
-- connexion OAuth réussie avec et sans rôle RH ;
-- compte Discord absent du serveur ;
+- connexion OAuth réussie pour un membre avec et sans rôle RH ;
+- compte Discord absent du serveur : aucune session, code fonctionnel stable, message explicite et retour public non bloquant ;
+- panne ou limitation Discord distincte d'une absence du serveur, avec message temporaire et retour public ;
 - `/auth/session` anonyme, expiré, non autorisé et autorisé ;
 - changement ou retrait de rôle après émission de la session ;
 - refus `403` d'une écriture avec session valide mais rôle insuffisant ;
@@ -221,6 +231,7 @@ Conséquence connue : si le Worker OAuth est indisponible, les lectures publique
 
 - session valide avec rôle RH acceptée ;
 - session valide sans rôle RH refusée sans être traitée comme expirée ;
+- absence du serveur refusée sans laisser de session et sans empêcher les lectures publiques ;
 - session expirée refusée ;
 - résultat identique des quatre actions protégées sur D1 et GAS ;
 - lectures publiques disponibles sans connexion ;
