@@ -128,9 +128,9 @@ Synchronisation :
 - un cron relance les mutations en attente et compare périodiquement les compteurs D1/GAS ;
 - sync.html fournit le tableau d'administration de la synchronisation.
 
-------------------------------
+----------------------------------
 -= URLS ET IDENTIFIANTS PUBLICS =-
-------------------------------
+----------------------------------
 Dépôt GitHub :
 https://github.com/mrln033/Membres-Soc-FrenchJumper
 
@@ -149,8 +149,31 @@ Application OAuth Discord :
 - Client ID public : 1479825051522957462
 - callback : https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev/auth/discord/callback
 
-Rôle Discord « Règlement Soc OK » :
-- ID : 1189173135380058133
+IDs Discord :
+- Role "Administrateur" : 464513638414417930
+- Role "Modérateur" : 464514892355993600
+- Role "Enzoboy" : 464514892355993600
+- Role "Règlement Soc OK" : 1189173135380058133
+- Role "FRJ" : 464706220905857026
+- Role "FRJ-Like" : 1133325888876970024
+- Role "Chasseur" : 811239593675456523
+- Role "Mineur" : 811240383127879691
+- Role " Crafteur" : 811240450123890688
+- Role " Tradeur" : 1070296235782701097
+- Role "Healeur" : 811240547552854050
+- Role "Sweateur" : 811240494390312973
+- Role "Streameur" : 962964676956790844
+- Role "Chef d'Expédition" : 1115185373748936714
+- Role "Conseiller d'Expédition" : 1115186713829060679
+- Role "Aventurier Expériementé" : 1115188114802094120
+- Role " Aventurier" : 1115188218992808037
+- Role "Voyageur Expérimenté" : 1115190061194018877
+- Role "Voyageur" : 1116022491429748746
+- Role "Pilote PF13" : 1538203076434075668
+- Salon "candidature_soc" : 880765957683957800
+- Salon "administrateurs" : 467280392509194241
+
+Le bot 'FrenchJuper Bot' [APP] (id: 1479825051522957462) est dans le role 'FrenchJumper' (id: 1483748622771290134) situé immédiatement sous le role 'Administrateur'.
 
 Web App GAS :
 https://script.google.com/macros/s/AKfycbzf40jOrUs79_O5PASuc7Y-OOZv_C2RZV1bY7r97WhF8iVVQ6f4nIpBCCRh_0IOIozSew/exec
