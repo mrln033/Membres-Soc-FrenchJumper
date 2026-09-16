@@ -1,0 +1,313 @@
+Projet = 'Membres Soc FrenchJumper'
+
+Dernière mise à jour de ce document : 16/09/2026
+
+------------------
+-= INSTRUCTIONS =-
+------------------
+Ce fichier est le point de référence permanent du projet. Il peut être modifié directement depuis un PC ou un smartphone puis poussé sur GitHub.
+
+À chaque reprise du projet :
+- lire entièrement ce fichier avant toute modification du code ou d'un service distant ;
+- considérer la section « Demandes à réaliser » comme la liste des tâches demandées ;
+- respecter l'ordre du « Point de reprise », sauf instruction plus récente et explicite ;
+- ne jamais recopier dans ce fichier la valeur d'un secret, d'un token, d'un mot de passe ou d'un webhook ;
+- vérifier l'état réel du dépôt, des branches et des services avant de considérer une information d'exploitation comme toujours exacte ;
+- préserver les données de production et préparer un retour arrière avant toute migration ou écriture distante importante ;
+- mettre à jour ce fichier à la fin de chaque intervention, même si la demande n'est que partiellement réalisée.
+
+Gestion des demandes :
+- chaque nouvelle demande reçoit un identifiant permanent D-NNN, attribué dans l'ordre et jamais réutilisé ni renuméroté ;
+- le type est indiqué séparément : [CORRECTIF], [ÉVOLUTION], [MAINTENANCE], [DOCUMENTATION] ou [SÉCURITÉ] ;
+- l'état est indiqué séparément : [À FAIRE], [EN COURS], [EN ATTENTE], [À VALIDER] ou [TERMINÉE] ;
+- les étapes d'une demande utilisent le suffixe .1, .2, etc. (exemple : D-002.1) ;
+- le repère « PROCHAIN IDENTIFIANT » doit être avancé dès qu'un numéro est attribué ;
+- une demande terminée est déplacée telle quelle dans « Réalisations effectuées », afin de conserver la formulation d'origine ;
+- la réalisation doit préciser ce qui a été fait, les fichiers ou services concernés, les contrôles effectués, le déploiement éventuel et les points restant à valider ;
+- chaque ajout est daté et, si utile, horodaté au format Europe/Paris.
+
+Règles d'intervention :
+- ne jamais publier automatiquement un changement distant simplement parce qu'il existe localement ; vérifier d'abord la demande et le périmètre autorisé ;
+- ne jamais committer de secret dans Git ; utiliser les secrets Cloudflare et les propriétés du script Apps Script ;
+- tester les deux parcours D1 et GAS lorsqu'une évolution touche leur contrat commun ;
+- une écriture dont le résultat réseau est incertain ne doit pas être rejouée aveuglément vers l'autre backend ;
+- les réplications GAS/D1 ne doivent jamais déclencher une seconde notification Discord ni une mutation inverse ;
+- les grades de la Soc, les droits RH du site, les rôles d'équipe Discord, les fonctions en jeu et les activités en jeu sont des notions distinctes ;
+- documenter tout changement d'URL, d'identifiant public, de nom de binding, de propriété ou de procédure de déploiement.
+
+-------------------
+-= POINT DE REPRISE =-
+-------------------
+État connu au 16/09/2026 :
+- la branche principale locale et distante est au commit 9b9c162 (« Active OAuth Discord avec repli legacy ») ;
+- la branche de travail courante « codex/cahier-des-charges-roles-discord » ajoute le cahier des charges des rôles Discord au commit 3009cbe ;
+- le présent fichier de pilotage est versionné sur cette branche de travail afin d'être consultable et modifiable depuis GitHub ;
+- D1 est le backend choisi par défaut par le frontend ; « ?backend=gas » force le backend de secours GAS ;
+- l'authentification Admin Discord est activée côté configuration D1, mais « ALLOW_LEGACY_ADMIN_TOKEN=true » maintient encore le repli par ancien jeton ;
+- la synchronisation bidirectionnelle GAS/D1 est configurée en mode actif dans le Worker ;
+- le cahier des charges des fonctions et activités Discord est rédigé, mais son développement n'a pas commencé ;
+- les informations et choix listés dans D-002 doivent être fournis ou validés avant l'implémentation.
+
+Ordre conseillé :
+1. D-001 — valider complètement OAuth Discord sur D1 et GAS, puis fermer l'ancien accès par jeton ;
+2. D-002 — valider le cahier des charges des rôles Discord et réaliser d'abord le lot 1 en lecture seule ;
+3. traiter ensuite les nouvelles demandes ajoutées dans ce fichier selon leur priorité explicite.
+
+---------
+-= BUT =-
+---------
+L'application « Membres Soc FrenchJumper » est l'outil de gestion des membres de la société FrenchJumpers dans Entropia Universe.
+
+Elle permet notamment :
+- d'afficher les membres actifs et les anciens membres ;
+- de rechercher et consulter la fiche individuelle d'un membre ;
+- de créer la fiche d'un nouveau membre ou de rouvrir celle d'un ancien membre ;
+- d'enregistrer les entrées, promotions, rétrogradations, sorties, désertions et bannissements ;
+- de conserver l'historique chronologique des mouvements et des grades ;
+- de modifier les informations complémentaires d'une fiche ;
+- d'associer un membre à son identité Discord ;
+- de synchroniser certaines conséquences avec Discord, notamment le retrait du rôle « Règlement Soc OK » lors d'une sortie ;
+- de fonctionner normalement sur Cloudflare Workers + D1, avec Google Sheets + Apps Script comme backend de secours ;
+- de synchroniser les mutations entre D1 et GAS avec reprise, déduplication, audit et contrôle des écarts ;
+- de protéger les actions RH par une authentification Discord et par la vérification des rôles autorisés.
+
+Grades connus, du niveau 0 au niveau 6 :
+0. Ancien Membre
+1. Voyageur
+2. Voyageur Expérimenté
+3. Aventurier
+4. Aventurier Expérimenté
+5. Conseiller d'Expédition
+6. Chef d'Expédition (grade unique)
+
+Règles métier importantes actuellement codées :
+- une nouvelle entrée réactive un « Ancien Membre » comme « Voyageur » ;
+- une sortie, une désertion ou un bannissement place le membre en « Ancien Membre » ;
+- une désertion n'est autorisée que depuis le grade « Voyageur » ;
+- les promotions et rétrogradations suivent les niveaux autorisés ;
+- aucune action de mouvement n'est permise sur le Chef d'Expédition ;
+- les mouvements de sortie retirent également l'acceptation locale du règlement ;
+- la synchronisation Discord associée n'est déclenchée qu'après la réussite de l'opération métier concernée.
+
+-------------------
+-= ARCHITECTURE =-
+-------------------
+Frontend statique GitHub Pages :
+- pages principales : index.html, actifs.html, anciens.html, fiche.html, mouvements.html, nouveau.html et sync.html ;
+- logique cliente partagée : js/config.js, js/client.js et js/utils.js ;
+- styles : css/style.css ;
+- le paramètre « admin=1 » demande l'affichage Admin, mais ne constitue jamais une autorisation ;
+- D1 est prioritaire ; une sonde « /health » peut provoquer une redirection vers GAS en cas d'indisponibilité ;
+- le backend choisi est conservé dans les liens internes.
+
+Backend principal Cloudflare :
+- projet : cloudflare/membres-soc-api ;
+- Worker : frj-membres-soc-api ;
+- base : Cloudflare D1 ;
+- migrations versionnées : 0001_initial.sql et 0002_bidirectional_sync.sql ;
+- modules principaux : index.js, auth.js, domain.js, discord.js et sync.js ;
+- files : frj-membres-sync et frj-membres-sync-dlq ;
+- contrôle planifié toutes les dix minutes ;
+- Service Binding vers le Worker « discord-proxy » existant ;
+- tests Node couvrant l'authentification, le métier, Discord, le frontend et la synchronisation.
+
+Backend de secours Google :
+- Google Sheets conserve les grades, membres, mouvements et données de synchronisation ;
+- gas/Code.gs expose le contrat HTTP historique et les opérations métier ;
+- gas/Sync.gs gère la réplication, l'outbox, les reprises et les modifications manuelles de la feuille ;
+- la feuille masquée SYNC_OUTBOX conserve les mutations GAS en attente ;
+- le déclencheur installable « syncMemberManualEdit » capture les modifications manuelles utiles ;
+- « flushSyncOutbox » retente les mutations qui n'ont pas encore été appliquées.
+
+Synchronisation :
+- chaque mutation porte un UUID d'idempotence ;
+- les mouvements sont append-only et dédupliqués par leur identifiant ;
+- les versions d'entités servent à éviter les régressions et à identifier les conflits ;
+- les réplications sont marquées par leur source et leur cible ;
+- la file Cloudflare réalise les reprises vers GAS ;
+- un cron relance les mutations en attente et compare périodiquement les compteurs D1/GAS ;
+- sync.html fournit le tableau d'administration de la synchronisation.
+
+------------------------------
+-= URLS ET IDENTIFIANTS PUBLICS =-
+------------------------------
+Dépôt GitHub :
+https://github.com/mrln033/Membres-Soc-FrenchJumper
+
+Origine GitHub Pages autorisée dans le Worker :
+https://mrln033.github.io
+
+API D1 :
+https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev
+
+Base D1 :
+- nom : frj-membres-soc
+- ID : 09b3c024-99f9-4add-a12c-ed214a462df5
+- région indiquée dans la documentation : WEUR
+
+Application OAuth Discord :
+- Client ID public : 1479825051522957462
+- callback : https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev/auth/discord/callback
+
+Rôle Discord « Règlement Soc OK » :
+- ID : 1189173135380058133
+
+Web App GAS :
+https://script.google.com/macros/s/AKfycbzf40jOrUs79_O5PASuc7Y-OOZv_C2RZV1bY7r97WhF8iVVQ6f4nIpBCCRh_0IOIozSew/exec
+
+Attention : les IDs de serveur et de rôles sont des identifiants publics au sens technique, mais les tokens, secrets OAuth, secrets HMAC et webhooks ne doivent jamais être ajoutés ici.
+
+------------------------------
+-= VARIABLES ET SECRETS REQUIS =-
+------------------------------
+Variables Cloudflare non secrètes versionnées dans wrangler.jsonc :
+- PUBLIC_SITE_ORIGIN
+- ADMIN_AUTH_MODE
+- ALLOW_LEGACY_ADMIN_TOKEN
+- DISCORD_OAUTH_CLIENT_ID
+- DISCORD_OAUTH_REDIRECT_URI
+- RULES_ACCEPTED_ROLE_ID
+- GAS_SYNC_URL
+- SYNC_MODE
+
+Secrets Cloudflare attendus, à stocker avec Wrangler et jamais dans Git :
+- DISCORD_OAUTH_CLIENT_SECRET
+- ADMIN_SESSION_SECRET
+- ADMIN_DISCORD_ROLE_IDS
+- DISCORD_BOT_TOKEN
+- DISCORD_GUILD_ID
+- DISCORD_PROXY_SECRET
+- SYNC_SHARED_SECRET
+- ADMIN_TOKEN, uniquement tant que le repli legacy reste volontairement ouvert
+
+Propriétés Apps Script attendues, jamais dans Git :
+- ADMIN_AUTH_MODE
+- ADMIN_SESSION_SECRET
+- ADMIN_DISCORD_ROLE_IDS
+- BOT_TOKEN
+- GUILD_ID
+- DISCORD_WEBHOOK_RH
+- DISCORD_PROXY_SECRET
+- D1_SYNC_URL
+- SYNC_SHARED_SECRET
+- SYNC_ENABLED
+
+Stockage navigateur temporaire :
+- FRJ_MEMBRES_ADMIN_SESSION : session OAuth signée ;
+- FRJ_MEMBRES_ADMIN_OAUTH_STATE : protection du retour OAuth ;
+- FRJ_MEMBRES_ADMIN_AUTH_ERROR : erreur du parcours OAuth ;
+- FRJ_MEMBRES_D1_ADMIN_TOKEN : ancien repli local, à supprimer lorsque D-001 sera clôturée.
+
+------------------------
+-= DEMANDES À RÉALISER =-
+------------------------
+>>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-003 <<<
+
+D-001 [SÉCURITÉ] [À VALIDER]
+Demande : terminer la migration de l'authentification Admin vers Discord pour D1 et GAS, vérifier les rôles « Chef d'Expédition » et « Conseiller d'Expédition », puis fermer définitivement l'ancien accès par ADMIN_TOKEN.
+
+État au 16/09/2026 :
+- D1 est configuré avec ADMIN_AUTH_MODE=discord ;
+- le frontend sait effectuer le parcours OAuth Discord et stocker une session courte ;
+- D1 et GAS relisent les rôles Discord avant chaque écriture sensible ;
+- le repli legacy reste toutefois autorisé dans le Worker avec ALLOW_LEGACY_ADMIN_TOKEN=true ;
+- la configuration et la validation du mode Discord côté GAS doivent être confirmées ;
+- après recette D1 + GAS, passer ALLOW_LEGACY_ADMIN_TOKEN=false, redéployer, contrôler les écritures et seulement ensuite supprimer l'ancien secret ADMIN_TOKEN ;
+- suivre DEPLOIEMENT-OAUTH-DISCORD.md et conserver le point de retour documenté au commit da1060c.
+
+D-002 [ÉVOLUTION] [EN ATTENTE DE VALIDATION]
+Demande : afficher sur la fiche des membres leurs fonctions en jeu, activités en jeu et responsabilités Discord, sans les confondre avec le grade de la Soc ni avec les rôles donnant accès à l'administration du site.
+
+Référence complète : CAHIER-DES-CHARGES-ROLES-DISCORD.md
+
+Périmètre recommandé pour le premier lot :
+- Discord reste la source de vérité ;
+- D1 conserve le cache principal et réplique les données vers GAS ;
+- synchronisation périodique par petits lots, cible de zéro à dix minutes ;
+- bouton Admin « Actualiser les rôles Discord » sur la fiche ;
+- affichage mobile et ordinateur des fonctions, activités et responsabilités ;
+- lecture seule de toutes les catégories pendant le lot 1 ;
+- conservation de la dernière copie connue si Discord est temporairement indisponible.
+
+Informations ou décisions nécessaires avant développement :
+1. ID du rôle Discord « Administrateur » ;
+2. ID du rôle Discord « Modérateurs » ;
+3. liste complète et IDs des fonctions en jeu ;
+4. liste complète et IDs des activités en jeu ;
+5. visibilité publique ou Admin uniquement des responsabilités Discord ;
+6. validation ou refus de la modification des fonctions depuis le site dans un lot 2 ;
+7. rôles autorisés à gérer ces fonctions depuis le site ;
+8. vérification de la permission et de la position hiérarchique du bot ;
+9. validation du délai de synchronisation cible de dix minutes.
+
+Modèle à copier pour une nouvelle demande :
+
+D-003 [TYPE] [À FAIRE]
+Demande :
+[Décrire ici le problème, le résultat attendu, les pages ou services concernés, les règles à préserver et, si possible, les critères de validation.]
+
+------------------------------
+-= RÉALISATIONS EFFECTUÉES =-
+------------------------------
+[Mars 2026] Création et évolution du frontend de gestion des membres : navigation principale, listes des membres actifs et anciens, consultation des fiches et affichage des mouvements.
+
+[Avril-mai 2026] Développement progressif de l'interface cliente et du backend Google Apps Script. Mise en place des feuilles de grades, membres et mouvements, des lectures publiques, de la création ou réouverture d'une fiche, des changements de grade, des sorties et de l'historique.
+
+[02/05/2026] Ajout initial de gas/Code.gs au dépôt, puis raccordement du frontend au contrat HTTP GAS.
+
+[Mai-juillet 2026] Consolidation des parcours de fiche et d'administration : affichage des données complémentaires, gestion des actions de membre, contrôles métier et synchronisation Discord depuis l'interface.
+
+[05/08/2026] État de référence du frontend/GAS avant l'introduction du backend Cloudflare D1.
+
+[12/08/2026] Préparation de la migration parallèle de Google Sheets/GAS vers Cloudflare Workers + D1 : création du projet « frj-membres-soc-api », schéma D1 pour les grades, membres et mouvements, export de départ, outils de génération du seed et comparaison GAS/D1.
+
+[12/08/2026] Implémentation du contrat HTTP D1 compatible avec le frontend existant : listes, fiche individuelle, mouvements mensuels et opérations d'administration. Ajout des règles métier partagées et des tests automatisés.
+
+[12/08/2026] Sécurisation du retrait du rôle Discord « Règlement Soc OK » lors des sorties, désertions et bannissements, uniquement après réussite de la mutation principale.
+
+[12/08/2026] Ajout d'un serveur local de validation permettant de tester le site statique avec le Worker et la base D1 locale.
+
+[12/08/2026] Mise en place de la synchronisation bidirectionnelle GAS/D1 : mutations idempotentes, version des entités, audit, file Cloudflare, dead-letter queue, outbox GAS, reprise des échecs et capture des modifications manuelles de la feuille.
+
+[12/08/2026] Activation de la synchronisation bidirectionnelle et ajout du tableau Admin sync.html. D1 devient utilisable en parallèle de GAS sans provoquer de boucle de réplication ni doubler les notifications Discord.
+
+[14/08/2026] Correction de la synchronisation Discord afin de conserver les notifications et retraits de rôles côté serveur, sans exposer de webhook dans GitHub Pages.
+
+[15/09/2026] Préparation de D1 comme backend par défaut avec basculement explicite ou automatique vers GAS. Le paramètre « backend=gas » est conservé dans la navigation et aucune écriture incertaine n'est rejouée automatiquement.
+
+[15/09/2026] Ajout de l'authentification Admin par OAuth Discord : scope minimal « identify », état OAuth anti-rejeu, session HMAC-SHA256 de trente minutes, relecture serveur des rôles avant chaque écriture sensible et séparation entre l'affichage Admin et l'autorisation réelle.
+
+[15/09/2026] Configuration du Client ID OAuth public et activation du mode Discord côté Worker avec maintien temporaire du repli legacy. Ajout du guide de déploiement prudent, de la procédure de recette et du retour arrière.
+
+[15/09/2026] Rédaction du cahier des charges « Fonctions et activités Discord ». Distinction formelle entre accès RH, équipe Discord, grades de la Soc, fonctions en jeu et activités ; proposition du modèle D1/GAS, de la synchronisation, des règles de sécurité, des lots, des tests et du retour arrière. Le document reste à valider avant développement.
+
+[16/09/2026] Création du présent fichier de pilotage à partir de l'historique Git, de l'état du code et des documents techniques du projet. Mise en place des identifiants permanents D-NNN, du point de reprise, du registre des variables sans leurs valeurs secrètes, des demandes encore ouvertes et de l'historique synthétique des réalisations.
+
+---------------------------
+-= DOCUMENTATION DE RÉFÉRENCE =-
+---------------------------
+- Description Projet.txt : point de reprise, demandes et journal des réalisations ;
+- SECURITE-GAS.md : secrets, propriétés Apps Script, notification Discord et synchronisation ;
+- DEPLOIEMENT-OAUTH-DISCORD.md : ordre de mise en production OAuth, recette et retour arrière ;
+- CAHIER-DES-CHARGES-ROLES-DISCORD.md : évolution future des fonctions et activités Discord ;
+- cloudflare/membres-soc-api/README.md : état et exploitation du Worker D1 ;
+- cloudflare/membres-soc-api/wrangler.jsonc : bindings et variables publiques Cloudflare ;
+- cloudflare/membres-soc-api/package.json : commandes locales de test, migration et déploiement.
+
+Commandes locales principales depuis cloudflare/membres-soc-api :
+- npm install
+- npm run build:seed
+- npm run db:migrate:local
+- npm run db:seed:local
+- npm test
+- npm run check
+- npm run dev
+- npm run dev:site
+- npm run deploy:dry
+
+Avant toute action distante :
+- contrôler la branche, le commit, le diff et l'état Git ;
+- exécuter les tests et contrôles de syntaxe adaptés ;
+- vérifier les secrets par leur nom sans afficher leur valeur ;
+- sauvegarder les données lorsqu'une migration ou une correction distante est prévue ;
+- noter dans « Réalisations effectuées » le résultat exact, les versions publiées et la recette réalisée.
