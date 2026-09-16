@@ -42,16 +42,16 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 16/09/2026 :
-- la branche principale locale et distante est au commit 9b9c162 (« Active OAuth Discord avec repli legacy ») ;
-- la branche de travail courante « codex/cahier-des-charges-roles-discord » ajoute le cahier des charges des rôles Discord au commit 3009cbe ;
+État connu au 16/09/2026 à 21:08 Europe/Paris :
+- la branche principale distante est au commit de fusion fcb60d9 (« Merge pull request #2 ») ;
+- la branche de travail courante « codex/cahier-des-charges-roles-discord » est au commit 05769fd, intégré à `main` par la PR #2 ;
 - le présent fichier de pilotage est versionné sur cette branche de travail afin d'être consultable et modifiable depuis GitHub ;
 - D1 est le backend choisi par défaut par le frontend ; « ?backend=gas » force le backend de secours GAS ;
 - l'authentification Admin Discord est activée côté configuration D1, mais « ALLOW_LEGACY_ADMIN_TOKEN=true » maintient encore le repli par ancien jeton ;
 - la synchronisation bidirectionnelle GAS/D1 est configurée en mode actif dans le Worker ;
 - le cahier des charges des fonctions et activités Discord est rédigé, mais son développement n'a pas commencé ;
 - les informations et choix listés dans D-002 doivent être fournis ou validés avant l'implémentation.
-- l'analyse D-003 sur le remplacement de `?admin=1` est terminée dans ANALYSE-D003-CONNEXION-DISCORD.md ; son implémentation locale est en cours dans D-001 et n'est pas déployée ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
+- l'analyse D-003 sur le remplacement de `?admin=1` est terminée dans ANALYSE-D003-CONNEXION-DISCORD.md ; le Worker, GAS et le frontend sont publiés en mode de migration protégé dans D-001 ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
 
 Ordre conseillé :
 1. D-001 — mettre en œuvre le plan D-003, valider complètement OAuth Discord sur D1 et GAS, puis fermer l'ancien accès par jeton ;
@@ -254,7 +254,7 @@ Demande : terminer la migration de l'authentification Admin vers Discord pour D1
 - limiter toutefois l'émission d'une session aux membres présents sur le serveur Discord FRJ : un compte absent doit recevoir un message explicite puis être redirigé vers la consultation publique non authentifiée, sans écran bloqué ni boucle de connexion.
 
 Avancement au 16/09/2026 à 13:42 Europe/Paris :
-- implémentation locale du bouton Connexion/Déconnexion, de la suppression de `?admin=1` et du retour OAuth par popup compatible avec l'intégration en iframe ;
+- publication du bouton Connexion/Déconnexion, de la suppression de `?admin=1` et du retour OAuth par popup compatible avec l'intégration en iframe ;
 - séparation côté Worker entre session Discord et autorisation RH, avec connexion possible des membres sans rôle lorsque `AUTH_LOGIN_POLICY=guild_members` sera activé ;
 - distinction entre 401 (session invalide), 403 (session valide sans droit RH) et 503 (vérification Discord indisponible) ;
 - absence du serveur identifiée par le seul statut Discord 404, sans session et avec retour public non bloquant ;
@@ -263,9 +263,11 @@ Avancement au 16/09/2026 à 13:42 Europe/Paris :
 - Worker compatible déployé le 16/09/2026 sous la version `c475badb-3424-4b95-84d8-edafb36e6f2b`, avec `AUTH_LOGIN_POLICY=admin_only` et `ALLOW_LEGACY_ADMIN_TOKEN=true` ;
 - GAS publié le 16/09/2026 en version 142 sur le déploiement `/exec` existant ; la version 141 est le retour arrière immédiat ;
 - recette publique réussie : 1 324 membres retournés par GAS et D1, santé D1 valide et absence de session refusée en HTTP 401 ;
-- aucun déploiement GitHub Pages effectué ; la recette réelle des profils Discord, l'activation `guild_members` puis la fermeture de `ALLOW_LEGACY_ADMIN_TOKEN` restent à réaliser avant de clôturer D-001.
+- frontend publié par la PR #2 sur GitHub Pages le 16/09/2026 à 21:06 Europe/Paris, commit de fusion `fcb60d9ea13494c494e1490bc67e782a9d63573e` ; la recette réelle des profils Discord, l'activation `guild_members` puis la fermeture de `ALLOW_LEGACY_ADMIN_TOKEN` restent à réaliser avant de clôturer D-001.
 
 Contrôle complémentaire au 16/09/2026 à 13:54 Europe/Paris : les tests frontend simulés prouvent qu'un ancien favori `?admin=1` n'accorde aucun droit, qu'un refus OAuth efface session et cache tout en conservant le message public, qu'une session n'est acceptée que si l'état anti-rejeu correspond et qu'un refus de rôle par D1 ou GAS masque immédiatement les commandes RH sans supprimer la session Discord. Le mapping des refus serveur vers 401, 403 et 503 est également testé directement.
+
+Contrôle de publication au 16/09/2026 à 21:08 Europe/Paris : GitHub Pages a construit sans erreur le commit `fcb60d9`. L'URL publique sert le bouton Discord, la page `oauth-callback.html` et l'appel `/auth/discord/login` ; la chaîne obsolète `admin=1` est absente du JavaScript publié. Les garde-fous `AUTH_LOGIN_POLICY=admin_only` et `ALLOW_LEGACY_ADMIN_TOKEN=true` restent actifs dans l'attente de la recette réelle avec les comptes Discord.
 
 D-002 [ÉVOLUTION] [EN ATTENTE DE VALIDATION]
 Demande : afficher sur la fiche des membres leurs fonctions en jeu, activités en jeu et responsabilités Discord, sans les confondre avec le grade de la Soc ni avec les rôles donnant accès à l'administration du site.

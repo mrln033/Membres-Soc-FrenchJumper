@@ -25,7 +25,7 @@ Apres toute modification de `gas/Code.gs`, mettre a jour le deploiement de l'app
 
 ## Authentification Admin Discord
 
-`?admin=1` est obsolète dans l'implémentation locale en cours : le frontend le retire de l'URL et ne lui accorde
+`?admin=1` est obsolète dans l'implémentation publiée : le frontend le retire de l'URL et ne lui accorde
 aucun droit. L'état d'affichage RH provient désormais de `/auth/session`.
 
 Le Worker réalise le parcours OAuth2 Discord avec le scope minimal `identify`, émet une session HMAC-SHA256 de
@@ -53,15 +53,15 @@ Actions protégées dans `doPost` :
 Les actions `replicateFromD1` et `getGasSyncSnapshot` conservent leur authentification séparée par
 `SYNC_SHARED_SECRET`. Les interactions Discord existantes restent traitées avant le routage Web.
 
-Le mode `legacy` est volontairement le défaut tant que le nouveau frontend n'est pas publié. Après validation du
+Le mode `legacy` reste volontairement actif pendant la recette du nouveau frontend publié. Après validation du
 parcours complet, passer `ADMIN_AUTH_MODE=discord` dans GAS. Le guide détaillé et le retour arrière figurent dans
 `DEPLOIEMENT-OAUTH-DISCORD.md`.
 
 ### Évolution D-003 en déploiement progressif
 
 D-003 supprime l'usage de `?admin=1` et ajoute un bouton Connexion/Déconnexion Discord dans le menu. Le code backend
-compatible est publié dans GAS v142 et dans le Worker `c475badb-3424-4b95-84d8-edafb36e6f2b` ; le frontend n'est pas
-encore publié. L'évolution sépare explicitement :
+compatible est publié dans GAS v142 et dans le Worker `c475badb-3424-4b95-84d8-edafb36e6f2b` ; le frontend est publié
+sur GitHub Pages depuis le commit `fcb60d9`. L'évolution sépare explicitement :
 
 - la session Discord, accessible à tout membre du serveur FRJ correctement authentifié, même sans rôle RH ;
 - l'autorisation RH, réservée aux rôles `Chef d'Expédition` et `Conseiller d'Expédition` et relue avant chaque écriture.

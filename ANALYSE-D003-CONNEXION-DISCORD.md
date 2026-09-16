@@ -1,6 +1,6 @@
 # D-003 — Connexion Discord et remplacement de `?admin=1`
 
-Statut : analyse terminée ; Worker et GAS compatibles déployés, frontend et activation finale encore en cours dans D-001
+Statut : analyse terminée ; Worker, GAS et frontend compatibles déployés, recette Discord et activation finale encore en cours dans D-001
 
 Date : 16 septembre 2026
 
@@ -9,8 +9,8 @@ Le bouton Connexion/Déconnexion, le retour OAuth par popup, la suppression de `
 authentification/autorisation et les réponses 401/403/503 sont implémentés et couverts par 24 tests automatisés.
 La garde `AUTH_LOGIN_POLICY=admin_only` reste volontairement active. Au 16 septembre 2026 à 14:34, le Worker
 `c475badb-3424-4b95-84d8-edafb36e6f2b` et GAS v142 sont déployés en mode compatible, avec le repli legacy maintenu.
-Le frontend, la recette réelle des comptes Discord, l'activation `guild_members` et la fermeture legacy restent à
-effectuer dans D-001.
+Le frontend a été publié par la PR #2 le 16 septembre 2026 à 21:06 Europe/Paris, commit `fcb60d9`. La recette réelle
+des comptes Discord, l'activation `guild_members` et la fermeture legacy restent à effectuer dans D-001.
 
 Application : Membres Soc FrenchJumper
 

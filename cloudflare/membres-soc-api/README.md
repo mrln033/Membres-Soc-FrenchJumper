@@ -13,7 +13,7 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
   legacy tant qu'il n'est pas fermé.
 - Lors d'une sortie, d'une désertion ou d'un bannissement, D1 retire aussi le rôle « Règlement Soc OK » (`1189173135380058133`).
 - Le Worker compatible D-003 est déployé depuis le 16 septembre 2026 sous la version
-  `c475badb-3424-4b95-84d8-edafb36e6f2b`. Le frontend remplaçant `?admin=1` reste à publier.
+  `c475badb-3424-4b95-84d8-edafb36e6f2b`. Le frontend remplaçant `?admin=1` est publié depuis le commit `fcb60d9`.
 - `AUTH_LOGIN_POLICY=admin_only` garde le comportement de production pendant la migration. Après publication conjointe
   du frontend et de GAS, `guild_members` permettra à un membre du serveur sans rôle RH de rester connecté sans droit.
 - Un compte absent du serveur ne reçoit jamais de session et revient, après un message explicite, à la consultation

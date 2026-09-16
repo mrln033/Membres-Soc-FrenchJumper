@@ -17,9 +17,9 @@ momentanément incompatible avec le Worker ou avec GAS.
 ## Évolution D-003 : état de l'implémentation
 
 Le bouton Connexion/Déconnexion, le retour OAuth compatible iframe, l'état asynchrone et le contrat serveur sont
-implémentés. Le Worker compatible et GAS v142 sont déployés ; le frontend ne l'est pas encore. La variable
-`AUTH_LOGIN_POLICY=admin_only` maintient le comportement antérieur tant que le frontend n'est pas publié. Le passage
-final à `guild_members` n'intervient qu'après cette publication et une recette RH réussie.
+implémentés. Le Worker compatible, GAS v142 et le frontend sont déployés. La variable
+`AUTH_LOGIN_POLICY=admin_only` maintient le périmètre de connexion antérieur pendant la recette. Le passage final à
+`guild_members` n'intervient qu'après une recette RH réussie.
 
 État validé le 16 septembre 2026 à 14:34 Europe/Paris :
 
@@ -28,7 +28,8 @@ final à `guild_members` n'intervient qu'après cette publication et une recette
 - GAS : déploiement existant `AKfycbzf40jOrUs79_O5PASuc7Y-OOZv_C2RZV1bY7r97WhF8iVVQ6f4nIpBCCRh_0IOIozSew`,
   version 142 ; retour arrière possible vers la version 141 ;
 - recette publique : 1 324 membres lus sur GAS et D1, `/health` valide et `/auth/session` sans jeton refusé en 401 ;
-- frontend GitHub Pages : non fusionné et non publié.
+- frontend GitHub Pages : PR #2 fusionnée et publiée le 16 septembre 2026 à 21:06 Europe/Paris, commit `fcb60d9` ;
+  contrôle public du bouton, du callback et de l'absence de `admin=1` réussi.
 
 Un compte absent du serveur ne reçoit aucune session : le frontend affiche un message explicite puis reste en
 consultation publique. Les erreurs Discord 401, 403, 429 et 5xx sont traitées comme une indisponibilité temporaire,
