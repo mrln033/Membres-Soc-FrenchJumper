@@ -12,6 +12,16 @@ momentanément incompatible avec le Worker ou avec GAS.
 - Un utilisateur est autorisé s'il porte au moins un rôle listé dans `ADMIN_DISCORD_ROLE_IDS`.
 - Le Worker et GAS relisent les rôles Discord à chaque écriture sensible.
 
+## Évolution D-003 : remplacement futur de `?admin=1`
+
+Le présent guide décrit le déploiement OAuth actuellement en place. D-003 prévoit ensuite de remplacer `?admin=1`
+par un bouton Connexion/Déconnexion et par un état d'autorisation fourni par le serveur.
+
+Cette évolution ne doit pas être appliquée directement à la procédure ci-dessous tant que son développement et sa
+recette ne sont pas terminés. Elle introduira d'abord un Worker rétrocompatible, puis le frontend et GAS, avant
+d'autoriser la connexion des comptes sans rôle RH et de fermer le repli legacy. Le plan détaillé et le retour arrière
+sont consignés dans `ANALYSE-D003-CONNEXION-DISCORD.md`.
+
 ## 1. Relever les deux IDs de rôles Discord
 
 1. Dans Discord, ouvrir **Paramètres utilisateur > Avancés**.

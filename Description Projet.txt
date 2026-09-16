@@ -37,6 +37,7 @@ Règles d'intervention :
 - les réplications GAS/D1 ne doivent jamais déclencher une seconde notification Discord ni une mutation inverse ;
 - les grades de la Soc, les droits RH du site, les rôles d'équipe Discord, les fonctions en jeu et les activités en jeu sont des notions distinctes ;
 - documenter tout changement d'URL, d'identifiant public, de nom de binding, de propriété ou de procédure de déploiement.
+- maintenir systématiquement à jour toutes les documentations présentes dans le projet dès qu'une analyse, une décision, une réalisation ou un déploiement modifie ou précise leur contenu ; cette règle s'applique même si la demande ne cite pas explicitement les fichiers documentaires.
 
 -------------------
 -= POINT DE REPRISE =-
@@ -50,9 +51,10 @@ Règles d'intervention :
 - la synchronisation bidirectionnelle GAS/D1 est configurée en mode actif dans le Worker ;
 - le cahier des charges des fonctions et activités Discord est rédigé, mais son développement n'a pas commencé ;
 - les informations et choix listés dans D-002 doivent être fournis ou validés avant l'implémentation.
+- l'analyse D-003 sur le remplacement de `?admin=1` est terminée dans ANALYSE-D003-CONNEXION-DISCORD.md ; aucun code de cette évolution n'est encore développé.
 
 Ordre conseillé :
-1. D-001 — valider complètement OAuth Discord sur D1 et GAS, puis fermer l'ancien accès par jeton ;
+1. D-001 — mettre en œuvre le plan D-003, valider complètement OAuth Discord sur D1 et GAS, puis fermer l'ancien accès par jeton ;
 2. D-002 — valider le cahier des charges des rôles Discord et réaliser d'abord le lot 1 en lecture seule ;
 3. traiter ensuite les nouvelles demandes ajoutées dans ce fichier selon leur priorité explicite.
 
@@ -227,7 +229,7 @@ Stockage navigateur temporaire :
 ------------------------
 -= DEMANDES À RÉALISER =-
 ------------------------
->>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-003 <<<
+>>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-004 <<<
 
 D-001 [SÉCURITÉ] [À VALIDER]
 Demande : terminer la migration de l'authentification Admin vers Discord pour D1 et GAS, vérifier les rôles « Chef d'Expédition » et « Conseiller d'Expédition », puis fermer définitivement l'ancien accès par ADMIN_TOKEN.
@@ -240,6 +242,7 @@ Demande : terminer la migration de l'authentification Admin vers Discord pour D1
 - la configuration et la validation du mode Discord côté GAS doivent être confirmées ;
 - après recette D1 + GAS, passer ALLOW_LEGACY_ADMIN_TOKEN=false, redéployer, contrôler les écritures et seulement ensuite supprimer l'ancien secret ADMIN_TOKEN ;
 - suivre DEPLOIEMENT-OAUTH-DISCORD.md et conserver le point de retour documenté au commit da1060c.
+- intégrer lors de l'implémentation le plan validé par l'analyse D-003 : connexion ouverte à tous les comptes Discord, droits RH accordés uniquement après contrôle des rôles, bouton Connexion/Déconnexion et suppression de la dépendance à `?admin=1`.
 
 D-002 [ÉVOLUTION] [EN ATTENTE DE VALIDATION]
 Demande : afficher sur la fiche des membres leurs fonctions en jeu, activités en jeu et responsabilités Discord, sans les confondre avec le grade de la Soc ni avec les rôles donnant accès à l'administration du site.
@@ -268,7 +271,7 @@ Informations ou décisions nécessaires avant développement :
 
 Modèle à copier pour une nouvelle demande :
 
-D-003 [TYPE] [À FAIRE]
+D-004 [TYPE] [À FAIRE]
 Demande :
 [Décrire ici le problème, le résultat attendu, les pages ou services concernés, les règles à préserver et, si possible, les critères de validation.]
 
@@ -320,6 +323,19 @@ Réalisation :
 
 [16/09/2026] Clarification de la règle de clôture des demandes : une demande terminée doit être retirée de la liste ouverte puis recopiée intégralement et sans reformulation dans « Réalisations effectuées », immédiatement suivie du détail horodaté de la réalisation, de ses contrôles et de son éventuel déploiement.
 
+[2026-09-16 13:14 Europe/Paris] Demande D-003 terminée.
+Demande initiale :
+D-003 [SECURITE] [À FAIRE]
+Demande : Il s'agit d'un complément/modification/ajout à la demande D-001.
+	L'authentification via Discord me plait beaucoup. J'aimerais l'utiliser en lieu et place du paraètre ?amin=1 (qui du coup serait obsolète et plus utilisé).
+	Actuellement, le paramètre admin détermine la présence ou non de certaines entrée du menu de gauche en appel direct (je souhaite conserver l'affichage différent lors de l'intégration en iframe dans notre site web historique).
+	Afin de remplacer ce paramètre, je voudrais ajouter un bouton 'Connexion/Déconnexion' dans la barre de menu, en bas de l'écran (mais toujours visible). L'appui sur ce bouton déclanchera l'authentification via Discord, et donnerait les droit d'affichage des entrées de menu et de modifications, selon les rôles que nous avons définis en D-001.
+	Aucun empêchement de connexion si l'utilisateur ne possède pas ces roles : il n'aura tout simplement aucun droit ni accès aux options d'administration RH.
+	Analyse cette demande et sa faisabilité, et décris-moi la marche à suivre pour la mise en oeuvre, sans rien casser de l'existant (qui je le rapelle est fonctionnel et en production).
+
+Réalisation :
+[2026-09-16 13:14 Europe/Paris] Analyse de faisabilité complète, sans modification du code ni des services de production. La demande est réalisable sans migration D1. La solution retenue sépare l'authentification Discord, ouverte à tout utilisateur, de l'autorisation RH, réservée aux rôles Chef d'Expédition et Conseiller d'Expédition et systématiquement revalidée côté Worker ou GAS avant chaque écriture. La marche à suivre couvre le nouvel état asynchrone du frontend, le bouton Connexion/Déconnexion toujours visible, la suppression progressive de `?admin=1`, les accès directs, l'intégration dans une iframe d'une autre origine, la distinction HTTP 401/403, la compatibilité GAS, les tests, le déploiement progressif par indicateur de configuration et le retour arrière. Le document ANALYSE-D003-CONNEXION-DISCORD.md contient le détail complet. SECURITE-GAS.md, DEPLOIEMENT-OAUTH-DISCORD.md, CAHIER-DES-CHARGES-ROLES-DISCORD.md, le README du Worker et le présent fichier ont été actualisés. Validation de l'état de référence : 17 tests automatisés réussis et contrôle de syntaxe Node réussi. L'implémentation reste rattachée à D-001 et n'a pas commencé.
+
 ---------------------------
 -= DOCUMENTATION DE RÉFÉRENCE =-
 ---------------------------
@@ -327,6 +343,7 @@ Réalisation :
 - SECURITE-GAS.md : secrets, propriétés Apps Script, notification Discord et synchronisation ;
 - DEPLOIEMENT-OAUTH-DISCORD.md : ordre de mise en production OAuth, recette et retour arrière ;
 - CAHIER-DES-CHARGES-ROLES-DISCORD.md : évolution future des fonctions et activités Discord ;
+- ANALYSE-D003-CONNEXION-DISCORD.md : faisabilité et plan de remplacement de `?admin=1` par une connexion Discord explicite ;
 - cloudflare/membres-soc-api/README.md : état et exploitation du Worker D1 ;
 - cloudflare/membres-soc-api/wrangler.jsonc : bindings et variables publiques Cloudflare ;
 - cloudflare/membres-soc-api/package.json : commandes locales de test, migration et déploiement.

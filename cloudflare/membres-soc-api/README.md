@@ -7,9 +7,13 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - Base D1 distante : `frj-membres-soc` (`09b3c024-99f9-4add-a12c-ed214a462df5`), région WEUR.
 - Worker déployé : <https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev>.
 - La version préparée du site utilise D1 par défaut et redirige vers GAS si la sonde `/health` échoue.
-- `ADMIN_AUTH_MODE=legacy` conserve temporairement l'authentification actuelle pendant le déploiement progressif.
-- En mode `discord`, les écritures exigent une session OAuth valide et l'un des rôles Discord autorisés.
+- `ADMIN_AUTH_MODE=discord` active OAuth Discord et `ALLOW_LEGACY_ADMIN_TOKEN=true` conserve encore temporairement
+  l'ancien jeton pendant la fenêtre de migration.
+- Les écritures exigent une session OAuth valide et l'un des rôles Discord autorisés, sauf usage explicite du repli
+  legacy tant qu'il n'est pas fermé.
 - Lors d'une sortie, d'une désertion ou d'un bannissement, D1 retire aussi le rôle « Règlement Soc OK » (`1189173135380058133`).
+- D-003 prévoit de remplacer `?admin=1` par une connexion explicite dans le menu. Cette évolution est analysée dans
+  `../../ANALYSE-D003-CONNEXION-DISCORD.md`, mais elle n'est pas encore implémentée : le comportement courant reste inchangé.
 
 ## Sécurité de la migration
 
