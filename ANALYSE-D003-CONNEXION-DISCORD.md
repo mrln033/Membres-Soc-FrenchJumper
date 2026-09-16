@@ -1,7 +1,9 @@
 # D-003 — Connexion Discord et remplacement de `?admin=1`
 
-Statut : analyse de faisabilité terminée, développement non commencé  
-Date : 16 septembre 2026  
+Statut : analyse de faisabilité terminée, développement non commencé
+
+Date : 16 septembre 2026
+
 Application : Membres Soc FrenchJumper
 
 ## 1. Conclusion
