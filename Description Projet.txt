@@ -22,8 +22,11 @@ Gestion des demandes :
 - l'état est indiqué séparément : [À FAIRE], [EN COURS], [EN ATTENTE], [À VALIDER] ou [TERMINÉE] ;
 - les étapes d'une demande utilisent le suffixe .1, .2, etc. (exemple : D-002.1) ;
 - le repère « PROCHAIN IDENTIFIANT » doit être avancé dès qu'un numéro est attribué ;
-- une demande terminée est déplacée telle quelle dans « Réalisations effectuées », afin de conserver la formulation d'origine ;
-- la réalisation doit préciser ce qui a été fait, les fichiers ou services concernés, les contrôles effectués, le déploiement éventuel et les points restant à valider ;
+- tant qu'une demande n'est pas terminée, son bloc complet reste dans « Demandes à réaliser », avec son état et ses éventuels avancements ;
+- dès qu'une demande est terminée, retirer son bloc complet de « Demandes à réaliser » et le déplacer dans « Réalisations effectuées » ;
+- la demande initiale déplacée doit être reproduite intégralement et mot pour mot : ne pas la résumer, la reformuler ni en supprimer une partie ;
+- placer immédiatement après cette demande un paragraphe « Réalisation : » horodaté qui précise ce qui a été fait, les fichiers ou services concernés, les contrôles effectués, les déploiements réalisés et les éventuels points restant à valider ;
+- si des précisions ou demandes complémentaires ont modifié le périmètre pendant le travail, les conserver également avant le paragraphe « Réalisation : » ;
 - chaque ajout est daté et, si utile, horodaté au format Europe/Paris.
 
 Règles d'intervention :
@@ -272,6 +275,15 @@ Demande :
 ------------------------------
 -= RÉALISATIONS EFFECTUÉES =-
 ------------------------------
+Format obligatoire lors de la clôture d'une demande :
+
+[AAAA-MM-JJ HH:MM Europe/Paris] Demande D-NNN terminée.
+Demande initiale :
+[Copie intégrale et strictement identique du bloc auparavant présent dans « Demandes à réaliser ».]
+
+Réalisation :
+[Détail horodaté des travaux, fichiers et services concernés, contrôles, tests, migrations, déploiements, validations et éventuelles réserves.]
+
 [Mars 2026] Création et évolution du frontend de gestion des membres : navigation principale, listes des membres actifs et anciens, consultation des fiches et affichage des mouvements.
 
 [Avril-mai 2026] Développement progressif de l'interface cliente et du backend Google Apps Script. Mise en place des feuilles de grades, membres et mouvements, des lectures publiques, de la création ou réouverture d'une fiche, des changements de grade, des sorties et de l'historique.
@@ -305,6 +317,8 @@ Demande :
 [15/09/2026] Rédaction du cahier des charges « Fonctions et activités Discord ». Distinction formelle entre accès RH, équipe Discord, grades de la Soc, fonctions en jeu et activités ; proposition du modèle D1/GAS, de la synchronisation, des règles de sécurité, des lots, des tests et du retour arrière. Le document reste à valider avant développement.
 
 [16/09/2026] Création du présent fichier de pilotage à partir de l'historique Git, de l'état du code et des documents techniques du projet. Mise en place des identifiants permanents D-NNN, du point de reprise, du registre des variables sans leurs valeurs secrètes, des demandes encore ouvertes et de l'historique synthétique des réalisations.
+
+[16/09/2026] Clarification de la règle de clôture des demandes : une demande terminée doit être retirée de la liste ouverte puis recopiée intégralement et sans reformulation dans « Réalisations effectuées », immédiatement suivie du détail horodaté de la réalisation, de ses contrôles et de son éventuel déploiement.
 
 ---------------------------
 -= DOCUMENTATION DE RÉFÉRENCE =-
