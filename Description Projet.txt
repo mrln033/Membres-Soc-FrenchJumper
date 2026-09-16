@@ -152,7 +152,7 @@ Application OAuth Discord :
 IDs Discord :
 - Role "Administrateur" : 464513638414417930
 - Role "Modérateur" : 464514892355993600
-- Role "Enzoboy" : 464514892355993600
+- Role "Enzoboy" : 464706697408020482
 - Role "Règlement Soc OK" : 1189173135380058133
 - Role "FRJ" : 464706220905857026
 - Role "FRJ-Like" : 1133325888876970024
