@@ -8,9 +8,31 @@ momentanément incompatible avec le Worker ou avec GAS.
 - Sans paramètre `backend`, le site utilise D1.
 - `backend=gas` ou `backend=GAS` force GAS.
 - Une panne détectée de D1 redirige la page courante vers `backend=gas` sans rejouer automatiquement une écriture.
-- `admin=1` demande le mode d'affichage Admin, mais les droits proviennent exclusivement de Discord.
+- `admin=1` est ignoré puis retiré de l'URL ; l'affichage RH provient exclusivement de la session Discord vérifiée.
 - Un utilisateur est autorisé s'il porte au moins un rôle listé dans `ADMIN_DISCORD_ROLE_IDS`.
+- Tout membre du serveur peut se connecter après activation de `AUTH_LOGIN_POLICY=guild_members`, sans obtenir
+  automatiquement de droit RH.
 - Le Worker et GAS relisent les rôles Discord à chaque écriture sensible.
+
+## Évolution D-003 : état de l'implémentation
+
+Le bouton Connexion/Déconnexion, le retour OAuth compatible iframe, l'état asynchrone et le contrat serveur sont
+implémentés. Le Worker compatible et GAS v142 sont déployés ; le frontend ne l'est pas encore. La variable
+`AUTH_LOGIN_POLICY=admin_only` maintient le comportement antérieur tant que le frontend n'est pas publié. Le passage
+final à `guild_members` n'intervient qu'après cette publication et une recette RH réussie.
+
+État validé le 16 septembre 2026 à 14:34 Europe/Paris :
+
+- Worker : version `c475badb-3424-4b95-84d8-edafb36e6f2b`, `ADMIN_AUTH_MODE=discord`,
+  `AUTH_LOGIN_POLICY=admin_only`, `ALLOW_LEGACY_ADMIN_TOKEN=true` ;
+- GAS : déploiement existant `AKfycbzf40jOrUs79_O5PASuc7Y-OOZv_C2RZV1bY7r97WhF8iVVQ6f4nIpBCCRh_0IOIozSew`,
+  version 142 ; retour arrière possible vers la version 141 ;
+- recette publique : 1 324 membres lus sur GAS et D1, `/health` valide et `/auth/session` sans jeton refusé en 401 ;
+- frontend GitHub Pages : non fusionné et non publié.
+
+Un compte absent du serveur ne reçoit aucune session : le frontend affiche un message explicite puis reste en
+consultation publique. Les erreurs Discord 401, 403, 429 et 5xx sont traitées comme une indisponibilité temporaire,
+jamais comme une fausse absence du serveur.
 
 ## 1. Relever les deux IDs de rôles Discord
 
@@ -80,8 +102,11 @@ npx wrangler secret put ADMIN_DISCORD_ROLE_IDS
 
 ## 5. Préparer GAS sans activer la protection
 
-1. Copier la nouvelle version de `gas/Code.gs` dans le projet Apps Script.
-2. Dans **Paramètres du projet > Propriétés du script**, ajouter :
+1. Vérifier `clasp show-authorized-user`, puis `clasp show-file-status`. Le projet est associé par `.clasp.json` au
+   Script ID Membres Soc et `rootDir=gas` limite le push à `Code.gs`, `Sync.gs` et `appsscript.json`.
+2. Exécuter `clasp push` seulement après avoir comparé le projet distant ; cette commande remplace tout le contenu du
+   projet Apps Script et ne doit donc jamais être lancée depuis un dossier incomplet.
+3. Dans **Paramètres du projet > Propriétés du script**, ajouter :
 
 ```text
 ADMIN_AUTH_MODE = legacy
@@ -89,16 +114,18 @@ ADMIN_SESSION_SECRET = même valeur que Cloudflare
 ADMIN_DISCORD_ROLE_IDS = id_role_chef,id_role_conseiller
 ```
 
-3. Vérifier que `BOT_TOKEN` et `GUILD_ID` existent déjà.
-4. Créer une nouvelle version du déploiement Web en conservant l'URL `/exec` actuelle.
-5. Tester une lecture et une écriture avec le site actuel. Le mode `legacy` conserve ici le comportement antérieur.
+4. Vérifier que `BOT_TOKEN` et `GUILD_ID` existent déjà.
+5. Lister les déploiements avec `clasp list-deployments`, puis mettre à jour le déploiement Web existant afin de
+   conserver l'URL `/exec` actuelle ; ne pas créer une seconde Web App par défaut.
+6. Tester une lecture et une écriture avec le site actuel. Le mode `legacy` conserve ici le comportement antérieur.
 
 ## 6. Déployer le Worker en mode compatible
 
 Dans `wrangler.jsonc`, conserver à ce stade :
 
 ```jsonc
-"ADMIN_AUTH_MODE": "legacy",
+"ADMIN_AUTH_MODE": "discord",
+"AUTH_LOGIN_POLICY": "admin_only",
 "ALLOW_LEGACY_ADMIN_TOKEN": "true"
 ```
 
@@ -127,37 +154,44 @@ Tester le nouveau frontend localement :
 npm run dev:site
 ```
 
-Puis ouvrir `http://127.0.0.1:8787/?admin=1`. Vérifier successivement :
+Puis ouvrir `http://127.0.0.1:8787/`. Vérifier successivement :
 
 - connexion d'un compte portant un rôle autorisé ;
-- refus d'un compte sans rôle autorisé ;
+- connexion sans droit RH d'un membre du serveur ne portant aucun rôle autorisé ;
+- refus non bloquant d'un compte absent du serveur, avec message puis consultation publique ;
+- erreur temporaire distincte lorsque Discord renvoie 401, 403, 429 ou 5xx ;
+- fonctionnement du bouton depuis `index.html` intégré dans une iframe d'une autre origine ;
 - ajout d'un membre de test raisonnablement identifiable ;
 - modification puis consultation de sa fiche ;
 - conservation de `backend=gas` dans les liens après un basculement manuel.
 
 ## 8. Publier le frontend puis fermer l'ancien accès
 
-1. Publier les fichiers HTML/JS sur GitHub Pages.
-2. Vérifier sans paramètre que D1 est utilisé.
-3. Vérifier `?admin=1` et une action Admin via Discord.
-4. Vérifier explicitement `?backend=gas&admin=1`.
-5. Dans GAS, passer `ADMIN_AUTH_MODE` de `legacy` à `discord`.
-6. Dans `wrangler.jsonc`, passer `ALLOW_LEGACY_ADMIN_TOKEN` à `false`, puis redéployer le Worker.
-7. Après vérification, l'ancien secret `ADMIN_TOKEN` peut être supprimé avec `wrangler secret delete ADMIN_TOKEN`.
+1. Publier la nouvelle version de `gas/Code.gs` en conservant `ADMIN_AUTH_MODE=legacy` et la même URL `/exec`.
+2. Déployer le Worker avec `AUTH_LOGIN_POLICY=admin_only` et `ALLOW_LEGACY_ADMIN_TOKEN=true`.
+3. Publier les fichiers HTML/JS sur GitHub Pages.
+4. Vérifier sans paramètre que D1 est utilisé, qu'un ancien favori `?admin=1` est nettoyé et qu'il n'accorde aucun droit.
+5. Vérifier une connexion et une action RH sur D1, puis explicitement avec `?backend=gas`.
+6. Passer `AUTH_LOGIN_POLICY` à `guild_members`, redéployer le Worker et tester les trois profils : RH, membre sans rôle,
+   compte absent du serveur.
+7. Dans GAS, passer `ADMIN_AUTH_MODE` de `legacy` à `discord`, republier puis refaire une écriture de recette.
+8. Passer `ALLOW_LEGACY_ADMIN_TOKEN` à `false`, redéployer le Worker et contrôler qu'un ancien token est refusé.
+9. Après vérification, supprimer l'ancien secret avec `wrangler secret delete ADMIN_TOKEN`.
 
 ## Retour arrière
 
-Le point Git antérieur à cette évolution est `da1060c`. La branche de travail est
-`codex/d1-default-discord-role-auth`.
+Le point Git antérieur à la première migration OAuth est `da1060c`. L'implémentation D-003 est préparée sur la branche
+`codex/cahier-des-charges-roles-discord` ; relever son commit exact avant la mise en production.
 
 En cas d'incident :
 
 1. Remettre `ADMIN_AUTH_MODE=legacy` dans les propriétés GAS.
-2. Revenir au déploiement Apps Script précédent via **Gérer les déploiements**.
-3. Dans `cloudflare/membres-soc-api`, exécuter `npx wrangler versions list`, puis
+2. Remettre `AUTH_LOGIN_POLICY=admin_only` et conserver temporairement `ALLOW_LEGACY_ADMIN_TOKEN=true`.
+3. Revenir au déploiement Apps Script précédent via **Gérer les déploiements**.
+4. Dans `cloudflare/membres-soc-api`, exécuter `npx wrangler versions list`, puis
    `npx wrangler rollback <VERSION_ID>` vers la version connue comme stable.
-4. Rétablir le frontend avec un `git revert` du commit de migration, puis republier GitHub Pages.
-5. Utiliser temporairement `?backend=gas` si D1 est la seule partie indisponible.
+5. Rétablir le frontend avec un `git revert` du commit de migration, puis republier GitHub Pages.
+6. Utiliser temporairement `?backend=gas` si D1 est la seule partie indisponible.
 
 Ne jamais utiliser `git reset --hard` pour ce retour arrière : un revert conserve un historique explicite et
 réversible.

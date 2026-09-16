@@ -15,6 +15,9 @@
     // Garde de déploiement : passer à "discord" seulement après avoir posé les
     // secrets OAuth/session et publié la nouvelle version GAS.
     "ADMIN_AUTH_MODE": "discord",
+    // Garde de déploiement : conserver admin_only jusqu'à publication conjointe
+    // du nouveau frontend, puis passer explicitement à guild_members.
+    "AUTH_LOGIN_POLICY": "admin_only",
     // À laisser vrai uniquement durant le chevauchement ancien/nouveau frontend.
     "ALLOW_LEGACY_ADMIN_TOKEN": "true",
     // Identifiant public de l'application Discord utilisée pour OAuth.

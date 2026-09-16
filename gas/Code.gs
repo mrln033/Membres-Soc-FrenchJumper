@@ -34,6 +34,12 @@ function getRequiredScriptProperty_(name) {
   return value;
 }
 
+function createAuthError_(code, message) {
+  const error = new Error(message);
+  error.authCode = code;
+  return error;
+}
+
 /**
  * Valide la session courte émise par le Worker puis relit les rôles Discord du
  * demandeur. Le mode legacy (valeur par défaut) conserve le comportement actuel
@@ -45,17 +51,17 @@ function requireAdminSession_(data) {
   if (mode !== "discord") return { id: "legacy", name: "Legacy admin" };
 
   const secret = properties.getProperty("ADMIN_SESSION_SECRET");
-  if (!secret) throw new Error("Propriété Apps Script manquante : ADMIN_SESSION_SECRET");
+  if (!secret) throw createAuthError_("auth_unavailable", "Propriété Apps Script manquante : ADMIN_SESSION_SECRET");
   const token = String(data.adminSession || "");
   const parts = token.split(".");
-  if (parts.length !== 3) throw new Error("Session administrateur absente ou invalide");
+  if (parts.length !== 3) throw createAuthError_("auth_required", "Session Discord absente ou invalide");
 
   const signingInput = parts[0] + "." + parts[1];
   const expectedSignature = Utilities.base64EncodeWebSafe(
     Utilities.computeHmacSha256Signature(signingInput, secret, Utilities.Charset.UTF_8)
   ).replace(/=+$/g, "");
   if (!constantTimeStringEquals_(parts[2], expectedSignature)) {
-    throw new Error("Session administrateur invalide");
+    throw createAuthError_("auth_required", "Session Discord invalide");
   }
 
   let payload;
@@ -64,7 +70,7 @@ function requireAdminSession_(data) {
       Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[1])).getDataAsString("UTF-8")
     );
   } catch (err) {
-    throw new Error("Session administrateur invalide");
+    throw createAuthError_("auth_required", "Session Discord invalide");
   }
   if (
     payload.aud !== "frj-membres-admin" ||
@@ -72,7 +78,7 @@ function requireAdminSession_(data) {
     !isFinite(Number(payload.exp)) ||
     Number(payload.exp) * 1000 <= Date.now()
   ) {
-    throw new Error("Session administrateur expirée ou invalide");
+    throw createAuthError_("auth_required", "Session Discord expirée ou invalide");
   }
 
   requireCurrentAdminDiscordRole_(String(payload.sub), properties);
@@ -100,27 +106,35 @@ function requireCurrentAdminDiscordRole_(userId, properties) {
     .map(function(id) { return id.trim(); })
     .filter(function(id) { return /^\d{17,20}$/.test(id); });
   if (!/^\d{17,20}$/.test(guildId) || !botToken || !allowedRoleIds.length) {
-    throw new Error("Configuration des rôles administrateurs Discord incomplète");
+    throw createAuthError_("auth_unavailable", "Configuration des rôles administrateurs Discord incomplète");
   }
 
-  const response = UrlFetchApp.fetch(
-    "https://discord.com/api/v10/guilds/" + guildId + "/members/" + userId,
-    {
-      method: "get",
-      headers: { Authorization: "Bot " + botToken },
-      muteHttpExceptions: true
-    }
-  );
+  let response;
+  try {
+    response = UrlFetchApp.fetch(
+      "https://discord.com/api/v10/guilds/" + guildId + "/members/" + userId,
+      {
+        method: "get",
+        headers: { Authorization: "Bot " + botToken },
+        muteHttpExceptions: true
+      }
+    );
+  } catch (err) {
+    throw createAuthError_("auth_unavailable", "Vérification des rôles Discord temporairement indisponible");
+  }
   const status = response.getResponseCode();
   let member = {};
   try { member = JSON.parse(response.getContentText() || "{}"); } catch (err) {}
   if (status < 200 || status >= 300 || !Array.isArray(member.roles)) {
-    throw new Error("Vérification des rôles Discord impossible (HTTP " + status + ")");
+    if (status === 404) {
+      throw createAuthError_("not_guild_member", "Ce compte Discord n'est plus membre du serveur FrenchJumper");
+    }
+    throw createAuthError_("auth_unavailable", "Vérification des rôles Discord impossible (HTTP " + status + ")");
   }
   const authorized = member.roles.some(function(roleId) {
     return allowedRoleIds.indexOf(String(roleId)) !== -1;
   });
-  if (!authorized) throw new Error("Rôle Discord administrateur requis");
+  if (!authorized) throw createAuthError_("role_required", "Rôle Discord administrateur requis");
 }
 
 function doGet(e) {
@@ -216,8 +230,16 @@ function doPost(e) {
     try {
       requireAdminSession_(data);
     } catch (err) {
+      const code = String(err.authCode || "auth_required");
       return ContentService
-        .createTextOutput(JSON.stringify({ success: false, authRequired: true, error: err.message }))
+        .createTextOutput(JSON.stringify({
+          success: false,
+          authRequired: code === "auth_required",
+          authForbidden: code === "role_required" || code === "not_guild_member",
+          authUnavailable: code === "auth_unavailable",
+          authCode: code,
+          error: err.message
+        }))
         .setMimeType(ContentService.MimeType.JSON);
     }
   }

@@ -55,7 +55,12 @@ async function apiRequestToBackend(backend, action, data, method, adminAuthoriza
 
     if (backend === "d1" && res.status === 401) {
         clearAdminAuthorization();
-        throw new ApiRequestError("Session administrateur refusée ou expirée. Réessaie l'action pour te reconnecter.", 401, backend);
+        throw new ApiRequestError("Session Discord refusée ou expirée. Reconnectez-vous pour effectuer cette action.", 401, backend);
+    }
+
+    if (backend === "d1" && res.status === 403) {
+        markAuthorizationDenied("role_required");
+        throw new ApiRequestError("Votre compte Discord ne possède plus un rôle RH autorisé.", 403, backend);
     }
 
     if (!res.ok) {
@@ -71,6 +76,7 @@ async function apiRequestToBackend(backend, action, data, method, adminAuthoriza
 
     const json = await res.json();
     if (json.authRequired === true) clearAdminAuthorization();
+    if (json.authForbidden === true) markAuthorizationDenied(json.authCode || "role_required");
     if (json.error) throw new Error(json.error);
     return json;
 }
@@ -489,8 +495,10 @@ async function loadFiche(membreId) {
   container.innerHTML = "Chargement...";
 
   try {
-
-    const data = await apiRequest("getFiche", { id: membreId });
+    const [, data] = await Promise.all([
+      ensureAuthState(),
+      apiRequest("getFiche", { id: membreId })
+    ]);
 
     displayFiche(container, data.membre, data.historique);
 
@@ -1149,20 +1157,14 @@ function openEditMembreInfosModal(membre) {
 async function initNouveauMembreForm() {
 	console.log("Fonction : client.js - initNouveauMembreForm()");
 
-	if (!isAdmin) {
+	const state = await ensureAuthState();
+	if (!state.authorized) {
 		document.body.innerHTML = "";
-		openInfoModal("Accès refusé", "Accès admin requis.", "error").then(() => {
+		openInfoModal("Accès refusé", state.authenticated
+			? "Votre compte Discord est connecté, mais ne possède pas un rôle RH autorisé."
+			: "Connectez-vous depuis le menu principal avec un compte Discord disposant d'un rôle RH.", "error").then(() => {
 			window.location.href = buildInternalPageUrl("actifs.html");
 		});
-		return;
-	}
-
-	// Sur un accès direct à nouveau.html, authentifie avant toute saisie afin
-	// qu'une redirection OAuth ne fasse pas perdre le contenu du formulaire.
-	try {
-		if (!(await prepareAdminAuthentication())) return;
-	} catch (error) {
-		await openInfoModal("Connexion Admin", error.message || "Connexion Discord impossible.", "error");
 		return;
 	}
 
