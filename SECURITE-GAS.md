@@ -25,7 +25,8 @@ Apres toute modification de `gas/Code.gs`, mettre a jour le deploiement de l'app
 
 ## Authentification Admin Discord
 
-`?admin=1` reste uniquement un interrupteur d'affichage. Il ne donne aucun droit côté Worker ou GAS.
+`?admin=1` est obsolète dans l'implémentation locale en cours : le frontend le retire de l'URL et ne lui accorde
+aucun droit. L'état d'affichage RH provient désormais de `/auth/session`.
 
 Le Worker réalise le parcours OAuth2 Discord avec le scope minimal `identify`, émet une session HMAC-SHA256 de
 30 minutes, puis relit les rôles Discord du demandeur avant chaque action sensible. GAS vérifie la même signature et
@@ -56,15 +57,15 @@ Le mode `legacy` est volontairement le défaut tant que le nouveau frontend n'es
 parcours complet, passer `ADMIN_AUTH_MODE=discord` dans GAS. Le guide détaillé et le retour arrière figurent dans
 `DEPLOIEMENT-OAUTH-DISCORD.md`.
 
-### Évolution D-003 planifiée
+### Évolution D-003 implémentée localement
 
-D-003 prévoit de supprimer l'usage de `?admin=1` et d'ajouter un bouton Connexion/Déconnexion Discord dans le menu.
-Cette évolution est analysée mais n'est pas encore développée. La cible sépare explicitement :
+D-003 supprime l'usage de `?admin=1` et ajoute un bouton Connexion/Déconnexion Discord dans le menu. Le code est
+développé et testé localement, mais n'est pas encore publié. Il sépare explicitement :
 
 - la session Discord, accessible à tout membre du serveur FRJ correctement authentifié, même sans rôle RH ;
 - l'autorisation RH, réservée aux rôles `Chef d'Expédition` et `Conseiller d'Expédition` et relue avant chaque écriture.
 
-GAS devra continuer à vérifier lui-même la signature, l'expiration et les rôles courants. Un utilisateur connecté sans
+GAS continue à vérifier lui-même la signature, l'expiration et les rôles courants. Un utilisateur connecté sans
 rôle RH restera connecté mais ses écritures seront refusées. Le plan complet, les tests, l'iframe et le déploiement
 progressif sont décrits dans `ANALYSE-D003-CONNEXION-DISCORD.md`.
 
@@ -96,7 +97,7 @@ Ordre d'activation :
 1. Ajouter les deux fichiers et les proprietes ci-dessus avec `SYNC_ENABLED=false`.
 2. Deployer une nouvelle version de l'application Web en conservant l'URL `/exec` actuelle.
 3. Executer manuellement `setupBidirectionalSync` une fois depuis l'editeur Apps Script et accepter les autorisations.
-4. Vérifier le tableau `sync.html?admin=1` (D1 est désormais le backend par défaut).
+4. Vérifier le tableau `sync.html?backend=d1` après connexion avec un compte RH (D1 est le backend par défaut).
 5. Passer `SYNC_ENABLED=true`, puis activer `SYNC_MODE=active` dans le Worker seulement apres un test controle.
 
 Les mutations recues de D1 mettent a jour les feuilles sans appeler Discord et sans creer une mutation inverse.

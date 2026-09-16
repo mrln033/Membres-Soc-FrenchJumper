@@ -51,7 +51,7 @@ Règles d'intervention :
 - la synchronisation bidirectionnelle GAS/D1 est configurée en mode actif dans le Worker ;
 - le cahier des charges des fonctions et activités Discord est rédigé, mais son développement n'a pas commencé ;
 - les informations et choix listés dans D-002 doivent être fournis ou validés avant l'implémentation.
-- l'analyse D-003 sur le remplacement de `?admin=1` est terminée dans ANALYSE-D003-CONNEXION-DISCORD.md ; elle impose notamment qu'un compte absent du serveur Discord revienne, après un message explicite, à la consultation publique non authentifiée sans aucun blocage ; aucun code de cette évolution n'est encore développé.
+- l'analyse D-003 sur le remplacement de `?admin=1` est terminée dans ANALYSE-D003-CONNEXION-DISCORD.md ; son implémentation locale est en cours dans D-001 et n'est pas déployée ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
 
 Ordre conseillé :
 1. D-001 — mettre en œuvre le plan D-003, valider complètement OAuth Discord sur D1 et GAS, puis fermer l'ancien accès par jeton ;
@@ -98,10 +98,11 @@ Règles métier importantes actuellement codées :
 -= ARCHITECTURE =-
 -------------------
 Frontend statique GitHub Pages :
-- pages principales : index.html, actifs.html, anciens.html, fiche.html, mouvements.html, nouveau.html et sync.html ;
-- logique cliente partagée : js/config.js, js/client.js et js/utils.js ;
+- pages principales : index.html, actifs.html, anciens.html, fiche.html, mouvements.html, nouveau.html et sync.html ; page technique de retour OAuth : oauth-callback.html ;
+- logique cliente partagée : js/config.js, js/client.js, js/utils.js et js/oauth-callback.js ;
 - styles : css/style.css ;
-- le paramètre « admin=1 » demande l'affichage Admin, mais ne constitue jamais une autorisation ;
+- le paramètre « admin=1 » est désormais obsolète dans le code local : il est retiré de l'URL et ne constitue jamais une autorisation ;
+- le bouton Connexion/Déconnexion Discord est toujours visible en bas du menu de `index.html` ; l'affichage RH dépend de `/auth/session` ;
 - D1 est prioritaire ; une sonde « /health » peut provoquer une redirection vers GAS en cas d'indisponibilité ;
 - le backend choisi est conservé dans les liens internes.
 
@@ -224,6 +225,7 @@ Stockage navigateur temporaire :
 - FRJ_MEMBRES_ADMIN_SESSION : session OAuth signée ;
 - FRJ_MEMBRES_ADMIN_OAUTH_STATE : protection du retour OAuth ;
 - FRJ_MEMBRES_ADMIN_AUTH_ERROR : erreur du parcours OAuth ;
+- FRJ_MEMBRES_AUTH_CACHE : dernier état d'identité et d'autorisation validé, utilisé uniquement pour permettre le secours GAS si le Worker est momentanément inaccessible ;
 - FRJ_MEMBRES_D1_ADMIN_TOKEN : ancien repli local, à supprimer lorsque D-001 sera clôturée.
 
 ------------------------
@@ -231,7 +233,7 @@ Stockage navigateur temporaire :
 ------------------------
 >>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-004 <<<
 
-D-001 [SÉCURITÉ] [À VALIDER]
+D-001 [SÉCURITÉ] [EN COURS]
 Demande : terminer la migration de l'authentification Admin vers Discord pour D1 et GAS, vérifier les rôles « Chef d'Expédition » et « Conseiller d'Expédition », puis fermer définitivement l'ancien accès par ADMIN_TOKEN.
 
 État au 16/09/2026 :
@@ -244,6 +246,17 @@ Demande : terminer la migration de l'authentification Admin vers Discord pour D1
 - suivre DEPLOIEMENT-OAUTH-DISCORD.md et conserver le point de retour documenté au commit da1060c.
 - intégrer lors de l'implémentation le plan validé par l'analyse D-003 : connexion ouverte à tous les membres du serveur Discord FRJ, droits RH accordés uniquement après contrôle des rôles, bouton Connexion/Déconnexion et suppression de la dépendance à `?admin=1`.
 - limiter toutefois l'émission d'une session aux membres présents sur le serveur Discord FRJ : un compte absent doit recevoir un message explicite puis être redirigé vers la consultation publique non authentifiée, sans écran bloqué ni boucle de connexion.
+
+Avancement au 16/09/2026 à 13:42 Europe/Paris :
+- implémentation locale du bouton Connexion/Déconnexion, de la suppression de `?admin=1` et du retour OAuth par popup compatible avec l'intégration en iframe ;
+- séparation côté Worker entre session Discord et autorisation RH, avec connexion possible des membres sans rôle lorsque `AUTH_LOGIN_POLICY=guild_members` sera activé ;
+- distinction entre 401 (session invalide), 403 (session valide sans droit RH) et 503 (vérification Discord indisponible) ;
+- absence du serveur identifiée par le seul statut Discord 404, sans session et avec retour public non bloquant ;
+- adaptation de GAS afin qu'un rôle retiré refuse l'écriture sans supprimer à tort une session encore valide ;
+- 24 tests automatisés réussis, dont le nettoyage d'un refus OAuth, la validation anti-rejeu, le déclassement immédiat après retrait d'un rôle et le contrat HTTP 401/403/503, et contrôles de syntaxe Node réussis ;
+- aucun déploiement Worker, GAS ou GitHub Pages effectué ; la recette réelle D1/GAS, l'activation `guild_members` puis la fermeture de `ALLOW_LEGACY_ADMIN_TOKEN` restent à réaliser avant de clôturer D-001.
+
+Contrôle complémentaire au 16/09/2026 à 13:54 Europe/Paris : les tests frontend simulés prouvent qu'un ancien favori `?admin=1` n'accorde aucun droit, qu'un refus OAuth efface session et cache tout en conservant le message public, qu'une session n'est acceptée que si l'état anti-rejeu correspond et qu'un refus de rôle par D1 ou GAS masque immédiatement les commandes RH sans supprimer la session Discord. Le mapping des refus serveur vers 401, 403 et 503 est également testé directement.
 
 D-002 [ÉVOLUTION] [EN ATTENTE DE VALIDATION]
 Demande : afficher sur la fiche des membres leurs fonctions en jeu, activités en jeu et responsabilités Discord, sans les confondre avec le grade de la Soc ni avec les rôles donnant accès à l'administration du site.

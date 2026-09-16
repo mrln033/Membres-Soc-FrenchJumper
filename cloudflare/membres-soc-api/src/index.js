@@ -41,7 +41,7 @@ export default {
         if (url.searchParams.get("action") === "getSyncStatus") {
           const authorization = await authorizeAdminRequest(request, env);
           if (!authorization.authorized) {
-            return withCors(json({ error: "Unauthorized" }, 401), origin, env);
+            return withCors(authorizationErrorResponse(authorization), origin, env);
           }
           return withCors(json(await getSyncStatus(env)), origin, env);
         }
@@ -58,7 +58,7 @@ export default {
         }
         const authorization = await authorizeAdminRequest(request, env);
         if (!authorization.authorized) {
-          return withCors(json({ error: "Unauthorized" }, 401), origin, env);
+          return withCors(authorizationErrorResponse(authorization), origin, env);
         }
         return withCors(await handlePost(data, env), origin, env);
       }
@@ -552,6 +552,18 @@ function json(data, status = 200) {
     status,
     headers: { "Content-Type": "application/json; charset=UTF-8" }
   });
+}
+
+export function authorizationErrorResponse(authorization) {
+  const status = authorization.status === 503
+    ? 503
+    : authorization.authenticated ? 403 : 401;
+  return json({
+    error: authorization.error || (status === 403 ? "Rôle Discord administrateur requis" : "Session invalide"),
+    authenticated: Boolean(authorization.authenticated),
+    authorized: false,
+    reason: authorization.reason || null
+  }, status);
 }
 
 function allowedOrigins(env) {

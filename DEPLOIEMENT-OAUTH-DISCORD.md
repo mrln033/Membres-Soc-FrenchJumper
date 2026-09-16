@@ -8,21 +8,22 @@ momentanément incompatible avec le Worker ou avec GAS.
 - Sans paramètre `backend`, le site utilise D1.
 - `backend=gas` ou `backend=GAS` force GAS.
 - Une panne détectée de D1 redirige la page courante vers `backend=gas` sans rejouer automatiquement une écriture.
-- `admin=1` demande le mode d'affichage Admin, mais les droits proviennent exclusivement de Discord.
+- `admin=1` est ignoré puis retiré de l'URL ; l'affichage RH provient exclusivement de la session Discord vérifiée.
 - Un utilisateur est autorisé s'il porte au moins un rôle listé dans `ADMIN_DISCORD_ROLE_IDS`.
+- Tout membre du serveur peut se connecter après activation de `AUTH_LOGIN_POLICY=guild_members`, sans obtenir
+  automatiquement de droit RH.
 - Le Worker et GAS relisent les rôles Discord à chaque écriture sensible.
 
-## Évolution D-003 : remplacement futur de `?admin=1`
+## Évolution D-003 : état de l'implémentation
 
-Le présent guide décrit le déploiement OAuth actuellement en place. D-003 prévoit ensuite de remplacer `?admin=1`
-par un bouton Connexion/Déconnexion et par un état d'autorisation fourni par le serveur.
+Le bouton Connexion/Déconnexion, le retour OAuth compatible iframe, l'état asynchrone et le contrat serveur sont
+implémentés localement. Ils ne sont pas encore déployés. La variable `AUTH_LOGIN_POLICY=admin_only` maintient le
+comportement antérieur tant que le frontend et GAS ne sont pas publiés ensemble. Le passage final à `guild_members`
+n'intervient qu'après cette publication et une recette RH réussie.
 
-Cette évolution ne doit pas être appliquée directement à la procédure ci-dessous tant que son développement et sa
-recette ne sont pas terminés. Elle introduira d'abord un Worker rétrocompatible, puis le frontend et GAS, avant
-d'autoriser la connexion des membres du serveur sans rôle RH et de fermer le repli legacy. Un compte absent du serveur
-ne recevra aucune session : un message explicite devra précéder le retour automatique à la consultation publique,
-sans jamais bloquer l'application. Le plan détaillé et le retour arrière
-sont consignés dans `ANALYSE-D003-CONNEXION-DISCORD.md`.
+Un compte absent du serveur ne reçoit aucune session : le frontend affiche un message explicite puis reste en
+consultation publique. Les erreurs Discord 401, 403, 429 et 5xx sont traitées comme une indisponibilité temporaire,
+jamais comme une fausse absence du serveur.
 
 ## 1. Relever les deux IDs de rôles Discord
 
@@ -111,6 +112,7 @@ Dans `wrangler.jsonc`, conserver à ce stade :
 
 ```jsonc
 "ADMIN_AUTH_MODE": "legacy",
+"AUTH_LOGIN_POLICY": "admin_only",
 "ALLOW_LEGACY_ADMIN_TOKEN": "true"
 ```
 
@@ -139,37 +141,44 @@ Tester le nouveau frontend localement :
 npm run dev:site
 ```
 
-Puis ouvrir `http://127.0.0.1:8787/?admin=1`. Vérifier successivement :
+Puis ouvrir `http://127.0.0.1:8787/`. Vérifier successivement :
 
 - connexion d'un compte portant un rôle autorisé ;
-- refus d'un compte sans rôle autorisé ;
+- connexion sans droit RH d'un membre du serveur ne portant aucun rôle autorisé ;
+- refus non bloquant d'un compte absent du serveur, avec message puis consultation publique ;
+- erreur temporaire distincte lorsque Discord renvoie 401, 403, 429 ou 5xx ;
+- fonctionnement du bouton depuis `index.html` intégré dans une iframe d'une autre origine ;
 - ajout d'un membre de test raisonnablement identifiable ;
 - modification puis consultation de sa fiche ;
 - conservation de `backend=gas` dans les liens après un basculement manuel.
 
 ## 8. Publier le frontend puis fermer l'ancien accès
 
-1. Publier les fichiers HTML/JS sur GitHub Pages.
-2. Vérifier sans paramètre que D1 est utilisé.
-3. Vérifier `?admin=1` et une action Admin via Discord.
-4. Vérifier explicitement `?backend=gas&admin=1`.
-5. Dans GAS, passer `ADMIN_AUTH_MODE` de `legacy` à `discord`.
-6. Dans `wrangler.jsonc`, passer `ALLOW_LEGACY_ADMIN_TOKEN` à `false`, puis redéployer le Worker.
-7. Après vérification, l'ancien secret `ADMIN_TOKEN` peut être supprimé avec `wrangler secret delete ADMIN_TOKEN`.
+1. Publier la nouvelle version de `gas/Code.gs` en conservant `ADMIN_AUTH_MODE=legacy` et la même URL `/exec`.
+2. Déployer le Worker avec `AUTH_LOGIN_POLICY=admin_only` et `ALLOW_LEGACY_ADMIN_TOKEN=true`.
+3. Publier les fichiers HTML/JS sur GitHub Pages.
+4. Vérifier sans paramètre que D1 est utilisé, qu'un ancien favori `?admin=1` est nettoyé et qu'il n'accorde aucun droit.
+5. Vérifier une connexion et une action RH sur D1, puis explicitement avec `?backend=gas`.
+6. Passer `AUTH_LOGIN_POLICY` à `guild_members`, redéployer le Worker et tester les trois profils : RH, membre sans rôle,
+   compte absent du serveur.
+7. Dans GAS, passer `ADMIN_AUTH_MODE` de `legacy` à `discord`, republier puis refaire une écriture de recette.
+8. Passer `ALLOW_LEGACY_ADMIN_TOKEN` à `false`, redéployer le Worker et contrôler qu'un ancien token est refusé.
+9. Après vérification, supprimer l'ancien secret avec `wrangler secret delete ADMIN_TOKEN`.
 
 ## Retour arrière
 
-Le point Git antérieur à cette évolution est `da1060c`. La branche de travail est
-`codex/d1-default-discord-role-auth`.
+Le point Git antérieur à la première migration OAuth est `da1060c`. L'implémentation D-003 est préparée sur la branche
+`codex/cahier-des-charges-roles-discord` ; relever son commit exact avant la mise en production.
 
 En cas d'incident :
 
 1. Remettre `ADMIN_AUTH_MODE=legacy` dans les propriétés GAS.
-2. Revenir au déploiement Apps Script précédent via **Gérer les déploiements**.
-3. Dans `cloudflare/membres-soc-api`, exécuter `npx wrangler versions list`, puis
+2. Remettre `AUTH_LOGIN_POLICY=admin_only` et conserver temporairement `ALLOW_LEGACY_ADMIN_TOKEN=true`.
+3. Revenir au déploiement Apps Script précédent via **Gérer les déploiements**.
+4. Dans `cloudflare/membres-soc-api`, exécuter `npx wrangler versions list`, puis
    `npx wrangler rollback <VERSION_ID>` vers la version connue comme stable.
-4. Rétablir le frontend avec un `git revert` du commit de migration, puis republier GitHub Pages.
-5. Utiliser temporairement `?backend=gas` si D1 est la seule partie indisponible.
+5. Rétablir le frontend avec un `git revert` du commit de migration, puis republier GitHub Pages.
+6. Utiliser temporairement `?backend=gas` si D1 est la seule partie indisponible.
 
 Ne jamais utiliser `git reset --hard` pour ce retour arrière : un revert conserve un historique explicite et
 réversible.

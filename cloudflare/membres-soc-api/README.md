@@ -12,10 +12,12 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - Les écritures exigent une session OAuth valide et l'un des rôles Discord autorisés, sauf usage explicite du repli
   legacy tant qu'il n'est pas fermé.
 - Lors d'une sortie, d'une désertion ou d'un bannissement, D1 retire aussi le rôle « Règlement Soc OK » (`1189173135380058133`).
-- D-003 prévoit de remplacer `?admin=1` par une connexion explicite dans le menu. Cette évolution est analysée dans
-  `../../ANALYSE-D003-CONNEXION-DISCORD.md`, mais elle n'est pas encore implémentée : le comportement courant reste inchangé.
-- Dans la cible D-003, un membre du serveur sans rôle RH pourra se connecter sans obtenir de droit. Un compte absent
-  du serveur ne recevra pas de session et reviendra, après un message explicite, à la consultation publique non bloquante.
+- L'implémentation locale D-003 remplace `?admin=1` par une connexion explicite dans le menu et sépare identité
+  Discord et autorisation RH. Elle n'est pas encore déployée.
+- `AUTH_LOGIN_POLICY=admin_only` garde le comportement de production pendant la migration. Après publication conjointe
+  du frontend et de GAS, `guild_members` permettra à un membre du serveur sans rôle RH de rester connecté sans droit.
+- Un compte absent du serveur ne reçoit jamais de session et revient, après un message explicite, à la consultation
+  publique non bloquante. Une panne Discord est identifiée séparément.
 
 ## Sécurité de la migration
 
@@ -39,15 +41,20 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - Les mouvements sont append-only et dédupliqués par `MouvementID`.
 - Les réplications ne rappellent jamais Discord et ne réémettent jamais une mutation inverse.
 - Un cron toutes les dix minutes relance les mutations en attente et contrôle les compteurs GAS/D1.
-- Le tableau administrateur est disponible via `sync.html?backend=d1&admin=1`.
+- Le tableau de synchronisation apparaît après connexion d'un compte autorisé et reste accessible avec `backend=d1`.
 
 ## Contrat HTTP compatible
 
+- `GET /auth/config` : mode OAuth public et politique de connexion ;
+- `GET /auth/session` : `401` si la session est invalide, sinon identité et booléen `authorized` ;
 - `GET /?action=getMembres`
 - `GET /?action=getMouvements`
 - `GET /?action=getMouvementsMensuels`
 - `GET /?action=getFiche&id=<uuid>`
 - `POST /` avec une action `createOrOpenMembre`, `applyMembreAction`, `updateMembreInfos` ou `syncDiscordFromWeb`
+
+Les routes protégées répondent `401` pour une session absente/invalide, `403` pour une session valide sans rôle RH
+et `503` lorsque Discord ne permet momentanément pas de revalider les rôles.
 
 ## Travail local
 
@@ -81,6 +88,7 @@ Variables non secrètes de migration dans `wrangler.jsonc` :
 - `DISCORD_OAUTH_CLIENT_ID` : `1479825051522957462` ;
 - `DISCORD_OAUTH_REDIRECT_URI` : callback déclaré à l'identique dans le portail Discord ;
 - `ADMIN_AUTH_MODE` : `legacy` pendant l'installation, puis `discord` ;
+- `AUTH_LOGIN_POLICY` : `admin_only` pendant le chevauchement, puis `guild_members` après publication du nouveau frontend ;
 - `ALLOW_LEGACY_ADMIN_TOKEN` : `true` pendant le chevauchement des frontends, puis impérativement `false`.
 
 Le token du bot et les autres secrets ne doivent jamais être ajoutés à `wrangler.jsonc` ni à Git.

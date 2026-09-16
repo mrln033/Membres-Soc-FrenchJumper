@@ -18,7 +18,8 @@ export async function handleAuthRoute(request, url, env, fetcher = fetch) {
   if (url.pathname === "/auth/config") {
     return json({
       mode: getAdminAuthMode(env),
-      configured: getAdminAuthMode(env) !== "discord" || isDiscordAuthConfigured(env)
+      configured: getAdminAuthMode(env) !== "discord" || isDiscordAuthConfigured(env),
+      loginPolicy: getDiscordLoginPolicy(env)
     });
   }
 
@@ -61,7 +62,11 @@ export async function handleAuthRoute(request, url, env, fetcher = fetch) {
     try {
       const oauth = await exchangeDiscordCode(code, getOAuthRedirectUri(request, env), env, fetcher);
       const user = await getCurrentDiscordUser(oauth.access_token, fetcher);
-      await requireAllowedDiscordRole(user.id, env, fetcher);
+      if (getDiscordLoginPolicy(env) === "guild_members") {
+        await requireGuildMembership(user.id, env, fetcher);
+      } else {
+        await requireAllowedDiscordRole(user.id, env, fetcher);
+      }
 
       const session = await createSignedToken({
         aud: ADMIN_AUDIENCE,
@@ -73,22 +78,30 @@ export async function handleAuthRoute(request, url, env, fetcher = fetch) {
       return redirectWithSession(state.returnTo, state.clientState, session);
     } catch (error) {
       console.warn(JSON.stringify({
-        message: "Discord admin login refused",
+        message: "Discord login refused",
         error: error instanceof Error ? error.message : String(error)
       }));
       return redirectWithAuthError(
         state.returnTo,
         state.clientState,
-        error instanceof Error ? error.message : "Connexion Discord refusée"
+        publicAuthErrorMessage(error),
+        error instanceof DiscordAccessError ? error.code : "discord_login_failed"
       );
     }
   }
 
   if (url.pathname === "/auth/session") {
     const authorization = await authorizeAdminRequest(request, env, fetcher);
-    return authorization.authorized
-      ? json({ authenticated: true, user: authorization.user })
-      : json({ authenticated: false, error: authorization.error }, 401);
+    if (!authorization.authenticated) {
+      return json({ authenticated: false, authorized: false, error: authorization.error }, 401);
+    }
+    return json({
+      authenticated: true,
+      authorized: authorization.authorized,
+      user: authorization.user,
+      reason: authorization.reason || null,
+      error: authorization.error || null
+    }, authorization.status || 200);
   }
 
   return null;
@@ -102,26 +115,62 @@ export async function authorizeAdminRequest(request, env, fetcher = fetch) {
   const bearer = getBearerToken(request);
   if (getAdminAuthMode(env) === "legacy") {
     const authorized = await constantTimeSecretEquals(bearer, env.ADMIN_TOKEN);
-    return { authorized, user: authorized ? { id: "legacy", name: "Legacy admin" } : null };
+    return {
+      authenticated: authorized,
+      authorized,
+      status: authorized ? 200 : 401,
+      user: authorized ? { id: "legacy", name: "Legacy admin" } : null
+    };
   }
 
+  let session;
   try {
-    const session = await verifySignedToken(bearer, env.ADMIN_SESSION_SECRET, ADMIN_AUDIENCE);
-    await requireAllowedDiscordRole(session.sub, env, fetcher);
-    return { authorized: true, user: { id: session.sub, name: session.name || "Discord" } };
+    session = await verifySignedToken(bearer, env.ADMIN_SESSION_SECRET, ADMIN_AUDIENCE);
   } catch (error) {
     // Fenêtre de migration volontaire : l'ancien frontend peut continuer à
     // écrire entre l'activation OAuth du Worker et la publication du site.
     if (String(env.ALLOW_LEGACY_ADMIN_TOKEN || "").toLowerCase() === "true") {
       const legacyAuthorized = await constantTimeSecretEquals(bearer, env.ADMIN_TOKEN);
       if (legacyAuthorized) {
-        return { authorized: true, user: { id: "legacy", name: "Legacy admin" } };
+        return {
+          authenticated: true,
+          authorized: true,
+          status: 200,
+          user: { id: "legacy", name: "Legacy admin" }
+        };
       }
     }
     return {
+      authenticated: false,
       authorized: false,
+      status: 401,
       user: null,
       error: error instanceof Error ? error.message : "Session administrateur invalide"
+    };
+  }
+
+  const user = { id: session.sub, name: session.name || "Discord" };
+  try {
+    await requireAllowedDiscordRole(session.sub, env, fetcher);
+    return { authenticated: true, authorized: true, status: 200, user };
+  } catch (error) {
+    if (error instanceof DiscordAccessError && error.code === "discord_unavailable") {
+      return {
+        authenticated: true,
+        authorized: false,
+        status: 503,
+        reason: error.code,
+        user,
+        error: publicAuthErrorMessage(error)
+      };
+    }
+    return {
+      authenticated: true,
+      authorized: false,
+      status: 200,
+      reason: error instanceof DiscordAccessError ? error.code : "role_required",
+      user,
+      error: publicAuthErrorMessage(error)
     };
   }
 }
@@ -130,6 +179,12 @@ export function getAdminAuthMode(env) {
   return String(env.ADMIN_AUTH_MODE || "legacy").trim().toLowerCase() === "discord"
     ? "discord"
     : "legacy";
+}
+
+export function getDiscordLoginPolicy(env) {
+  return String(env.AUTH_LOGIN_POLICY || "admin_only").trim().toLowerCase() === "guild_members"
+    ? "guild_members"
+    : "admin_only";
 }
 
 export function parseRoleIds(value) {
@@ -144,23 +199,44 @@ export function parseRoleIds(value) {
 }
 
 export async function requireAllowedDiscordRole(userId, env, fetcher = fetch) {
+  const allowedRoleIds = parseRoleIds(env.ADMIN_DISCORD_ROLE_IDS);
+  const member = await requireGuildMembership(userId, env, fetcher);
+  const roles = Array.isArray(member.roles) ? member.roles.map(String) : [];
+  if (!roles.some((roleId) => allowedRoleIds.has(roleId))) {
+    throw new DiscordAccessError("role_required", "Rôle Discord administrateur requis");
+  }
+  return { userId: String(userId), roles };
+}
+
+export async function requireGuildMembership(userId, env, fetcher = fetch) {
   if (!/^\d{17,20}$/.test(String(userId || ""))) throw new Error("Utilisateur Discord invalide");
   if (!env.DISCORD_BOT_TOKEN) throw new Error("DISCORD_BOT_TOKEN manquant");
   if (!/^\d{17,20}$/.test(String(env.DISCORD_GUILD_ID || ""))) {
     throw new Error("DISCORD_GUILD_ID invalide ou manquant");
   }
 
-  const allowedRoleIds = parseRoleIds(env.ADMIN_DISCORD_ROLE_IDS);
-  const response = await fetcher(
-    `${DISCORD_API}/guilds/${env.DISCORD_GUILD_ID}/members/${userId}`,
-    { headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` } }
-  );
-  const member = await readJsonResponse(response, "membre Discord");
-  const roles = Array.isArray(member.roles) ? member.roles.map(String) : [];
-  if (!roles.some((roleId) => allowedRoleIds.has(roleId))) {
-    throw new Error("Rôle Discord administrateur requis");
+  let response;
+  try {
+    response = await fetcher(
+      `${DISCORD_API}/guilds/${env.DISCORD_GUILD_ID}/members/${userId}`,
+      { headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` } }
+    );
+  } catch {
+    throw new DiscordAccessError("discord_unavailable", "Vérification Discord temporairement indisponible");
   }
-  return { userId: String(userId), roles };
+  if (response.status === 404) {
+    await readBoundedText(response.body, MAX_DISCORD_BODY_BYTES);
+    throw new DiscordAccessError("not_guild_member", "Ce compte Discord n'est pas membre du serveur FrenchJumper");
+  }
+  if (!response.ok) {
+    await readBoundedText(response.body, MAX_DISCORD_BODY_BYTES);
+    throw new DiscordAccessError("discord_unavailable", `Vérification Discord temporairement indisponible (HTTP ${response.status})`);
+  }
+  const member = await readJsonResponse(response, "membre Discord");
+  if (!Array.isArray(member.roles)) {
+    throw new DiscordAccessError("discord_unavailable", "Réponse Discord de membre invalide");
+  }
+  return member;
 }
 
 export async function createSignedToken(payload, secret) {
@@ -311,10 +387,23 @@ function redirectWithSession(returnTo, clientState, session) {
   return Response.redirect(target.toString(), 302);
 }
 
-function redirectWithAuthError(returnTo, clientState, message) {
+function redirectWithAuthError(returnTo, clientState, message, code = "discord_login_failed") {
   const target = new URL(returnTo);
-  target.hash = new URLSearchParams({ admin_error: message, admin_state: clientState }).toString();
+  target.hash = new URLSearchParams({ admin_error: message, admin_error_code: code, admin_state: clientState }).toString();
   return Response.redirect(target.toString(), 302);
+}
+
+function publicAuthErrorMessage(error) {
+  if (error instanceof DiscordAccessError) return error.message;
+  return "Connexion Discord impossible pour le moment. La consultation publique reste disponible.";
+}
+
+export class DiscordAccessError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = "DiscordAccessError";
+    this.code = code;
+  }
 }
 
 function getBearerToken(request) {

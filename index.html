@@ -27,6 +27,8 @@ body{
     background:#2c3e50;
     color:white;
     padding-top:20px;
+    display:flex;
+    flex-direction:column;
 }
 
 .sidebar h2{
@@ -38,6 +40,38 @@ body{
     list-style:none;
     padding:0;
     margin:0;
+}
+
+.auth-panel{
+    margin-top:auto;
+    padding:14px;
+    border-top:1px solid rgba(255,255,255,.2);
+}
+
+.auth-status{
+    margin:0 0 10px;
+    font-size:12px;
+    line-height:1.35;
+}
+
+.auth-button{
+    width:100%;
+    padding:9px 10px;
+    border:0;
+    border-radius:4px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.auth-notice{
+    display:none;
+    margin:0 14px 12px;
+    padding:9px;
+    border-radius:4px;
+    background:#fff3cd;
+    color:#664d03;
+    font-size:12px;
+    line-height:1.35;
 }
 
 .menu li{
@@ -78,6 +112,12 @@ iframe{
 			<li id="menuSynchronisation" onclick="loadPage('sync.html')" style="display:none;">Synchronisation GAS / D1</li>
 		</ul>
 
+        <p id="authNotice" class="auth-notice" role="status"></p>
+        <div class="auth-panel">
+            <p id="authStatus" class="auth-status">Vérification de la connexion…</p>
+            <button id="authButton" class="auth-button" type="button">Connexion Discord</button>
+        </div>
+
     </div>
 
     <div class="content">
@@ -88,29 +128,56 @@ iframe{
 
 <script>
 
-// appel au chargement
-checkAdminParam();
 document.getElementById("mainFrame").src = buildPageUrl("actifs.html");
 
-// Vérifie D1 avant toute action et ouvre OAuth tôt en mode Admin, afin que le
-// formulaire Nouveau Membre ne soit jamais interrompu par une demande de login.
 ensurePreferredBackendAvailable()
-    .then(() => prepareAdminAuthentication())
     .catch(error => console.error("Initialisation :", error));
 
-function checkAdminParam() {
-	console.log("Fonction : index.html - checkAdminParam()");
-    const params = new URLSearchParams(window.location.search);
+initializeAuthenticationControls();
+window.addEventListener("frj-auth-state-changed", event => {
+    renderAuthentication(event.detail);
+    const notice = takeAuthenticationNotice();
+    if (notice) showAuthenticationNotice(notice.message);
+});
 
-    if (params.get("admin") === "1") {
-        sessionStorage.setItem("admin", "true");
-        document.getElementById("menuNouveauMembre").style.display = "";
-        if (preferredBackend === "d1") {
-            document.getElementById("menuSynchronisation").style.display = "";
-        }
+async function initializeAuthenticationControls() {
+    const notice = takeAuthenticationNotice();
+    if (notice) showAuthenticationNotice(notice.message);
+    const state = await ensureAuthState();
+    renderAuthentication(state);
+}
+
+function renderAuthentication(state) {
+    const status = document.getElementById("authStatus");
+    const button = document.getElementById("authButton");
+    const authorized = state && state.authorized === true;
+    const authenticated = state && state.authenticated === true;
+    document.getElementById("menuNouveauMembre").style.display = authorized ? "" : "none";
+    document.getElementById("menuSynchronisation").style.display = authorized && preferredBackend === "d1" ? "" : "none";
+    if (authenticated) {
+        const name = state.user && state.user.name ? state.user.name : "Discord";
+        status.textContent = authorized ? `${name} — accès RH` : `${name} — consultation publique`;
+        if (state.stale) status.textContent += " (vérification différée)";
+        button.textContent = "Déconnexion";
+        button.onclick = () => { logoutDiscord(); showAuthenticationNotice("Vous êtes déconnecté. Consultation publique active."); renderAuthentication(authState); };
     } else {
-        sessionStorage.removeItem("admin");
+        status.textContent = "Consultation publique";
+        button.textContent = "Connexion Discord";
+        button.onclick = async () => {
+            button.disabled = true;
+            try { await beginDiscordLogin(); }
+            catch (error) { showAuthenticationNotice(error.message || "Connexion Discord impossible pour le moment."); }
+            finally { button.disabled = false; }
+        };
     }
+    const frame = document.getElementById("mainFrame");
+    if (!authorized && /(?:^|\/)nouveau\.html/.test(frame.getAttribute("src") || "")) loadPage("actifs.html");
+}
+
+function showAuthenticationNotice(message) {
+    const notice = document.getElementById("authNotice");
+    notice.textContent = message;
+    notice.style.display = "block";
 }
 
 function loadPage(page){

@@ -38,8 +38,11 @@
   <script>
     const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
     async function loadSyncStatus() {
-      if (!isAdmin || preferredBackend !== "d1") {
-        document.getElementById("syncSummary").textContent = "Ouvrir avec ?admin=1 en utilisant D1";
+      const state = await ensureAuthState();
+      if (!state.authorized || preferredBackend !== "d1") {
+        document.getElementById("syncSummary").textContent = state.authenticated
+          ? "Un rôle RH Discord est requis pour consulter la synchronisation."
+          : "Connectez-vous depuis le menu principal pour consulter la synchronisation.";
         return;
       }
       const data = await apiRequest("getSyncStatus", {}, "POST");

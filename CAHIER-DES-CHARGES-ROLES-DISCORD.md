@@ -211,7 +211,7 @@ Le format exact devra être stable et lisible par GAS. Ces champs sont des copie
 - Conformément à l'analyse D-003, une connexion Discord ne donnera pas automatiquement un droit RH : tout membre du
   serveur pourra être authentifié, mais seuls `Chef d'Expédition` et `Conseiller d'Expédition` pourront
   accéder aux commandes d'administration. Un compte absent du serveur ne recevra aucune session ; après un message
-  explicite, il reviendra en consultation publique non authentifiée sans blocage. Le détail du remplacement futur de `?admin=1` figure dans
+  explicite, il reviendra en consultation publique non authentifiée sans blocage. Le détail du remplacement de `?admin=1`, implémenté localement mais non déployé, figure dans
   `ANALYSE-D003-CONNEXION-DISCORD.md`.
 
 ## 8. Gestion des erreurs
