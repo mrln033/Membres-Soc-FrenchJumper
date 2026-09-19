@@ -56,7 +56,8 @@ du cache peut donc dépasser ponctuellement la cible de dix minutes ; cette cibl
 - Après la première recette, le chargement de fiche a été rendu indépendant de l'enrichissement RH : la réponse
   publique est affichée avant la lecture protégée des responsabilités. Une erreur GAS/Discord sur cette seconde lecture
   conserve donc la fiche publique. Les fonctions et activités utilisent deux cartes responsives côte à côte, empilées
-  automatiquement lorsque la largeur disponible est insuffisante.
+  automatiquement lorsque la largeur disponible est insuffisante. Ce correctif est publié par la PR #10 au commit
+  `2d6977abdecb9bc942001179ce5cf48452265ce6` ; les fichiers JavaScript/CSS et la fiche GAS servis ont été contrôlés en HTTP 200.
 
 ## Contrôles fonctionnels
 
