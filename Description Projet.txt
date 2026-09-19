@@ -42,20 +42,20 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 19/09/2026 à 12:57 Europe/Paris :
+État connu au 19/09/2026 à 16:47 Europe/Paris :
 - la branche principale distante et la production GitHub Pages sont au commit de fusion a264239 (« Merge pull request #5 ») ;
 - la branche de travail courante « codex/cahier-des-charges-roles-discord » contient le suivi documentaire de D-001 à D-004 ;
 - le présent fichier de pilotage est versionné sur cette branche de travail afin d'être consultable et modifiable depuis GitHub ;
 - D1 est le backend choisi par défaut par le frontend ; « ?backend=gas » force le backend de secours GAS ;
 - l'authentification Admin Discord est activée côté configuration D1, mais « ALLOW_LEGACY_ADMIN_TOKEN=true » maintient encore le repli par ancien jeton ;
 - la synchronisation bidirectionnelle GAS/D1 est configurée en mode actif dans le Worker ;
-- le cahier des charges des fonctions et activités Discord est rédigé, mais son développement n'a pas commencé ;
-- les informations et choix listés dans D-002 doivent être fournis ou validés avant l'implémentation.
+- le cahier des charges des fonctions et activités Discord est validé ; D-002 entre en développement sur une branche dédiée, sans activation immédiate en production ;
+- Discord est l'unique source de vérité et l'unique interface de gestion des fonctions, activités et responsabilités ; le site les synchronise et les affiche uniquement en lecture seule.
 - l'analyse D-003 sur le remplacement de `?admin=1` est terminée dans ANALYSE-D003-CONNEXION-DISCORD.md ; le Worker, GAS et le frontend sont publiés en mode de migration protégé dans D-001 ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
 
 Ordre conseillé :
 1. D-001 — mettre en œuvre le plan D-003, valider complètement OAuth Discord sur D1 et GAS, puis fermer l'ancien accès par jeton ;
-2. D-002 — valider le cahier des charges des rôles Discord et réaliser d'abord le lot 1 en lecture seule ;
+2. D-002 — réaliser le lot 1 en lecture seule, le tester sur D1 et GAS, puis le publier par étapes avec retour arrière ;
 3. traiter ensuite les nouvelles demandes ajoutées dans ce fichier selon leur priorité explicite.
 
 ---------
@@ -105,14 +105,15 @@ Frontend statique GitHub Pages :
 - le bouton Connexion/Déconnexion Discord est toujours visible en bas du menu de `index.html` ; l'affichage RH dépend de `/auth/session` ;
 - D1 est prioritaire ; une sonde « /health » peut provoquer une redirection vers GAS en cas d'indisponibilité ;
 - le backend choisi est conservé dans les liens internes.
+- les fonctions et activités Discord sont affichées sous forme de badges lorsque D-002 est activée ; les catégories vides restent masquées et les responsabilités Discord sont réservées à l'affichage RH.
 
 Backend principal Cloudflare :
 - projet : cloudflare/membres-soc-api ;
 - Worker : frj-membres-soc-api ;
 - base : Cloudflare D1 ;
-- migrations versionnées : 0001_initial.sql et 0002_bidirectional_sync.sql ;
-- modules principaux : index.js, auth.js, domain.js, discord.js et sync.js ;
-- files : frj-membres-sync et frj-membres-sync-dlq ;
+- migrations versionnées : 0001_initial.sql, 0002_bidirectional_sync.sql et 0003_discord_role_cache.sql ;
+- modules principaux : index.js, auth.js, domain.js, discord.js, discord-roles.js et sync.js ;
+- files métier : frj-membres-sync et frj-membres-sync-dlq ; file dédiée aux lectures de rôles : frj-discord-role-sync et frj-discord-role-sync-dlq ;
 - contrôle planifié toutes les dix minutes ;
 - Service Binding vers le Worker « discord-proxy » existant ;
 - tests Node couvrant l'authentification, le métier, Discord, le frontend et la synchronisation.
@@ -124,13 +125,14 @@ Backend de secours Google :
 - la feuille masquée SYNC_OUTBOX conserve les mutations GAS en attente ;
 - le déclencheur installable « syncMemberManualEdit » capture les modifications manuelles utiles ;
 - « flushSyncOutbox » retente les mutations qui n'ont pas encore été appliquées.
+- les colonnes FonctionsDiscord, ActivitesDiscord, ResponsabilitesDiscord, RolesDiscordSyncedAt et RolesDiscordStatus conservent le cache de secours D-002 ; les responsabilités ne sont jamais exposées par la lecture publique.
 
 Synchronisation :
 - chaque mutation porte un UUID d'idempotence ;
 - les mouvements sont append-only et dédupliqués par leur identifiant ;
 - les versions d'entités servent à éviter les régressions et à identifier les conflits ;
 - les réplications sont marquées par leur source et leur cible ;
-- la file Cloudflare réalise les reprises vers GAS ;
+- la file Cloudflare métier réalise les reprises vers GAS ; une file séparée et séquentielle limite les lectures de rôles Discord ;
 - un cron relance les mutations en attente et compare périodiquement les compteurs D1/GAS ;
 - sync.html fournit le tableau d'administration de la synchronisation.
 
@@ -179,7 +181,7 @@ IDs Discord :
 - Salon "candidature_soc" : 880765957683957800
 - Salon "administrateurs" : 467280392509194241
 
-Le bot 'FrenchJuper Bot' [APP] (id: 1479825051522957462) est dans le role 'FrenchJumper' (id: 1483748622771290134) situé immédiatement sous le role 'Administrateur'.
+Le bot 'FrenchJumper Bot' [APP] (id: 1479825051522957462) est dans le role 'FrenchJumper' (id: 1483748622771290134) situé immédiatement sous le role 'Administrateur'.
 
 Web App GAS :
 https://script.google.com/macros/s/AKfycbzf40jOrUs79_O5PASuc7Y-OOZv_C2RZV1bY7r97WhF8iVVQ6f4nIpBCCRh_0IOIozSew/exec
@@ -204,6 +206,8 @@ Variables Cloudflare non secrètes versionnées dans wrangler.jsonc :
 - RULES_ACCEPTED_ROLE_ID
 - GAS_SYNC_URL
 - SYNC_MODE
+- DISCORD_ROLE_SYNC_MODE
+- DISCORD_ROLE_DISPLAY_ENABLED
 
 Secrets Cloudflare attendus, à stocker avec Wrangler et jamais dans Git :
 - DISCORD_OAUTH_CLIENT_SECRET
@@ -274,7 +278,7 @@ Recette réelle au 16/09/2026 à 21:15 Europe/Paris : la connexion Discord du co
 
 Correction au 16/09/2026 à 21:21 Europe/Paris : après une déconnexion puis une reconnexion réussie, l'avis « Vous êtes déconnecté. Consultation publique active. » restait visible sous le menu. `renderAuthentication` efface désormais tout ancien avis dès qu'un état authentifié est confirmé. Un test de non-régression a été ajouté. La correction est publiée par la PR #3 depuis le 19/09/2026.
 
-D-002 [ÉVOLUTION] [EN ATTENTE DE VALIDATION]
+D-002 [ÉVOLUTION] [VALIDÉE — EN COURS]
 Demande : afficher sur la fiche des membres leurs fonctions en jeu, activités en jeu et responsabilités Discord, sans les confondre avec le grade de la Soc ni avec les rôles donnant accès à l'administration du site.
 
 Référence complète : CAHIER-DES-CHARGES-ROLES-DISCORD.md
@@ -288,16 +292,28 @@ Périmètre recommandé pour le premier lot :
 - lecture seule de toutes les catégories pendant le lot 1 ;
 - conservation de la dernière copie connue si Discord est temporairement indisponible.
 
-Informations ou décisions nécessaires avant développement :
-1. ID du rôle Discord « Administrateur » ;
-2. ID du rôle Discord « Modérateurs » ;
-3. liste complète et IDs des fonctions en jeu ;
-4. liste complète et IDs des activités en jeu ;
-5. visibilité publique ou Admin uniquement des responsabilités Discord ;
-6. validation ou refus de la modification des fonctions depuis le site dans un lot 2 ;
-7. rôles autorisés à gérer ces fonctions depuis le site ;
-8. vérification de la permission et de la position hiérarchique du bot ;
-9. validation du délai de synchronisation cible de dix minutes.
+Décisions validées le 19/09/2026 :
+- responsabilités Discord suivies : Administrateur `464513638414417930` et Modérateur `464514892355993600` ; elles sont visibles uniquement par les utilisateurs disposant d'un accès RH au site ;
+- fonctions en jeu suivies : Enzoboy `464706697408020482` et Pilote PF13 `1538203076434075668` ;
+- activités suivies : Chasseur `811239593675456523`, Mineur `811240383127879691`, Crafteur `811240450123890688`, Tradeur `1070296235782701097`, Healeur `811240547552854050`, Sweateur `811240494390312973` et Streameur `962964676956790844` ;
+- les catégories vides sont masquées ;
+- synchronisation automatique toutes les dix minutes et bouton RH de rafraîchissement ponctuel ;
+- le site reste en lecture seule pour toutes ces catégories : les fonctions, activités et responsabilités sont gérées exclusivement dans Discord, qui demeure l'unique source de vérité ; le lot 2 de modification depuis le site est reporté sans date ;
+- les droits RH restent réservés à Chef d'Expédition et Conseiller d'Expédition ; les responsabilités Administrateur et Modérateur ne donnent aucun accès RH ;
+- rôle du bot FrenchJumper : `1483748622771290134`, placé immédiatement sous Administrateur ; aucune permission de modification des rôles n'est nécessaire au lot 1 en lecture seule.
+
+Étapes de réalisation :
+- D-002.1 — documenter les décisions et préparer le modèle D1/GAS avec indicateurs d'activation ;
+- D-002.2 — synchroniser en lecture seule Discord vers D1, avec cache conservé en cas d'erreur et respect des limitations Discord ;
+- D-002.3 — répliquer vers GAS et exposer le même contrat de lecture sur les deux backends ;
+- D-002.4 — afficher les catégories sur la fiche et ajouter le rafraîchissement manuel RH ;
+- D-002.5 — tester D1, GAS, mobile et ordinateur, préparer le retour arrière, puis publier progressivement après validation.
+
+Avancement au 19/09/2026 à 17:14 Europe/Paris :
+- D-002.1 est réalisée localement : décisions reportées dans le cahier des charges, migration additive `0003_discord_role_cache.sql`, catalogue de 11 rôles tous non modifiables depuis le site, deux gardes de production désactivées par défaut et guide de déploiement/retour arrière dédié ;
+- D-002.2 à D-002.4 sont implémentées sur la branche de travail mais restent non publiées : file Cloudflare dédiée et séquentielle, lecture Discord avec reprise des limitations, cache D1 conservé en cas d'erreur, réplication GAS, séparation public/RH, badges adaptatifs et bouton RH de rafraîchissement ;
+- contrôles locaux réussis : 34 tests automatisés, syntaxes Worker/frontend/GAS, migration D1 locale, catalogue 2 responsabilités + 2 fonctions + 7 activités, paquet Wrangler à blanc et routes locales avec gardes désactivées ;
+- la production, la base D1 distante, le projet GAS distant et GitHub Pages n'ont pas été modifiés ; D-002 ne doit pas être clôturée avant la publication progressive et la recette D1/GAS/mobile/ordinateur.
 
 Modèle à copier pour une nouvelle demande :
 
@@ -391,6 +407,7 @@ Complément de réalisation :
 - Description Projet.txt : point de reprise, demandes et journal des réalisations ;
 - SECURITE-GAS.md : secrets, propriétés Apps Script, notification Discord et synchronisation ;
 - DEPLOIEMENT-OAUTH-DISCORD.md : ordre de mise en production OAuth, recette et retour arrière ;
+- DEPLOIEMENT-D002-ROLES-DISCORD.md : publication progressive, recette et retour arrière du cache de rôles Discord ;
 - CAHIER-DES-CHARGES-ROLES-DISCORD.md : évolution future des fonctions et activités Discord ;
 - ANALYSE-D003-CONNEXION-DISCORD.md : faisabilité et plan de remplacement de `?admin=1` par une connexion Discord explicite ;
 - cloudflare/membres-soc-api/README.md : état et exploitation du Worker D1 ;

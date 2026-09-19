@@ -1,6 +1,39 @@
 const DISCORD_API = "https://discord.com/api/v10";
 const MAX_ERROR_BYTES = 2_000;
 
+export class DiscordApiError extends Error {
+  constructor(status, message, retryAfterSeconds = null) {
+    super(message);
+    this.status = status;
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+export async function getDiscordGuildMember({ discordId, guildId, botToken }, fetcher = fetch) {
+  const member = String(discordId || "").trim();
+  const guild = String(guildId || "").trim();
+  if (!/^\d{17,20}$/.test(member)) throw new Error("Identifiant Discord invalide");
+  if (!/^\d{17,20}$/.test(guild)) throw new Error("DISCORD_GUILD_ID invalide ou manquant");
+  if (!botToken) throw new Error("DISCORD_BOT_TOKEN manquant");
+
+  const response = await fetcher(`${DISCORD_API}/guilds/${guild}/members/${member}`, {
+    headers: { Authorization: `Bot ${botToken}` }
+  });
+  if (response.status === 404) return { found: false, roles: [] };
+  const text = await readBoundedText(response.body, MAX_ERROR_BYTES);
+  if (!response.ok) {
+    let retryAfter = null;
+    if (response.status === 429) {
+      try { retryAfter = Number(JSON.parse(text || "{}").retry_after) || null; } catch { /* réponse non JSON */ }
+    }
+    throw new DiscordApiError(response.status, `Discord HTTP ${response.status}: ${text}`, retryAfter);
+  }
+  let payload;
+  try { payload = JSON.parse(text || "{}"); } catch { throw new DiscordApiError(response.status, "Réponse Discord invalide"); }
+  if (!Array.isArray(payload.roles)) throw new DiscordApiError(response.status, "Réponse Discord sans liste de rôles");
+  return { found: true, roles: payload.roles.map(String) };
+}
+
 export async function removeDiscordRole({ discordId, guildId, roleId, botToken }, fetcher = fetch) {
   const member = String(discordId || "").trim();
   const guild = String(guildId || "").trim();

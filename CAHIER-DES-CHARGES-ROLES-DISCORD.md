@@ -1,6 +1,6 @@
 # Cahier des charges — Fonctions et activités Discord
 
-Statut : projet à valider avant développement  
+Statut : validé le 19 septembre 2026 — lot 1 en cours de développement
 Application : Membres Soc FrenchJumper  
 Date : 15 septembre 2026
 
@@ -21,7 +21,7 @@ Discord restera la source de vérité pour ces rôles.
 | Accès RH au site | Chef d’Expédition, Conseiller d’Expédition | Autorisation d’administrer l’application Membres | Contrôle déjà assuré par OAuth Discord |
 | Équipe Discord | Administrateur, Modérateurs | Responsabilités et permissions sur le serveur Discord | Attribuées uniquement dans Discord |
 | Grade de la Soc | Voyageur, Aventurier, etc. | Progression hiérarchique existante | Fonctionnement actuel inchangé |
-| Fonction en jeu | Enzoboy, Pilote PF13 | Responsabilité ou service lié à Entropia Universe | Attribuée dans Discord ; modification depuis le site envisageable |
+| Fonction en jeu | Enzoboy, Pilote PF13 | Responsabilité ou service lié à Entropia Universe | Attribuée uniquement dans Discord ; lecture seule sur le site |
 | Activité en jeu | Chasseur, Mineur, Crafteur, Tradeur, Healeur, Sweateur, Streameur | Activité déclarée par le membre | Auto-attribution Discord par le bot externe |
 
 ### 2.2 Règles impératives
@@ -65,7 +65,7 @@ Responsabilités Discord
 - Les activités utilisent des pastilles compactes, éventuellement accompagnées d’une icône.
 - Les responsabilités Discord sont affichées dans un bloc distinct et plus discret.
 - Les badges doivent revenir correctement à la ligne sur mobile.
-- Une catégorie vide affiche une mention sobre telle que `Aucune activité renseignée`, ou reste masquée selon le choix final.
+- Une catégorie vide reste masquée.
 - La date de dernière synchronisation est visible en mode Admin ; elle peut rester masquée en consultation publique.
 - Un retard ou une panne Discord ne doit pas empêcher l’ouverture de la fiche : les dernières données connues sont affichées.
 
@@ -89,6 +89,7 @@ Google Sheets / GAS (backend de repli)
 
 - Une tâche Cloudflare est déclenchée toutes les 10 minutes.
 - Elle programme les membres à contrôler dans une file, par petits lots.
+- Une file dédiée et limitée à un seul lot concurrent isole ces lectures Discord de la file de réplication métier GAS/D1 et évite une rafale de requêtes.
 - Le Worker interroge Discord sans exposer le token du bot au navigateur.
 - Pour chaque membre, il conserve seulement les rôles présents dans le catalogue configuré.
 - Seuls les changements réels entraînent une écriture dans D1.
@@ -125,21 +126,9 @@ Les rôles `Administrateur` et `Modérateurs` restent gérés exclusivement depu
 
 ### 5.2 Fonctions en jeu
 
-Deux modes sont envisageables :
+Les fonctions en jeu sont gérées exclusivement dans Discord. Le site les synchronise et les affiche en lecture seule. Aucune route, aucun bouton et aucun traitement du lot 1 ne doit ajouter ou retirer un rôle Discord.
 
-- mode initial prudent : lecture seule sur le site, attribution dans Discord par les administrateurs et modérateurs ;
-- évolution : bouton `Gérer les fonctions` accessible aux administrateurs RH du site.
-
-Si la modification depuis le site est activée :
-
-1. le Worker vérifie la session Discord de l’administrateur RH ;
-2. il contrôle que le rôle demandé appartient bien à la catégorie `Fonction en jeu` et qu’il est déclaré modifiable ;
-3. il ajoute ou retire le rôle via l’API Discord ;
-4. il actualise D1 uniquement après confirmation de Discord ;
-5. il réplique ensuite la nouvelle situation vers GAS ;
-6. il journalise l’auteur, le membre, le rôle, l’action et la date.
-
-Le bot devra posséder la permission Discord nécessaire et être placé au-dessus des rôles qu’il doit gérer.
+Le lot 2 de modification depuis le site est reporté sans date. S'il est réétudié, il fera l'objet d'une nouvelle validation explicite, d'une analyse des permissions du bot et de règles d'audit propres.
 
 ### 5.3 Activités en jeu
 
@@ -235,7 +224,7 @@ Le format exact devra être stable et lisible par GAS. Ces champs sont des copie
 - afficher les catégories sur les fiches ;
 - conserver toutes les catégories en lecture seule.
 
-### Lot 2 — Gestion des fonctions en jeu
+### Lot 2 — Gestion des fonctions en jeu (reporté, non validé)
 
 - ajouter l’interface Admin de sélection des fonctions ;
 - autoriser uniquement les rôles explicitement déclarés modifiables ;
@@ -278,22 +267,22 @@ Le retour arrière devra permettre :
 - de revenir au Worker et au frontend précédents ;
 - de ne jamais retirer massivement des rôles Discord lors d’un rollback.
 
-## 12. Informations nécessaires avant développement
+## 12. Décisions validées avant développement
 
-Les éléments suivants devront être fournis ou décidés :
+Décisions du 19 septembre 2026 :
 
-1. ID Discord du rôle `Administrateur` ;
-2. ID Discord du rôle `Modérateurs` ;
-3. liste complète et IDs des fonctions en jeu ;
-4. liste complète et IDs des activités en jeu ;
-5. visibilité publique ou Admin uniquement des responsabilités Discord ;
-6. validation ou non de la modification des fonctions depuis le site dans le lot 2 ;
-7. confirmation des rôles autorisés à gérer ces fonctions depuis le site ;
-8. vérification de la permission et de la position hiérarchique du rôle du bot ;
-9. validation du délai de synchronisation cible de 10 minutes.
+1. équipe Discord : `Administrateur` (`464513638414417930`) et `Modérateur` (`464514892355993600`) ; affichage réservé aux utilisateurs RH ;
+2. fonctions en jeu : `Enzoboy` (`464706697408020482`) et `Pilote PF13` (`1538203076434075668`) ;
+3. activités en jeu : `Chasseur` (`811239593675456523`), `Mineur` (`811240383127879691`), `Crafteur` (`811240450123890688`), `Tradeur` (`1070296235782701097`), `Healeur` (`811240547552854050`), `Sweateur` (`811240494390312973`) et `Streameur` (`962964676956790844`) ;
+4. les catégories vides sont masquées ;
+5. la synchronisation automatique s'exécute toutes les dix minutes et un rafraîchissement manuel est disponible pour les utilisateurs RH ;
+6. Discord est l'unique source de vérité et l'unique interface de gestion : le site est intégralement en lecture seule pour ces catégories ;
+7. `Chef d’Expédition` et `Conseiller d’Expédition` restent les seuls rôles donnant accès aux fonctions RH du site ;
+8. le rôle du bot `FrenchJumper` (`1483748622771290134`) est placé immédiatement sous `Administrateur` ; la permission de modifier les rôles ne fait pas partie du lot 1 ;
+9. le délai cible de propagation est validé à zéro à dix minutes.
 
 ## 13. Recommandation de départ
 
 Commencer par le lot 1 en lecture seule. Cette étape apporte immédiatement l’information demandée tout en limitant fortement les risques pour l’application en production et pour les rôles Discord.
 
-Après une période d’observation, le lot 2 pourra ouvrir la modification des seules fonctions en jeu depuis le site. Les activités et les rôles de l’équipe Discord resteront gérés dans Discord.
+Le lot 2 reste reporté. Toute ouverture future d'une modification depuis le site nécessitera une nouvelle décision explicite ; jusque-là, fonctions, activités et responsabilités sont toutes gérées uniquement dans Discord.

@@ -52,12 +52,19 @@ transmis dans l'URL ou ajouté au dépôt.
 Actions protégées dans `doPost` :
 
 - `syncDiscordFromWeb` ;
+- `getDiscordRolesForMember` ;
+- `refreshDiscordRoles` ;
 - `applyMembreAction` ;
 - `createOrOpenMembre` ;
 - `updateMembreInfos`.
 
-Les actions `replicateFromD1` et `getGasSyncSnapshot` conservent leur authentification séparée par
+Les actions `replicateFromD1`, `replicateDiscordRolesFromD1` et `getGasSyncSnapshot` conservent leur authentification séparée par
 `SYNC_SHARED_SECRET`. Les interactions Discord existantes restent traitées avant le routage Web.
+
+Pour D-002, `replicateDiscordRolesFromD1` accepte uniquement le secret partagé et crée au besoin les colonnes de
+cache dans `MEMBRES_SOC`. La lecture publique ne retourne jamais `ResponsabilitesDiscord`; cette colonne n'est lue
+que par `getDiscordRolesForMember` après validation de la session RH. `refreshDiscordRoles` transmet la session au
+Worker D1, qui relit Discord et réplique le résultat : GAS ne devient donc jamais une seconde source de vérité.
 
 Le mode `legacy` reste volontairement actif pendant la recette du nouveau frontend publié. Après validation du
 parcours complet, passer `ADMIN_AUTH_MODE=discord` dans GAS. Le guide détaillé et le retour arrière figurent dans

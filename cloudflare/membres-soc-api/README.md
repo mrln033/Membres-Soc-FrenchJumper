@@ -18,6 +18,9 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
   du frontend et de GAS, `guild_members` permettra à un membre du serveur sans rôle RH de rester connecté sans droit.
 - Un compte absent du serveur ne reçoit jamais de session et revient, après un message explicite, à la consultation
   publique non bloquante. Une panne Discord est identifiée séparément.
+- D-002 est préparée derrière deux gardes désactivées : `DISCORD_ROLE_SYNC_MODE=off` et
+  `DISCORD_ROLE_DISPLAY_ENABLED=false`. Discord reste l'unique source et le site ne possède aucune route de
+  modification des fonctions, activités ou responsabilités.
 
 ## Sécurité de la migration
 
@@ -43,6 +46,20 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - Un cron toutes les dix minutes relance les mutations en attente et contrôle les compteurs GAS/D1.
 - Le tableau de synchronisation apparaît après connexion d'un compte autorisé et reste accessible avec `backend=d1`.
 
+## Cache des fonctions et activités Discord (D-002)
+
+- La migration additive `0003_discord_role_cache.sql` crée le catalogue, les associations membre/rôle et l'état de
+  synchronisation. Tous les rôles du catalogue ont `site_editable=0`.
+- `frj-discord-role-sync` est une file distincte, limitée à un lot concurrent ; sa DLQ est
+  `frj-discord-role-sync-dlq`. La file métier `frj-membres-sync` reste inchangée.
+- Le cron existant programme une lecture des membres toutes les dix minutes lorsque
+  `DISCORD_ROLE_SYNC_MODE=active`.
+- Une erreur Discord conserve la dernière copie connue. Un membre réellement absent du serveur reçoit une copie vide.
+- Les fonctions et activités sont publiques. Les responsabilités Administrateur/Modérateur sont retournées uniquement
+  par une action protégée RH.
+- D1 réplique les snapshots vers les colonnes GAS `FonctionsDiscord`, `ActivitesDiscord`,
+  `ResponsabilitesDiscord`, `RolesDiscordSyncedAt` et `RolesDiscordStatus`.
+
 ## Contrat HTTP compatible
 
 - `GET /auth/config` : mode OAuth public et politique de connexion ;
@@ -51,7 +68,8 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - `GET /?action=getMouvements`
 - `GET /?action=getMouvementsMensuels`
 - `GET /?action=getFiche&id=<uuid>`
-- `POST /` avec une action `createOrOpenMembre`, `applyMembreAction`, `updateMembreInfos` ou `syncDiscordFromWeb`
+- `POST /` avec une action `createOrOpenMembre`, `applyMembreAction`, `updateMembreInfos`, `syncDiscordFromWeb`,
+  `getDiscordRolesForMember` ou `refreshDiscordRoles`
 
 Les routes protégées répondent `401` pour une session absente/invalide, `403` pour une session valide sans rôle RH
 et `503` lorsque Discord ne permet momentanément pas de revalider les rôles.
@@ -90,6 +108,8 @@ Variables non secrètes de migration dans `wrangler.jsonc` :
 - `ADMIN_AUTH_MODE` : `legacy` pendant l'installation, puis `discord` ;
 - `AUTH_LOGIN_POLICY` : `admin_only` pendant le chevauchement, puis `guild_members` après publication du nouveau frontend ;
 - `ALLOW_LEGACY_ADMIN_TOKEN` : `true` pendant le chevauchement des frontends, puis impérativement `false`.
+- `DISCORD_ROLE_SYNC_MODE` : `off` tant que le cache D-002 n'est pas prêt, puis `active` après migration et publication GAS ;
+- `DISCORD_ROLE_DISPLAY_ENABLED` : `false` pendant le remplissage initial, puis `true` après comparaison D1/GAS.
 
 Le token du bot et les autres secrets ne doivent jamais être ajoutés à `wrangler.jsonc` ni à Git.
 
@@ -97,3 +117,5 @@ Le binding local utilise `preview_database_id: "local"`; le binding distant poin
 
 Le déroulé complet, les contrôles et le retour arrière sont décrits dans
 [`../../DEPLOIEMENT-OAUTH-DISCORD.md`](../../DEPLOIEMENT-OAUTH-DISCORD.md).
+Le déploiement et le retour arrière propres à D-002 sont décrits dans
+[`../../DEPLOIEMENT-D002-ROLES-DISCORD.md`](../../DEPLOIEMENT-D002-ROLES-DISCORD.md).
