@@ -6,6 +6,8 @@ import { webcrypto } from "node:crypto";
 
 const configSource = readFileSync(new URL("../../../js/config.js", import.meta.url), "utf8");
 const indexSource = readFileSync(new URL("../../../index.html", import.meta.url), "utf8");
+const clientSource = readFileSync(new URL("../../../js/client.js", import.meta.url), "utf8");
+const styleSource = readFileSync(new URL("../../../css/style.css", import.meta.url), "utf8");
 
 function loadConfigState(url, initialStorage = {}, afterLoad = "") {
   const values = new Map(Object.entries(initialStorage));
@@ -183,4 +185,23 @@ test("un refus d'autorisation déclasse immédiatement l'interface sans supprime
   assert.equal(downgraded.authorized, false);
   assert.equal(downgraded.user.name, "RH Test");
   assert.equal(downgraded.reason, "role_required");
+});
+
+test("une panne de la lecture RH GAS conserve la fiche publique déjà affichée", () => {
+  const loadFicheSource = clientSource.match(/async function loadFiche\(membreId\) \{[\s\S]*?\n\}/)?.[0] || "";
+  assert.match(loadFicheSource, /data = await apiRequest\("getFiche"/);
+  assert.match(loadFicheSource, /displayFiche\(container, data\.membre, data\.historique, publicDiscordRoles\)/);
+  assert.match(loadFicheSource, /fiche publique conservée/);
+  assert.ok(
+    loadFicheSource.indexOf("displayFiche(container") < loadFicheSource.indexOf('apiRequest("getDiscordRolesForMember"'),
+    "la fiche publique doit être affichée avant l'enrichissement RH"
+  );
+});
+
+test("sépare fonctions et activités en deux cartes responsives", () => {
+  assert.match(clientSource, /<h2>Fonctions<\/h2>/);
+  assert.match(clientSource, /<h2>Activités<\/h2>/);
+  assert.match(clientSource, /discord-functions-card/);
+  assert.match(clientSource, /discord-activities-card/);
+  assert.match(styleSource, /\.discord-roles-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(auto-fit, minmax\(260px, 1fr\)\)/);
 });

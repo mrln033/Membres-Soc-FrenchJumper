@@ -53,6 +53,10 @@ du cache peut donc dépasser ponctuellement la cible de dix minutes ; cette cibl
 - Le frontend a été publié par la PR #7 au commit `e8c8209adc221ea63a887213358730d9a1877ff9`. La construction GitHub Pages
   a réussi ; `index.html`, `fiche.html`, `js/client.js` et `css/style.css` répondent en HTTP 200, avec le bouton RH,
   le rendu des badges et le masquage public des responsabilités présents dans les ressources servies.
+- Après la première recette, le chargement de fiche a été rendu indépendant de l'enrichissement RH : la réponse
+  publique est affichée avant la lecture protégée des responsabilités. Une erreur GAS/Discord sur cette seconde lecture
+  conserve donc la fiche publique. Les fonctions et activités utilisent deux cartes responsives côte à côte, empilées
+  automatiquement lorsque la largeur disponible est insuffisante.
 
 ## Contrôles fonctionnels
 
@@ -60,7 +64,7 @@ du cache peut donc dépasser ponctuellement la cible de dix minutes ; cette cibl
 - Les responsabilités Administrateur/Modérateur n'apparaissent qu'en accès RH.
 - Administrateur/Modérateur ne donnent aucun droit RH.
 - Le bouton RH relit Discord, actualise D1, puis réplique vers GAS sans modifier de rôle.
-- Une panne Discord ou GAS ne bloque pas l'ouverture de la fiche.
+- Une panne Discord ou de la lecture RH GAS ne bloque pas l'ouverture de la fiche publique.
 - Les fonctions restent modifiables uniquement dans Discord.
 
 ## Retour arrière

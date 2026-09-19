@@ -24,7 +24,9 @@ test("configure explicitement la synchronisation et la garde d'affichage", () =>
 });
 
 test("masque les catégories vides et réserve les responsabilités à l'accès RH", () => {
-  assert.match(client, /\.filter\(\(\[, values\]\) => Array\.isArray\(values\) && values\.length\)/);
-  assert.match(client, /isAdmin \? source\.responsibilities : \[\]/);
+  assert.match(client, /const staff = isAdmin \? source\.responsibilities : \[\]/);
+  assert.match(client, /if \(!showFunctions && !showActivities\) return null/);
+  assert.match(client, /if \(showFunctions\)/);
+  assert.match(client, /if \(showActivities\)/);
   assert.match(client, /Actualiser les rôles Discord/);
 });

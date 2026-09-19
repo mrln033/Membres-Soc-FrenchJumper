@@ -215,7 +215,24 @@ gap:10px;
   text-align: center;
 }
 
-.discord-role-section + .discord-role-section {
+.discord-roles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.discord-role-card {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.discord-role-card h2 {
+  margin-top: 0;
+  text-align: center;
+}
+
+.discord-role-section {
   margin-top: 16px;
 }
 
