@@ -43,7 +43,7 @@ Règles d'intervention :
 -= POINT DE REPRISE =-
 -------------------
 État connu au 19/09/2026 à 17:58 Europe/Paris :
-- la branche principale distante et la production GitHub Pages sont au commit de fusion `e8c8209` de la PR #7 ;
+- la production GitHub Pages contient le frontend D-002 publié par le commit de fusion `e8c8209` de la PR #7 ;
 - la branche de travail courante « codex/d002-discord-roles-readonly » contient l'implémentation et le suivi documentaire de D-002 ;
 - le présent fichier de pilotage est versionné sur cette branche afin d'être consultable et modifiable depuis GitHub ;
 - D1 est le backend choisi par défaut par le frontend ; « ?backend=gas » force le backend de secours GAS ;
