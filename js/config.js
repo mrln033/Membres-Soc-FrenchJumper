@@ -222,7 +222,7 @@ function buildDiscordLoginUrl(returnTo, clientState) {
 
 function logoutDiscord() {
     clearAdminAuthorization();
-    setAuthenticationNotice("Vous êtes déconnecté. La consultation publique reste disponible.", "logged_out");
+    setAuthenticationNotice("Vous êtes déconnecté. Consultation publique active.", "logged_out");
 }
 
 function ensurePreferredBackendAvailable() {

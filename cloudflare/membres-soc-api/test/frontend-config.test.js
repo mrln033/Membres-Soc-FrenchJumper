@@ -149,6 +149,19 @@ test("rafraîchit après connexion uniquement une page interne mémorisée", () 
   assert.match(indexSource, /document\.getElementById\("mainFrame"\)\.src = page;/);
 });
 
+test("mémorise l'URL réellement affichée dans l'iframe plutôt que son ancien attribut src", () => {
+  assert.match(indexSource, /rememberAuthenticationReturnPage\(getCurrentFramePage\(\)\)/);
+  assert.match(indexSource, /frame\.contentWindow\.location\.href/);
+  assert.match(indexSource, /target\.pathname\.slice\(siteRoot\.pathname\.length\) \+ target\.search \+ target\.hash/);
+});
+
+test("masque automatiquement l'avis de déconnexion après trente secondes", () => {
+  assert.match(indexSource, /notice\.code === "logged_out" \? 30000 : 0/);
+  assert.match(indexSource, /setTimeout\(clearAuthenticationNotice, timeoutMs\)/);
+  assert.match(indexSource, /clearTimeout\(authenticationNoticeTimer\)/);
+  assert.match(indexSource, /logoutDiscord\(\);\s*const notice = takeAuthenticationNotice\(\);/);
+});
+
 test("un refus d'autorisation déclasse immédiatement l'interface sans supprimer la session", () => {
   const cachedState = {
     authenticated: true,

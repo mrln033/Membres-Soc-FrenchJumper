@@ -260,7 +260,7 @@ Avancement au 16/09/2026 à 13:42 Europe/Paris :
 - distinction entre 401 (session invalide), 403 (session valide sans droit RH) et 503 (vérification Discord indisponible) ;
 - absence du serveur identifiée par le seul statut Discord 404, sans session et avec retour public non bloquant ;
 - adaptation de GAS afin qu'un rôle retiré refuse l'écriture sans supprimer à tort une session encore valide ;
-- 27 tests automatisés réussis, dont le nettoyage d'un refus OAuth, la validation anti-rejeu, l'effacement d'un ancien avis après reconnexion, le rafraîchissement unique de la page interne mémorisée, le déclassement immédiat après retrait d'un rôle et le contrat HTTP 401/403/503, et contrôles de syntaxe Node réussis ;
+- 29 tests automatisés réussis, dont le nettoyage d'un refus OAuth, la validation anti-rejeu, l'effacement d'un ancien avis après reconnexion, la lecture de l'URL réellement affichée dans l'iframe, le rafraîchissement unique de la page interne mémorisée, le délai d'effacement de l'avis de déconnexion, le déclassement immédiat après retrait d'un rôle et le contrat HTTP 401/403/503, et contrôles de syntaxe Node réussis ;
 - Worker compatible déployé le 16/09/2026 sous la version `c475badb-3424-4b95-84d8-edafb36e6f2b`, avec `AUTH_LOGIN_POLICY=admin_only` et `ALLOW_LEGACY_ADMIN_TOKEN=true` ;
 - GAS publié le 16/09/2026 en version 142 sur le déploiement `/exec` existant ; la version 141 est le retour arrière immédiat ;
 - recette publique réussie : 1 324 membres retournés par GAS et D1, santé D1 valide et absence de session refusée en HTTP 401 ;
@@ -304,14 +304,16 @@ Demande : Après une connexion réussie, il faudrait actualiser la page en cours
 	Un exemple concret : à la consultation d'une fiche de membre, une correction quelconque est à apporter. Une connexion Admin-RH est donc nécessaire. Actuellement, seul le menu de gauche se met à jour avec les entrées désormais accessibles. Il conviendrait également de rafraichir la fiche membre affichée afin de pouvoir procéder immédiatement aux modifications nécessaires.
 
 Avancement au 19/09/2026 à 12:18 Europe/Paris :
-- l'URL exacte de la page interne affichée, paramètres et fragment compris, est mémorisée juste avant l'ouverture de Discord ;
+- l'URL réellement affichée par le document de l'iframe, paramètres et fragment compris, est mémorisée juste avant l'ouverture de Discord ; l'attribut `src`, qui peut conserver l'ancienne liste après une navigation interne, n'est utilisé qu'en repli ;
 - après authentification réussie, cette URL est consommée une seule fois puis rechargée dans l'iframe, ce qui actualise immédiatement les droits de la fiche sans revenir à la liste des membres ;
 - le mécanisme couvre la popup OAuth et le repli pleine page lorsque la popup est bloquée ;
 - seules les pages de la même origine et situées sous la racine du site peuvent être restaurées ; une valeur invalide est ignorée sans bloquer l'interface ;
 - un refus ou une erreur de lancement conserve la consultation publique et ne déclenche aucun rafraîchissement différé ;
-- 27 tests automatisés réussissent. L'implémentation est publiée par la PR #3 au commit de fusion `3bdd53e`. La construction GitHub Pages et les contrôles publics automatisés sont réussis ; la validation visuelle du scénario réel sur une fiche reste nécessaire avant clôture de D-004.
+- 29 tests automatisés réussissent. Une première implémentation a été publiée par la PR #3 au commit de fusion `3bdd53e`, puis corrigée localement à la suite de la recette réelle. La nouvelle correction doit être publiée et validée avant clôture de D-004.
 
 Publication au 19/09/2026 à 12:26 Europe/Paris : GitHub Pages sert la mémorisation de la page, le rafraîchissement post-authentification, l'effacement de l'ancien avis et la restriction à la même origine. Le contrôle de santé D1 reste valide avec 1 324 membres. Aucun changement Worker, GAS ou D1 n'a été effectué pour D-004.
+
+Recette réelle au 19/09/2026 à 12:38 Europe/Paris : la connexion RH réussit, mais la liste des membres remplace la fiche. Cause identifiée : l'attribut `src` de l'iframe reste sur sa valeur initiale lorsque la fiche navigue elle-même avec `window.location.href`. La correction lit désormais `contentWindow.location.href`, conserve l'ancien attribut uniquement comme repli et protège toujours l'origine. À la demande de l'utilisateur, l'avis de déconnexion est en outre consommé dès son affichage et disparaît automatiquement après 30 secondes, même si une autre page interne est ouverte.
 
 Modèle à copier pour une nouvelle demande :
 
