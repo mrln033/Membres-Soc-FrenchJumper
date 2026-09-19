@@ -44,7 +44,7 @@ Règles d'intervention :
 -------------------
 État connu au 16/09/2026 à 21:08 Europe/Paris :
 - la branche principale distante est au commit de fusion fcb60d9 (« Merge pull request #2 ») ;
-- la branche de travail courante « codex/cahier-des-charges-roles-discord » est au commit 5673313, intégré à `main` par la PR #3 ; la production GitHub Pages est au commit de fusion 3bdd53e ;
+- la branche de travail courante « codex/cahier-des-charges-roles-discord » contient le suivi documentaire ; la correction D-004 est intégrée à `main` par la PR #4 et la production GitHub Pages est au commit de fusion ed91e2e ;
 - le présent fichier de pilotage est versionné sur cette branche de travail afin d'être consultable et modifiable depuis GitHub ;
 - D1 est le backend choisi par défaut par le frontend ; « ?backend=gas » force le backend de secours GAS ;
 - l'authentification Admin Discord est activée côté configuration D1, mais « ALLOW_LEGACY_ADMIN_TOKEN=true » maintient encore le repli par ancien jeton ;
@@ -309,11 +309,15 @@ Avancement au 19/09/2026 à 12:18 Europe/Paris :
 - le mécanisme couvre la popup OAuth et le repli pleine page lorsque la popup est bloquée ;
 - seules les pages de la même origine et situées sous la racine du site peuvent être restaurées ; une valeur invalide est ignorée sans bloquer l'interface ;
 - un refus ou une erreur de lancement conserve la consultation publique et ne déclenche aucun rafraîchissement différé ;
-- 29 tests automatisés réussissent. Une première implémentation a été publiée par la PR #3 au commit de fusion `3bdd53e`, puis corrigée localement à la suite de la recette réelle. La nouvelle correction doit être publiée et validée avant clôture de D-004.
+- 29 tests automatisés réussissent. Une première implémentation a été publiée par la PR #3 au commit de fusion `3bdd53e`, puis corrigée à la suite de la recette réelle. La correction est publiée par la PR #4 au commit `ed91e2e` et validée par l'utilisateur. Le dernier ajustement de temporisation doit encore être publié avant clôture de D-004.
 
 Publication au 19/09/2026 à 12:26 Europe/Paris : GitHub Pages sert la mémorisation de la page, le rafraîchissement post-authentification, l'effacement de l'ancien avis et la restriction à la même origine. Le contrôle de santé D1 reste valide avec 1 324 membres. Aucun changement Worker, GAS ou D1 n'a été effectué pour D-004.
 
-Recette réelle au 19/09/2026 à 12:38 Europe/Paris : la connexion RH réussit, mais la liste des membres remplace la fiche. Cause identifiée : l'attribut `src` de l'iframe reste sur sa valeur initiale lorsque la fiche navigue elle-même avec `window.location.href`. La correction lit désormais `contentWindow.location.href`, conserve l'ancien attribut uniquement comme repli et protège toujours l'origine. À la demande de l'utilisateur, l'avis de déconnexion est en outre consommé dès son affichage et disparaît automatiquement après 30 secondes, même si une autre page interne est ouverte.
+Recette réelle au 19/09/2026 à 12:38 Europe/Paris : la connexion RH réussit, mais la liste des membres remplace la fiche. Cause identifiée : l'attribut `src` de l'iframe reste sur sa valeur initiale lorsque la fiche navigue elle-même avec `window.location.href`. La correction lit désormais `contentWindow.location.href`, conserve l'ancien attribut uniquement comme repli et protège toujours l'origine. À la demande de l'utilisateur, l'avis de déconnexion est en outre consommé dès son affichage et disparaît automatiquement après un délai, même si une autre page interne est ouverte.
+
+Publication corrective au 19/09/2026 à 12:42 Europe/Paris : la PR #4 est fusionnée au commit `ed91e2e` et GitHub Pages est construit sans erreur. Les fichiers publics contiennent la lecture de l'URL active, la consommation définitive de l'avis et la garde de même origine. D1 reste sain avec 1 324 membres.
+
+Validation utilisateur au 19/09/2026 à 12:49 Europe/Paris : la même fiche reste affichée après connexion, les commandes RH apparaissent, l'ancien avis disparaît à la reconnexion et l'avis de déconnexion s'efface automatiquement. Le comportement est validé ; l'utilisateur demande comme dernier ajustement de réduire le délai d'effacement de 30 à 15 secondes. Cette temporisation est modifiée localement et doit encore être publiée avant clôture.
 
 Modèle à copier pour une nouvelle demande :
 
