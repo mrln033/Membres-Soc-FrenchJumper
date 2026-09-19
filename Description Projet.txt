@@ -42,14 +42,14 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 19/09/2026 à 18:05 Europe/Paris :
-- la branche principale distante et la production GitHub Pages sont encore au commit de fusion a264239 (« Merge pull request #5 ») avant la publication frontend D-002 ;
+État connu au 19/09/2026 à 17:58 Europe/Paris :
+- la branche principale distante et la production GitHub Pages sont au commit de fusion `e8c8209` de la PR #7 ;
 - la branche de travail courante « codex/d002-discord-roles-readonly » contient l'implémentation et le suivi documentaire de D-002 ;
 - le présent fichier de pilotage est versionné sur cette branche afin d'être consultable et modifiable depuis GitHub ;
 - D1 est le backend choisi par défaut par le frontend ; « ?backend=gas » force le backend de secours GAS ;
 - l'authentification Admin Discord est activée côté configuration D1, mais « ALLOW_LEGACY_ADMIN_TOKEN=true » maintient encore le repli par ancien jeton ;
 - la synchronisation bidirectionnelle GAS/D1 est configurée en mode actif dans le Worker ;
-- le lot 1 de D-002 est actif côté D1, Worker et GAS ; son frontend doit encore être fusionné et contrôlé sur GitHub Pages avant la recette utilisateur finale ;
+- le lot 1 de D-002 est actif côté frontend GitHub Pages, D1, Worker et GAS ; il attend la recette utilisateur finale ;
 - Discord est l'unique source de vérité et l'unique interface de gestion des fonctions, activités et responsabilités ; le site les synchronise et les affiche uniquement en lecture seule.
 - l'analyse D-003 sur le remplacement de `?admin=1` est terminée dans ANALYSE-D003-CONNEXION-DISCORD.md ; le Worker, GAS et le frontend sont publiés en mode de migration protégé dans D-001 ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
 
@@ -309,14 +309,15 @@ Décisions validées le 19/09/2026 :
 - D-002.4 — afficher les catégories sur la fiche et ajouter le rafraîchissement manuel RH ;
 - D-002.5 — tester D1, GAS, mobile et ordinateur, préparer le retour arrière, puis publier progressivement après validation.
 
-Avancement au 19/09/2026 à 18:05 Europe/Paris :
+Avancement au 19/09/2026 à 17:58 Europe/Paris :
 - D-002.1 à D-002.4 sont réalisées : modèle D1/GAS, lecture Discord en petits lots, cache conservé en cas d'erreur, réplication GAS, séparation public/RH, badges adaptatifs et bouton RH de rafraîchissement ;
 - une sauvegarde D1 a été prise avant migration ; `0003_discord_role_cache.sql` a été appliquée à la base distante et les files `frj-discord-role-sync` / `frj-discord-role-sync-dlq` ont été créées sans modifier la file métier existante ;
 - GAS v144 est publié sur l'URL `/exec` existante ; le traitement regroupe jusqu'à dix snapshots par appel et verrouille l'écriture du lot ; GAS v142 reste le point de retour antérieur à D-002 ;
 - le premier remplissage a traité 125 membres éligibles en 8 min 13 s : 118 états `OK`, 7 membres absents, 0 erreur et 0 réplication GAS en attente ; 133 associations suivies ont été enregistrées ;
 - le Worker est actif sous la version `8968e108-2274-49ac-9b97-50aff3b81c73`, avec `DISCORD_ROLE_SYNC_MODE=active` et `DISCORD_ROLE_DISPLAY_ENABLED=true` ; la version `c475badb-3424-4b95-84d8-edafb36e6f2b` reste le retour arrière antérieur à D-002 ;
 - contrôles réussis : 34 tests automatisés, syntaxes Worker/frontend/GAS, santé D1 à 1 324 membres et 3 218 mouvements, affichage public réel d'une fonction et de quatre activités, responsabilités absentes du contrat public, concordance d'un échantillon D1/GAS ;
-- D-002 reste ouverte jusqu'à la publication GitHub Pages puis la recette utilisateur finale ordinateur/mobile, D1/GAS et rafraîchissement manuel RH.
+- le frontend a été fusionné par la PR #7 au commit `e8c8209adc221ea63a887213358730d9a1877ff9` ; la construction GitHub Pages a réussi et les ressources publiques servent le rendu, le bouton RH et la protection des responsabilités ;
+- D-002 reste ouverte jusqu'à la recette utilisateur finale ordinateur/mobile, D1/GAS et rafraîchissement manuel RH.
 
 Modèle à copier pour une nouvelle demande :
 
