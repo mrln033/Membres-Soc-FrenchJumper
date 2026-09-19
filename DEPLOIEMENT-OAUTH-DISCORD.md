@@ -37,7 +37,7 @@ implémentés. Le Worker compatible, GAS v142 et le frontend sont déployés. La
   avant la recette GAS ;
 - D-004 mémorise la page interne affichée avant la connexion et la recharge une seule fois après succès. Les paramètres
   de fiche et de backend sont conservés, y compris lorsque la popup est remplacée par le repli OAuth pleine page. Une
-  cible extérieure à la racine du site est refusée.
+  cible extérieure à la racine du site est refusée. Cette évolution est proposée dans la PR #3 et reste à publier.
 
 Un compte absent du serveur ne reçoit aucune session : le frontend affiche un message explicite puis reste en
 consultation publique. Les erreurs Discord 401, 403, 429 et 5xx sont traitées comme une indisponibilité temporaire,
