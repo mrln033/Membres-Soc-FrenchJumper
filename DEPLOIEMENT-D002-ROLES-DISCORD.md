@@ -50,7 +50,9 @@ du cache peut donc dépasser ponctuellement la cible de dix minutes ; cette cibl
   `c475badb-3424-4b95-84d8-edafb36e6f2b`.
 - Contrôles publics D1 réussis : `/health` retourne 1 324 membres et 3 218 mouvements ; une fiche de contrôle retourne
   `Pilote PF13` et quatre activités, tandis qu'une responsabilité suivie reste absente de la réponse publique.
-- Le frontend est publié séparément par GitHub Pages après fusion de la branche D-002.
+- Le frontend a été publié par la PR #7 au commit `e8c8209adc221ea63a887213358730d9a1877ff9`. La construction GitHub Pages
+  a réussi ; `index.html`, `fiche.html`, `js/client.js` et `css/style.css` répondent en HTTP 200, avec le bouton RH,
+  le rendu des badges et le masquage public des responsabilités présents dans les ressources servies.
 
 ## Contrôles fonctionnels
 
