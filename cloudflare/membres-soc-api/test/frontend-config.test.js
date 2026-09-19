@@ -5,6 +5,7 @@ import vm from "node:vm";
 import { webcrypto } from "node:crypto";
 
 const configSource = readFileSync(new URL("../../../js/config.js", import.meta.url), "utf8");
+const indexSource = readFileSync(new URL("../../../index.html", import.meta.url), "utf8");
 
 function loadConfigState(url, initialStorage = {}, afterLoad = "") {
   const values = new Map(Object.entries(initialStorage));
@@ -118,6 +119,11 @@ test("un retour OAuth valide stocke la session seulement si l'état correspond",
   );
   assert.equal(refused.storage.FRJ_MEMBRES_ADMIN_SESSION, undefined);
   assert.equal(JSON.parse(refused.storage.FRJ_MEMBRES_ADMIN_AUTH_ERROR).code, "invalid_state");
+});
+
+test("une reconnexion réussie efface l'ancien avis de déconnexion", () => {
+  assert.match(indexSource, /if \(authenticated\) \{\s*clearAuthenticationNotice\(\);/);
+  assert.match(indexSource, /function clearAuthenticationNotice\(\) \{[\s\S]*notice\.textContent = "";[\s\S]*notice\.style\.display = "none";/);
 });
 
 test("un refus d'autorisation déclasse immédiatement l'interface sans supprimer la session", () => {

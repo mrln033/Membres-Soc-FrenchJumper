@@ -29,7 +29,12 @@ implémentés. Le Worker compatible, GAS v142 et le frontend sont déployés. La
   version 142 ; retour arrière possible vers la version 141 ;
 - recette publique : 1 324 membres lus sur GAS et D1, `/health` valide et `/auth/session` sans jeton refusé en 401 ;
 - frontend GitHub Pages : PR #2 fusionnée et publiée le 16 septembre 2026 à 21:06 Europe/Paris, commit `fcb60d9` ;
-  contrôle public du bouton, du callback et de l'absence de `admin=1` réussi.
+  contrôle public du bouton, du callback et de l'absence de `admin=1` réussi ;
+- recette Discord RH : le compte « Merlin » est connecté et affiché avec « accès RH » sur D1 le 16 septembre 2026 à
+  21:15 Europe/Paris ; la page protégée « Synchronisation GAS / D1 » est également chargée correctement ;
+- anomalie d'affichage relevée pendant la recette : l'ancien avis de déconnexion persistait après reconnexion. La
+  correction et son test de non-régression sont préparés localement ; leur publication reste à effectuer avant la
+  recette GAS.
 
 Un compte absent du serveur ne reçoit aucune session : le frontend affiche un message explicite puis reste en
 consultation publique. Les erreurs Discord 401, 403, 429 et 5xx sont traitées comme une indisponibilité temporaire,

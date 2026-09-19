@@ -259,7 +259,7 @@ Avancement au 16/09/2026 à 13:42 Europe/Paris :
 - distinction entre 401 (session invalide), 403 (session valide sans droit RH) et 503 (vérification Discord indisponible) ;
 - absence du serveur identifiée par le seul statut Discord 404, sans session et avec retour public non bloquant ;
 - adaptation de GAS afin qu'un rôle retiré refuse l'écriture sans supprimer à tort une session encore valide ;
-- 24 tests automatisés réussis, dont le nettoyage d'un refus OAuth, la validation anti-rejeu, le déclassement immédiat après retrait d'un rôle et le contrat HTTP 401/403/503, et contrôles de syntaxe Node réussis ;
+- 25 tests automatisés réussis, dont le nettoyage d'un refus OAuth, la validation anti-rejeu, l'effacement d'un ancien avis après reconnexion, le déclassement immédiat après retrait d'un rôle et le contrat HTTP 401/403/503, et contrôles de syntaxe Node réussis ;
 - Worker compatible déployé le 16/09/2026 sous la version `c475badb-3424-4b95-84d8-edafb36e6f2b`, avec `AUTH_LOGIN_POLICY=admin_only` et `ALLOW_LEGACY_ADMIN_TOKEN=true` ;
 - GAS publié le 16/09/2026 en version 142 sur le déploiement `/exec` existant ; la version 141 est le retour arrière immédiat ;
 - recette publique réussie : 1 324 membres retournés par GAS et D1, santé D1 valide et absence de session refusée en HTTP 401 ;
@@ -268,6 +268,10 @@ Avancement au 16/09/2026 à 13:42 Europe/Paris :
 Contrôle complémentaire au 16/09/2026 à 13:54 Europe/Paris : les tests frontend simulés prouvent qu'un ancien favori `?admin=1` n'accorde aucun droit, qu'un refus OAuth efface session et cache tout en conservant le message public, qu'une session n'est acceptée que si l'état anti-rejeu correspond et qu'un refus de rôle par D1 ou GAS masque immédiatement les commandes RH sans supprimer la session Discord. Le mapping des refus serveur vers 401, 403 et 503 est également testé directement.
 
 Contrôle de publication au 16/09/2026 à 21:08 Europe/Paris : GitHub Pages a construit sans erreur le commit `fcb60d9`. L'URL publique sert le bouton Discord, la page `oauth-callback.html` et l'appel `/auth/discord/login` ; la chaîne obsolète `admin=1` est absente du JavaScript publié. Les garde-fous `AUTH_LOGIN_POLICY=admin_only` et `ALLOW_LEGACY_ADMIN_TOKEN=true` restent actifs dans l'attente de la recette réelle avec les comptes Discord.
+
+Recette réelle au 16/09/2026 à 21:15 Europe/Paris : la connexion Discord du compte « Merlin » aboutit correctement et le frontend affiche « Merlin — accès RH » sur le backend D1. La session OAuth, la lecture du membre Discord et la reconnaissance d'un rôle RH sont donc validées. La page « Synchronisation GAS / D1 » s'affiche correctement, ce qui valide également une route D1 protégée avec relecture du rôle. La recette GAS reste à effectuer avant l'activation de `guild_members`.
+
+Correction au 16/09/2026 à 21:21 Europe/Paris : après une déconnexion puis une reconnexion réussie, l'avis « Vous êtes déconnecté. Consultation publique active. » restait visible sous le menu. `renderAuthentication` efface désormais tout ancien avis dès qu'un état authentifié est confirmé. Un test de non-régression porte la recette automatisée à 25 tests réussis. Cette correction est préparée localement et reste à publier.
 
 D-002 [ÉVOLUTION] [EN ATTENTE DE VALIDATION]
 Demande : afficher sur la fiche des membres leurs fonctions en jeu, activités en jeu et responsabilités Discord, sans les confondre avec le grade de la Soc ni avec les rôles donnant accès à l'administration du site.
@@ -294,9 +298,13 @@ Informations ou décisions nécessaires avant développement :
 8. vérification de la permission et de la position hiérarchique du bot ;
 9. validation du délai de synchronisation cible de dix minutes.
 
+D-004 [CORRECTIF] [À FAIRE]
+Demande : Après une connexion réussie, il faudrait actualiser la page en cours.
+	Un exemple concret : à la consultation d'une fiche de membre, une correction quelconque est à apporter. Une connexion Admin-RH est donc nécessaire. Actuellement, seul le menu de gauche se met à jour avec les entrées désormais accessibles. Il conviendrait également de rafraichir la fiche membre affichée afin de pouvoir procéder immédiatement aux modifications nécessaires.
+
 Modèle à copier pour une nouvelle demande :
 
-D-004 [TYPE] [À FAIRE]
+D-005 [TYPE] [À FAIRE]
 Demande :
 [Décrire ici le problème, le résultat attendu, les pages ou services concernés, les règles à préserver et, si possible, les critères de validation.]
 

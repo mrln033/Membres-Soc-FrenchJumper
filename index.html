@@ -155,6 +155,7 @@ function renderAuthentication(state) {
     document.getElementById("menuNouveauMembre").style.display = authorized ? "" : "none";
     document.getElementById("menuSynchronisation").style.display = authorized && preferredBackend === "d1" ? "" : "none";
     if (authenticated) {
+        clearAuthenticationNotice();
         const name = state.user && state.user.name ? state.user.name : "Discord";
         status.textContent = authorized ? `${name} — accès RH` : `${name} — consultation publique`;
         if (state.stale) status.textContent += " (vérification différée)";
@@ -178,6 +179,12 @@ function showAuthenticationNotice(message) {
     const notice = document.getElementById("authNotice");
     notice.textContent = message;
     notice.style.display = "block";
+}
+
+function clearAuthenticationNotice() {
+    const notice = document.getElementById("authNotice");
+    notice.textContent = "";
+    notice.style.display = "none";
 }
 
 function loadPage(page){
