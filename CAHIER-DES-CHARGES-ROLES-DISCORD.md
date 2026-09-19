@@ -293,5 +293,7 @@ Le 19 septembre 2026, le lot 1 a été déployé progressivement sur GAS, D1 et 
 125 membres éligibles en 8 min 13 s, sans erreur définitive ni réplication GAS restante. La lecture publique réelle
 confirme l'affichage des fonctions et activités et l'absence des responsabilités dans le contrat non authentifié.
 Le Worker de production est `8968e108-2274-49ac-9b97-50aff3b81c73`, GAS est en version 144 et le frontend est publié
-par la PR #7 au commit `e8c8209`. La demande reste en recette jusqu'au contrôle utilisateur final sur ordinateur et
-mobile, des deux backends et du bouton RH.
+par la PR #7 au commit `e8c8209`. Après la première recette, le frontend affiche la fiche publique avant toute lecture
+RH supplémentaire afin qu'une panne de cet enrichissement ne soit jamais bloquante. Les fonctions et activités sont
+présentées dans deux cartes responsives distinctes. La demande reste en recette jusqu'au contrôle utilisateur final sur
+ordinateur et mobile, des deux backends et du bouton RH.

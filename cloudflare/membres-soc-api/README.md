@@ -23,6 +23,9 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - Le Worker D-002 actif depuis le 19 septembre 2026 est `8968e108-2274-49ac-9b97-50aff3b81c73`. Le remplissage initial
   a traité 125 membres en 8 min 13 s (118 `OK`, 7 `ABSENT`, 0 `ERROR`) et n'a laissé aucune réplication GAS en attente.
 - Le frontend D-002 est publié sur GitHub Pages depuis la PR #7, commit de fusion `e8c8209`.
+- La fiche rend d'abord le contrat public, puis enrichit séparément les responsabilités en accès RH : un échec de cet
+  appel protégé conserve la consultation publique. Les fonctions et activités sont affichées dans deux cartes
+  responsives distinctes.
 
 ## Sécurité de la migration
 

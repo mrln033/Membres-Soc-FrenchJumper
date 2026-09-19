@@ -494,27 +494,41 @@ async function loadFiche(membreId) {
   const container = document.getElementById("ficheMembre");
   container.innerHTML = "Chargement...";
 
+  let data;
   try {
-    const [, data] = await Promise.all([
-      ensureAuthState(),
-      apiRequest("getFiche", { id: membreId })
-    ]);
-
-    let discordRoles = data.discordRoles || { functions: [], activities: [], responsibilities: [] };
-    if (isAdmin) {
-      try {
-        discordRoles = await apiRequest("getDiscordRolesForMember", { membreId }, "POST");
-      } catch (error) {
-        console.warn("Lecture des responsabilités Discord impossible :", error);
-      }
-    }
-    displayFiche(container, data.membre, data.historique, discordRoles);
-
+    data = await apiRequest("getFiche", { id: membreId });
   } catch (err) {
-
     console.error(err);
     container.innerHTML = "Erreur chargement";
+    return;
+  }
 
+  // La consultation de la fiche reste prioritaire. Une vérification de session
+  // ou une lecture RH indisponible ne doit jamais masquer les données publiques.
+  try {
+    await ensureAuthState();
+  } catch (error) {
+    console.warn("Vérification de la session Discord impossible :", error);
+  }
+
+  const publicDiscordRoles = normalizeDiscordRoles(data.discordRoles);
+  try {
+    displayFiche(container, data.membre, data.historique, publicDiscordRoles);
+  } catch (error) {
+    console.error(error);
+    container.innerHTML = "Erreur chargement";
+    return;
+  }
+
+  if (isAdmin) {
+    try {
+      const protectedDiscordRoles = normalizeDiscordRoles(
+        await apiRequest("getDiscordRolesForMember", { membreId }, "POST")
+      );
+      replaceDiscordRolesCards(protectedDiscordRoles);
+    } catch (error) {
+      console.warn("Lecture des responsabilités Discord impossible, fiche publique conservée :", error);
+    }
   }
 }
 
@@ -733,27 +747,72 @@ function buildCardMembre(m, mouvements, discordRoles) {
 }
 
 function buildDiscordRolesCard(roles) {
-    const source = roles || {};
-    const sections = [
-        ["Fonctions en jeu", source.functions, "discord-role-function"],
-        ["Activités", source.activities, "discord-role-activity"],
-        ["Responsabilités Discord", isAdmin ? source.responsibilities : [], "discord-role-staff"]
-    ].filter(([, values]) => Array.isArray(values) && values.length);
-    if (!sections.length) return null;
-    const card = document.createElement("div");
-    card.className = "card discord-roles-card";
-    card.id = "discordRolesCard";
-    card.innerHTML = sections.map(([title, values, className]) => `
-        <section class="discord-role-section">
-            <h3>${title}</h3>
-            <div class="discord-role-badges">
-                ${values.map(role => `<span class="discord-role-badge ${className}">${escapeHtml(role.label)}</span>`).join("")}
-            </div>
-        </section>
-    `).join("") + (isAdmin && source.syncedAt ? `
-        <div class="discord-roles-synced-at">Dernière synchronisation : ${escapeHtml(formatDiscordSyncDate(source.syncedAt))}</div>
-    ` : "");
-    return card;
+    const source = normalizeDiscordRoles(roles);
+    const staff = isAdmin ? source.responsibilities : [];
+    const showFunctions = source.functions.length || staff.length;
+    const showActivities = source.activities.length;
+    if (!showFunctions && !showActivities) return null;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "discord-roles-grid";
+    wrapper.id = "discordRolesCard";
+
+    if (showFunctions) {
+        const functionCard = document.createElement("article");
+        functionCard.className = "card discord-role-card discord-functions-card";
+        functionCard.innerHTML = `
+            <h2>Fonctions</h2>
+            ${source.functions.length ? buildDiscordRoleBadges(source.functions, "discord-role-function") : ""}
+            ${staff.length ? `
+                <section class="discord-role-section discord-staff-section">
+                    <h3>Responsabilités Discord</h3>
+                    ${buildDiscordRoleBadges(staff, "discord-role-staff")}
+                </section>
+            ` : ""}
+            ${isAdmin && source.syncedAt ? `
+                <div class="discord-roles-synced-at">Dernière synchronisation : ${escapeHtml(formatDiscordSyncDate(source.syncedAt))}</div>
+            ` : ""}
+        `;
+        wrapper.appendChild(functionCard);
+    }
+
+    if (showActivities) {
+        const activityCard = document.createElement("article");
+        activityCard.className = "card discord-role-card discord-activities-card";
+        activityCard.innerHTML = `
+            <h2>Activités</h2>
+            ${buildDiscordRoleBadges(source.activities, "discord-role-activity")}
+        `;
+        wrapper.appendChild(activityCard);
+    }
+
+    return wrapper;
+}
+
+function normalizeDiscordRoles(roles) {
+    const source = roles && typeof roles === "object" ? roles : {};
+    return {
+        functions: Array.isArray(source.functions) ? source.functions : [],
+        activities: Array.isArray(source.activities) ? source.activities : [],
+        responsibilities: Array.isArray(source.responsibilities) ? source.responsibilities : [],
+        syncedAt: source.syncedAt || null,
+        status: source.status || "PENDING",
+        error: source.error || null
+    };
+}
+
+function buildDiscordRoleBadges(roles, className) {
+    return `<div class="discord-role-badges">
+        ${roles.map(role => `<span class="discord-role-badge ${className}">${escapeHtml(role.label)}</span>`).join("")}
+    </div>`;
+}
+
+function replaceDiscordRolesCards(roles) {
+    const previous = document.getElementById("discordRolesCard");
+    const next = buildDiscordRolesCard(roles);
+    if (previous && next) previous.replaceWith(next);
+    else if (previous) previous.remove();
+    else if (next) document.querySelector("#ficheMembre .card")?.after(next);
 }
 
 function formatDiscordSyncDate(value) {
@@ -766,11 +825,7 @@ async function refreshDiscordRoles(membreId, button) {
     button.innerText = "⏳ Actualisation...";
     try {
         const roles = await apiRequest("refreshDiscordRoles", { membreId }, "POST");
-        const previous = document.getElementById("discordRolesCard");
-        const next = buildDiscordRolesCard(roles);
-        if (previous && next) previous.replaceWith(next);
-        else if (previous) previous.remove();
-        else if (next) document.querySelector("#ficheMembre .card")?.after(next);
+        replaceDiscordRolesCards(normalizeDiscordRoles(roles));
         button.innerText = "✅ Rôles actualisés";
     } catch (error) {
         console.error("Actualisation des rôles Discord impossible :", error);
