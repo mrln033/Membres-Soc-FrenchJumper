@@ -5,11 +5,12 @@ retirer un rôle Discord.
 
 ## Gardes de production
 
-Les deux variables suivantes restent désactivées tant que GAS, D1 et le Worker ne sont pas prêts ensemble :
+Les deux variables suivantes restent désactivées tant que GAS, D1 et le Worker ne sont pas prêts ensemble. Elles ont
+été activées le 19 septembre 2026 après remplissage et comparaison du cache :
 
 ```jsonc
-"DISCORD_ROLE_SYNC_MODE": "off",
-"DISCORD_ROLE_DISPLAY_ENABLED": "false"
+"DISCORD_ROLE_SYNC_MODE": "active",
+"DISCORD_ROLE_DISPLAY_ENABLED": "true"
 ```
 
 La première coupe le cron et le rafraîchissement manuel. La seconde force un contrat vide et masque les blocs de la
@@ -36,6 +37,20 @@ fiche. Elles permettent de déployer le code sans modifier le site visible.
 
 Les changements de configuration Cron peuvent demander jusqu'à quinze minutes pour se propager. Le premier remplissage
 du cache peut donc dépasser ponctuellement la cible de dix minutes ; cette cible s'applique au fonctionnement stabilisé.
+
+## Publication du 19 septembre 2026
+
+- Sauvegarde D1 préalable : export SQL local ignoré par Git `seed/d1-pre-d002-20260919.sql`.
+- Files créées : `frj-discord-role-sync` et `frj-discord-role-sync-dlq` ; `frj-membres-sync` est restée inchangée.
+- GAS publié en version 144 sur l'URL `/exec` existante ; version antérieure à D-002 : 142.
+- Migration distante `0003_discord_role_cache.sql` appliquée : 2 responsabilités, 2 fonctions et 7 activités,
+  toutes avec `site_editable=0`.
+- Remplissage initial : 125/125 membres en 8 min 13 s, 118 `OK`, 7 `ABSENT`, 0 `ERROR`, aucune réplication GAS en attente.
+- Worker actif : `8968e108-2274-49ac-9b97-50aff3b81c73`. Retour arrière antérieur à D-002 :
+  `c475badb-3424-4b95-84d8-edafb36e6f2b`.
+- Contrôles publics D1 réussis : `/health` retourne 1 324 membres et 3 218 mouvements ; une fiche de contrôle retourne
+  `Pilote PF13` et quatre activités, tandis qu'une responsabilité suivie reste absente de la réponse publique.
+- Le frontend est publié séparément par GitHub Pages après fusion de la branche D-002.
 
 ## Contrôles fonctionnels
 

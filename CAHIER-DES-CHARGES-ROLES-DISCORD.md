@@ -286,3 +286,11 @@ Décisions du 19 septembre 2026 :
 Commencer par le lot 1 en lecture seule. Cette étape apporte immédiatement l’information demandée tout en limitant fortement les risques pour l’application en production et pour les rôles Discord.
 
 Le lot 2 reste reporté. Toute ouverture future d'une modification depuis le site nécessitera une nouvelle décision explicite ; jusque-là, fonctions, activités et responsabilités sont toutes gérées uniquement dans Discord.
+
+## 14. État de réalisation du lot 1
+
+Le 19 septembre 2026, le lot 1 a été déployé progressivement sur GAS, D1 et le Worker. Le cache initial a traité les
+125 membres éligibles en 8 min 13 s, sans erreur définitive ni réplication GAS restante. La lecture publique réelle
+confirme l'affichage des fonctions et activités et l'absence des responsabilités dans le contrat non authentifié.
+Le Worker de production est `8968e108-2274-49ac-9b97-50aff3b81c73` et GAS est en version 144. La demande reste en
+recette jusqu'au contrôle final du frontend GitHub Pages sur ordinateur et mobile, des deux backends et du bouton RH.

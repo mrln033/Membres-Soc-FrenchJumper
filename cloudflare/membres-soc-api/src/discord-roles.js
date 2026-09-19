@@ -50,10 +50,11 @@ export async function enqueueDiscordRoleRefresh(env) {
 }
 
 export async function handleDiscordRoleQueue(batch, env) {
+  const completed = [];
   for (const message of batch.messages) {
     try {
-      await refreshDiscordRolesForMember(env, message.body?.memberId);
-      message.ack();
+      const refresh = await refreshDiscordRoleState(env, message.body?.memberId);
+      completed.push({ message, memberId: String(message.body?.memberId || ""), ...refresh });
     } catch (error) {
       console.error(JSON.stringify({
         message: "Discord role refresh failed",
@@ -66,9 +67,36 @@ export async function handleDiscordRoleQueue(batch, env) {
       message.retry({ delaySeconds });
     }
   }
+
+  if (!completed.length) return;
+  try {
+    const pending = completed.filter((item) => item.needsGasReplication);
+    if (pending.length) {
+      await replicateRolesBatchToGas(env, pending.map((item) => ({
+        memberId: item.memberId,
+        roles: item.snapshot
+      })));
+    }
+    for (const item of completed) item.message.ack();
+  } catch (error) {
+    console.error(JSON.stringify({
+      message: "Discord role batch replication failed",
+      members: completed.map((item) => item.memberId),
+      error: error instanceof Error ? error.message : String(error)
+    }));
+    for (const item of completed) item.message.retry({ delaySeconds: 30 });
+  }
 }
 
 export async function refreshDiscordRolesForMember(env, memberId, fetcher = fetch) {
+  const refresh = await refreshDiscordRoleState(env, memberId, fetcher);
+  if (refresh.needsGasReplication) {
+    await replicateRolesBatchToGas(env, [{ memberId: String(memberId || "").trim(), roles: refresh.snapshot }]);
+  }
+  return refresh.snapshot;
+}
+
+async function refreshDiscordRoleState(env, memberId, fetcher = fetch) {
   const id = String(memberId || "").trim();
   if (!id) throw new Error("MembreID manquant");
   const member = await env.DB.prepare(
@@ -80,7 +108,7 @@ export async function refreshDiscordRolesForMember(env, memberId, fetcher = fetc
   const discordId = String(member.discord_id || "").trim();
   if (!DISCORD_ID_PATTERN.test(discordId)) {
     await upsertSyncState(env, id, discordId || null, "INVALID_ID", now, null, "ID Discord absent ou invalide");
-    return getCachedDiscordRoles(env, id, true);
+    return { snapshot: await getCachedDiscordRoles(env, id, true), needsGasReplication: false };
   }
 
   let discordMember;
@@ -139,8 +167,7 @@ export async function refreshDiscordRolesForMember(env, memberId, fetcher = fetc
   await env.DB.batch(statements);
 
   const snapshot = await getCachedDiscordRoles(env, id, true);
-  if (changed || !previous?.gas_synced_at) await replicateRolesToGas(env, id, snapshot);
-  return snapshot;
+  return { snapshot, needsGasReplication: changed || !previous?.gas_synced_at };
 }
 
 function upsertSyncState(env, memberId, discordId, status, attemptedAt, succeededAt, error) {
@@ -157,23 +184,45 @@ function upsertSyncState(env, memberId, discordId, status, attemptedAt, succeede
   `).bind(memberId, discordId, status, attemptedAt, succeededAt, error).run();
 }
 
-async function replicateRolesToGas(env, memberId, snapshot) {
+async function replicateRolesBatchToGas(env, snapshots) {
   if (!env.GAS_SYNC_URL || !env.SYNC_SHARED_SECRET) throw new Error("Configuration de réplication GAS manquante");
   const response = await fetch(env.GAS_SYNC_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      action: "replicateDiscordRolesFromD1",
+      action: "replicateDiscordRolesBatchFromD1",
       syncSecret: env.SYNC_SHARED_SECRET,
-      memberId,
-      roles: snapshot
+      snapshots
     })
   });
-  const result = await response.json().catch(() => ({}));
+  const text = await readBoundedText(response.body, 16_000);
+  let result = {};
+  try { result = JSON.parse(text || "{}"); } catch { /* handled below */ }
   if (!response.ok || result.success !== true) throw new Error(result.error || `GAS HTTP ${response.status}`);
-  await env.DB.prepare(
+  const now = new Date().toISOString();
+  await env.DB.batch(snapshots.map((snapshot) => env.DB.prepare(
     "UPDATE member_discord_role_sync SET gas_synced_at = ? WHERE member_id = ?"
-  ).bind(new Date().toISOString(), memberId).run();
+  ).bind(now, snapshot.memberId)));
+}
+
+async function readBoundedText(body, limit) {
+  if (!body) return "";
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  const chunks = [];
+  let bytes = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    bytes += value.byteLength;
+    if (bytes > limit) {
+      await reader.cancel("Payload too large");
+      throw new Error("Réponse GAS trop volumineuse");
+    }
+    chunks.push(decoder.decode(value, { stream: true }));
+  }
+  chunks.push(decoder.decode());
+  return chunks.join("");
 }
 
 export function isDiscordRoleMessage(message) {

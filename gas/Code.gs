@@ -222,6 +222,10 @@ function doPost(e) {
     return replicateDiscordRolesFromD1_(data);
   }
 
+  if (data.action === "replicateDiscordRolesBatchFromD1") {
+    return replicateDiscordRolesBatchFromD1_(data);
+  }
+
   // Les réplications disposent de leur secret propre. Seules les actions
   // provenant de l'interface Web passent par la session Admin Discord.
   const adminActions = [
@@ -601,30 +605,46 @@ function getFiche(membreId) {
 }
 
 function replicateDiscordRolesFromD1_(data) {
+  return replicateDiscordRolesBatchFromD1_({
+    syncSecret: data.syncSecret,
+    snapshots: [{ memberId: data.memberId, roles: data.roles }]
+  });
+}
+
+function replicateDiscordRolesBatchFromD1_(data) {
   const expected = PropertiesService.getScriptProperties().getProperty("SYNC_SHARED_SECRET");
   if (!expected || String(data.syncSecret || "") !== expected) {
     return discordRolesJson_({ success: false, error: "Unauthorized" });
   }
+  const lock = LockService.getScriptLock();
   try {
-    const memberId = String(data.memberId || "").trim();
-    if (!memberId) throw new Error("MembreID manquant");
+    const snapshots = Array.isArray(data.snapshots) ? data.snapshots.slice(0, 10) : [];
+    if (!snapshots.length) throw new Error("Lot de rôles Discord vide");
+    lock.waitLock(30000);
     const sheet = SpreadsheetApp.getActive().getSheetByName("MEMBRES_SOC");
     const map = ensureDiscordRoleColumns_(sheet);
     const values = sheet.getDataRange().getValues();
-    let row = -1;
+    const rowsByMember = {};
     for (let i = 1; i < values.length; i++) {
-      if (String(values[i][map["MembreID"]]) === memberId) { row = i + 1; break; }
+      rowsByMember[String(values[i][map["MembreID"]])] = i + 1;
     }
-    if (row === -1) throw new Error("Membre introuvable dans GAS");
-    const roles = data.roles || {};
-    setDiscordRoleCell_(sheet, row, map, "FonctionsDiscord", roles.functions);
-    setDiscordRoleCell_(sheet, row, map, "ActivitesDiscord", roles.activities);
-    setDiscordRoleCell_(sheet, row, map, "ResponsabilitesDiscord", roles.responsibilities);
-    setSyncCell_(sheet, row, map, "RolesDiscordSyncedAt", roles.syncedAt || new Date().toISOString());
-    setSyncCell_(sheet, row, map, "RolesDiscordStatus", roles.status || "OK");
-    return discordRolesJson_({ success: true });
+    snapshots.forEach(function(snapshot) {
+      const memberId = String(snapshot.memberId || "").trim();
+      const row = rowsByMember[memberId];
+      if (!row) throw new Error("Membre introuvable dans GAS : " + memberId);
+      const roles = snapshot.roles || {};
+      setDiscordRoleCell_(sheet, row, map, "FonctionsDiscord", roles.functions);
+      setDiscordRoleCell_(sheet, row, map, "ActivitesDiscord", roles.activities);
+      setDiscordRoleCell_(sheet, row, map, "ResponsabilitesDiscord", roles.responsibilities);
+      setSyncCell_(sheet, row, map, "RolesDiscordSyncedAt", roles.syncedAt || new Date().toISOString());
+      setSyncCell_(sheet, row, map, "RolesDiscordStatus", roles.status || "OK");
+    });
+    SpreadsheetApp.flush();
+    return discordRolesJson_({ success: true, applied: snapshots.length });
   } catch (err) {
     return discordRolesJson_({ success: false, error: err.message });
+  } finally {
+    if (lock.hasLock()) lock.releaseLock();
   }
 }
 

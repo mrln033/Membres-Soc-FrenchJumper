@@ -16,9 +16,9 @@ test("verrouille tout le catalogue D-002 en lecture seule", () => {
   assert.doesNotMatch(worker, /\/roles\//);
 });
 
-test("laisse la synchronisation et l'affichage désactivés par défaut", () => {
-  assert.match(config, /"DISCORD_ROLE_SYNC_MODE": "off"/);
-  assert.match(config, /"DISCORD_ROLE_DISPLAY_ENABLED": "false"/);
+test("configure explicitement la synchronisation et la garde d'affichage", () => {
+  assert.match(config, /"DISCORD_ROLE_SYNC_MODE": "(?:off|active)"/);
+  assert.match(config, /"DISCORD_ROLE_DISPLAY_ENABLED": "(?:false|true)"/);
   assert.match(config, /"binding": "DISCORD_ROLE_QUEUE"/);
   assert.match(config, /"max_concurrency": 1/);
 });

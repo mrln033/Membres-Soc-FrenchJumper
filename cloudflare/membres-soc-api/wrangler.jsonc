@@ -28,8 +28,8 @@
     "SYNC_MODE": "active",
     // D-002 reste sans effet en production tant que la migration, GAS et la
     // recette ne sont pas terminés. Activation explicite en deux temps.
-    "DISCORD_ROLE_SYNC_MODE": "off",
-    "DISCORD_ROLE_DISPLAY_ENABLED": "false"
+    "DISCORD_ROLE_SYNC_MODE": "active",
+    "DISCORD_ROLE_DISPLAY_ENABLED": "true"
   },
   "queues": {
     "producers": [

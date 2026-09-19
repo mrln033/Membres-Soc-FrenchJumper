@@ -18,9 +18,10 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
   du frontend et de GAS, `guild_members` permettra à un membre du serveur sans rôle RH de rester connecté sans droit.
 - Un compte absent du serveur ne reçoit jamais de session et revient, après un message explicite, à la consultation
   publique non bloquante. Une panne Discord est identifiée séparément.
-- D-002 est préparée derrière deux gardes désactivées : `DISCORD_ROLE_SYNC_MODE=off` et
-  `DISCORD_ROLE_DISPLAY_ENABLED=false`. Discord reste l'unique source et le site ne possède aucune route de
-  modification des fonctions, activités ou responsabilités.
+- D-002 est activée avec `DISCORD_ROLE_SYNC_MODE=active` et `DISCORD_ROLE_DISPLAY_ENABLED=true`. Discord reste
+  l'unique source et le site ne possède aucune route de modification des fonctions, activités ou responsabilités.
+- Le Worker D-002 actif depuis le 19 septembre 2026 est `8968e108-2274-49ac-9b97-50aff3b81c73`. Le remplissage initial
+  a traité 125 membres en 8 min 13 s (118 `OK`, 7 `ABSENT`, 0 `ERROR`) et n'a laissé aucune réplication GAS en attente.
 
 ## Sécurité de la migration
 
@@ -59,6 +60,8 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
   par une action protégée RH.
 - D1 réplique les snapshots vers les colonnes GAS `FonctionsDiscord`, `ActivitesDiscord`,
   `ResponsabilitesDiscord`, `RolesDiscordSyncedAt` et `RolesDiscordStatus`.
+- Le consommateur regroupe jusqu'à dix snapshots dans une seule exécution GAS ; GAS verrouille l'écriture du lot afin
+  de préserver la cohérence de la feuille.
 
 ## Contrat HTTP compatible
 
