@@ -42,9 +42,9 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 16/09/2026 à 21:08 Europe/Paris :
-- la branche principale distante est au commit de fusion fcb60d9 (« Merge pull request #2 ») ;
-- la branche de travail courante « codex/cahier-des-charges-roles-discord » contient le suivi documentaire ; la correction D-004 est intégrée à `main` par la PR #4 et la production GitHub Pages est au commit de fusion ed91e2e ;
+État connu au 19/09/2026 à 12:57 Europe/Paris :
+- la branche principale distante et la production GitHub Pages sont au commit de fusion a264239 (« Merge pull request #5 ») ;
+- la branche de travail courante « codex/cahier-des-charges-roles-discord » contient le suivi documentaire de D-001 à D-004 ;
 - le présent fichier de pilotage est versionné sur cette branche de travail afin d'être consultable et modifiable depuis GitHub ;
 - D1 est le backend choisi par défaut par le frontend ; « ?backend=gas » force le backend de secours GAS ;
 - l'authentification Admin Discord est activée côté configuration D1, mais « ALLOW_LEGACY_ADMIN_TOKEN=true » maintient encore le repli par ancien jeton ;
@@ -299,26 +299,6 @@ Informations ou décisions nécessaires avant développement :
 8. vérification de la permission et de la position hiérarchique du bot ;
 9. validation du délai de synchronisation cible de dix minutes.
 
-D-004 [CORRECTIF] [EN COURS]
-Demande : Après une connexion réussie, il faudrait actualiser la page en cours.
-	Un exemple concret : à la consultation d'une fiche de membre, une correction quelconque est à apporter. Une connexion Admin-RH est donc nécessaire. Actuellement, seul le menu de gauche se met à jour avec les entrées désormais accessibles. Il conviendrait également de rafraichir la fiche membre affichée afin de pouvoir procéder immédiatement aux modifications nécessaires.
-
-Avancement au 19/09/2026 à 12:18 Europe/Paris :
-- l'URL réellement affichée par le document de l'iframe, paramètres et fragment compris, est mémorisée juste avant l'ouverture de Discord ; l'attribut `src`, qui peut conserver l'ancienne liste après une navigation interne, n'est utilisé qu'en repli ;
-- après authentification réussie, cette URL est consommée une seule fois puis rechargée dans l'iframe, ce qui actualise immédiatement les droits de la fiche sans revenir à la liste des membres ;
-- le mécanisme couvre la popup OAuth et le repli pleine page lorsque la popup est bloquée ;
-- seules les pages de la même origine et situées sous la racine du site peuvent être restaurées ; une valeur invalide est ignorée sans bloquer l'interface ;
-- un refus ou une erreur de lancement conserve la consultation publique et ne déclenche aucun rafraîchissement différé ;
-- 29 tests automatisés réussissent. Une première implémentation a été publiée par la PR #3 au commit de fusion `3bdd53e`, puis corrigée à la suite de la recette réelle. La correction est publiée par la PR #4 au commit `ed91e2e` et validée par l'utilisateur. Le dernier ajustement de temporisation doit encore être publié avant clôture de D-004.
-
-Publication au 19/09/2026 à 12:26 Europe/Paris : GitHub Pages sert la mémorisation de la page, le rafraîchissement post-authentification, l'effacement de l'ancien avis et la restriction à la même origine. Le contrôle de santé D1 reste valide avec 1 324 membres. Aucun changement Worker, GAS ou D1 n'a été effectué pour D-004.
-
-Recette réelle au 19/09/2026 à 12:38 Europe/Paris : la connexion RH réussit, mais la liste des membres remplace la fiche. Cause identifiée : l'attribut `src` de l'iframe reste sur sa valeur initiale lorsque la fiche navigue elle-même avec `window.location.href`. La correction lit désormais `contentWindow.location.href`, conserve l'ancien attribut uniquement comme repli et protège toujours l'origine. À la demande de l'utilisateur, l'avis de déconnexion est en outre consommé dès son affichage et disparaît automatiquement après un délai, même si une autre page interne est ouverte.
-
-Publication corrective au 19/09/2026 à 12:42 Europe/Paris : la PR #4 est fusionnée au commit `ed91e2e` et GitHub Pages est construit sans erreur. Les fichiers publics contiennent la lecture de l'URL active, la consommation définitive de l'avis et la garde de même origine. D1 reste sain avec 1 324 membres.
-
-Validation utilisateur au 19/09/2026 à 12:49 Europe/Paris : la même fiche reste affichée après connexion, les commandes RH apparaissent, l'ancien avis disparaît à la reconnexion et l'avis de déconnexion s'efface automatiquement. Le comportement est validé ; l'utilisateur demande comme dernier ajustement de réduire le délai d'effacement de 30 à 15 secondes. Cette temporisation est modifiée localement et doit encore être publiée avant clôture.
-
 Modèle à copier pour une nouvelle demande :
 
 D-005 [TYPE] [À FAIRE]
@@ -336,6 +316,19 @@ Demande initiale :
 
 Réalisation :
 [Détail horodaté des travaux, fichiers et services concernés, contrôles, tests, migrations, déploiements, validations et éventuelles réserves.]
+
+[2026-09-19 12:57 Europe/Paris] Demande D-004 terminée.
+Demande initiale :
+D-004 [CORRECTIF] [À FAIRE]
+Demande : Après une connexion réussie, il faudrait actualiser la page en cours.
+	Un exemple concret : à la consultation d'une fiche de membre, une correction quelconque est à apporter. Une connexion Admin-RH est donc nécessaire. Actuellement, seul le menu de gauche se met à jour avec les entrées désormais accessibles. Il conviendrait également de rafraichir la fiche membre affichée afin de pouvoir procéder immédiatement aux modifications nécessaires.
+
+Réalisation :
+[2026-09-19 12:18 Europe/Paris] Mémorisation temporaire de la page interne avant OAuth et rechargement unique après authentification. Conservation des paramètres et fragments, prise en charge de la popup et du repli pleine page, restriction à l'origine et à la racine GitHub Pages courantes. Ajout des tests de non-régression dans `cloudflare/membres-soc-api/test/frontend-config.test.js`.
+[2026-09-19 12:38 Europe/Paris] La première recette de production a montré que l'attribut `src` de l'iframe conservait la liste initiale malgré la navigation interne vers une fiche. Correction dans `index.html` afin de lire l'adresse réellement affichée via `contentWindow.location.href`, avec maintien du repli sûr sur `src`.
+[2026-09-19 12:42 Europe/Paris] Publication de la correction par la PR #4 au commit de fusion `ed91e2e`. Construction GitHub Pages et contrôles publics réussis ; D1 resté sain avec 1 324 membres. Aucun changement Worker, GAS ou D1.
+[2026-09-19 12:49 Europe/Paris] Validation utilisateur réussie : même fiche conservée après connexion, commandes RH immédiatement visibles, ancien avis de déconnexion effacé à la reconnexion et avis courant masqué automatiquement même après changement de page.
+[2026-09-19 12:57 Europe/Paris] Temporisation finale ramenée de 30 à 15 secondes, publiée par la PR #5 au commit de fusion `a264239`. La valeur `15000` est servie en production, l'ancienne valeur `30000` est absente, la conservation de la fiche reste active et les 29 tests automatisés réussissent.
 
 [Mars 2026] Création et évolution du frontend de gestion des membres : navigation principale, listes des membres actifs et anciens, consultation des fiches et affichage des mouvements.
 
