@@ -11,9 +11,10 @@ La garde `AUTH_LOGIN_POLICY=admin_only` reste volontairement active. Au 16 septe
 `c475badb-3424-4b95-84d8-edafb36e6f2b` et GAS v142 sont déployés en mode compatible, avec le repli legacy maintenu.
 Le frontend a été publié par la PR #2 le 16 septembre 2026 à 21:06 Europe/Paris, commit `fcb60d9`. À 21:15, le compte
 « Merlin » a été reconnu avec un accès RH sur D1 et la page protégée de synchronisation a été chargée correctement.
-L'effacement de l'ancien avis de déconnexion après reconnexion est corrigé sur la branche de travail. D-004 ajoute
-le rafraîchissement unique de la page interne mémorisée après connexion, y compris avec le repli OAuth pleine page.
-La recette GAS, l'activation `guild_members` et la fermeture legacy restent à effectuer dans D-001.
+L'effacement de l'ancien avis de déconnexion après reconnexion et D-004 sont publiés par la PR #3 au commit de fusion
+`3bdd53e`. D-004 recharge une seule fois la page interne mémorisée après connexion, y compris avec le repli OAuth
+pleine page ; sa validation visuelle reste à effectuer. La recette GAS, l'activation `guild_members` et la fermeture
+legacy restent à effectuer dans D-001.
 
 Application : Membres Soc FrenchJumper
 
