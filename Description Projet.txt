@@ -232,12 +232,13 @@ Stockage navigateur temporaire :
 - FRJ_MEMBRES_ADMIN_OAUTH_STATE : protection du retour OAuth ;
 - FRJ_MEMBRES_ADMIN_AUTH_ERROR : erreur du parcours OAuth ;
 - FRJ_MEMBRES_AUTH_CACHE : dernier état d'identité et d'autorisation validé, utilisé uniquement pour permettre le secours GAS si le Worker est momentanément inaccessible ;
+- FRJ_MEMBRES_AUTH_RETURN_PAGE : URL interne mémorisée pendant la connexion Discord puis consommée une seule fois afin de rafraîchir la page affichée ;
 - FRJ_MEMBRES_D1_ADMIN_TOKEN : ancien repli local, à supprimer lorsque D-001 sera clôturée.
 
 ------------------------
 -= DEMANDES À RÉALISER =-
 ------------------------
->>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-004 <<<
+>>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-005 <<<
 
 D-001 [SÉCURITÉ] [EN COURS]
 Demande : terminer la migration de l'authentification Admin vers Discord pour D1 et GAS, vérifier les rôles « Chef d'Expédition » et « Conseiller d'Expédition », puis fermer définitivement l'ancien accès par ADMIN_TOKEN.
@@ -259,7 +260,7 @@ Avancement au 16/09/2026 à 13:42 Europe/Paris :
 - distinction entre 401 (session invalide), 403 (session valide sans droit RH) et 503 (vérification Discord indisponible) ;
 - absence du serveur identifiée par le seul statut Discord 404, sans session et avec retour public non bloquant ;
 - adaptation de GAS afin qu'un rôle retiré refuse l'écriture sans supprimer à tort une session encore valide ;
-- 25 tests automatisés réussis, dont le nettoyage d'un refus OAuth, la validation anti-rejeu, l'effacement d'un ancien avis après reconnexion, le déclassement immédiat après retrait d'un rôle et le contrat HTTP 401/403/503, et contrôles de syntaxe Node réussis ;
+- 27 tests automatisés réussis, dont le nettoyage d'un refus OAuth, la validation anti-rejeu, l'effacement d'un ancien avis après reconnexion, le rafraîchissement unique de la page interne mémorisée, le déclassement immédiat après retrait d'un rôle et le contrat HTTP 401/403/503, et contrôles de syntaxe Node réussis ;
 - Worker compatible déployé le 16/09/2026 sous la version `c475badb-3424-4b95-84d8-edafb36e6f2b`, avec `AUTH_LOGIN_POLICY=admin_only` et `ALLOW_LEGACY_ADMIN_TOKEN=true` ;
 - GAS publié le 16/09/2026 en version 142 sur le déploiement `/exec` existant ; la version 141 est le retour arrière immédiat ;
 - recette publique réussie : 1 324 membres retournés par GAS et D1, santé D1 valide et absence de session refusée en HTTP 401 ;
@@ -271,7 +272,7 @@ Contrôle de publication au 16/09/2026 à 21:08 Europe/Paris : GitHub Pages a co
 
 Recette réelle au 16/09/2026 à 21:15 Europe/Paris : la connexion Discord du compte « Merlin » aboutit correctement et le frontend affiche « Merlin — accès RH » sur le backend D1. La session OAuth, la lecture du membre Discord et la reconnaissance d'un rôle RH sont donc validées. La page « Synchronisation GAS / D1 » s'affiche correctement, ce qui valide également une route D1 protégée avec relecture du rôle. La recette GAS reste à effectuer avant l'activation de `guild_members`.
 
-Correction au 16/09/2026 à 21:21 Europe/Paris : après une déconnexion puis une reconnexion réussie, l'avis « Vous êtes déconnecté. Consultation publique active. » restait visible sous le menu. `renderAuthentication` efface désormais tout ancien avis dès qu'un état authentifié est confirmé. Un test de non-régression porte la recette automatisée à 25 tests réussis. Cette correction est préparée localement et reste à publier.
+Correction au 16/09/2026 à 21:21 Europe/Paris : après une déconnexion puis une reconnexion réussie, l'avis « Vous êtes déconnecté. Consultation publique active. » restait visible sous le menu. `renderAuthentication` efface désormais tout ancien avis dès qu'un état authentifié est confirmé. Un test de non-régression a été ajouté. Cette correction est poussée sur la branche de travail et reste à publier.
 
 D-002 [ÉVOLUTION] [EN ATTENTE DE VALIDATION]
 Demande : afficher sur la fiche des membres leurs fonctions en jeu, activités en jeu et responsabilités Discord, sans les confondre avec le grade de la Soc ni avec les rôles donnant accès à l'administration du site.
@@ -298,9 +299,17 @@ Informations ou décisions nécessaires avant développement :
 8. vérification de la permission et de la position hiérarchique du bot ;
 9. validation du délai de synchronisation cible de dix minutes.
 
-D-004 [CORRECTIF] [À FAIRE]
+D-004 [CORRECTIF] [EN COURS]
 Demande : Après une connexion réussie, il faudrait actualiser la page en cours.
 	Un exemple concret : à la consultation d'une fiche de membre, une correction quelconque est à apporter. Une connexion Admin-RH est donc nécessaire. Actuellement, seul le menu de gauche se met à jour avec les entrées désormais accessibles. Il conviendrait également de rafraichir la fiche membre affichée afin de pouvoir procéder immédiatement aux modifications nécessaires.
+
+Avancement au 19/09/2026 à 12:18 Europe/Paris :
+- l'URL exacte de la page interne affichée, paramètres et fragment compris, est mémorisée juste avant l'ouverture de Discord ;
+- après authentification réussie, cette URL est consommée une seule fois puis rechargée dans l'iframe, ce qui actualise immédiatement les droits de la fiche sans revenir à la liste des membres ;
+- le mécanisme couvre la popup OAuth et le repli pleine page lorsque la popup est bloquée ;
+- seules les pages de la même origine et situées sous la racine du site peuvent être restaurées ; une valeur invalide est ignorée sans bloquer l'interface ;
+- un refus ou une erreur de lancement conserve la consultation publique et ne déclenche aucun rafraîchissement différé ;
+- 27 tests automatisés réussissent. L'implémentation reste locale et doit encore être relue, commitée, publiée puis validée en production avant clôture de D-004.
 
 Modèle à copier pour une nouvelle demande :
 

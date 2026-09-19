@@ -33,8 +33,11 @@ implémentés. Le Worker compatible, GAS v142 et le frontend sont déployés. La
 - recette Discord RH : le compte « Merlin » est connecté et affiché avec « accès RH » sur D1 le 16 septembre 2026 à
   21:15 Europe/Paris ; la page protégée « Synchronisation GAS / D1 » est également chargée correctement ;
 - anomalie d'affichage relevée pendant la recette : l'ancien avis de déconnexion persistait après reconnexion. La
-  correction et son test de non-régression sont préparés localement ; leur publication reste à effectuer avant la
-  recette GAS.
+  correction et son test de non-régression sont poussés sur la branche de travail ; leur publication reste à effectuer
+  avant la recette GAS ;
+- D-004 mémorise la page interne affichée avant la connexion et la recharge une seule fois après succès. Les paramètres
+  de fiche et de backend sont conservés, y compris lorsque la popup est remplacée par le repli OAuth pleine page. Une
+  cible extérieure à la racine du site est refusée.
 
 Un compte absent du serveur ne reçoit aucune session : le frontend affiche un message explicite puis reste en
 consultation publique. Les erreurs Discord 401, 403, 429 et 5xx sont traitées comme une indisponibilité temporaire,

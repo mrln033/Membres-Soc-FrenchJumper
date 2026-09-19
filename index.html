@@ -156,6 +156,7 @@ function renderAuthentication(state) {
     document.getElementById("menuSynchronisation").style.display = authorized && preferredBackend === "d1" ? "" : "none";
     if (authenticated) {
         clearAuthenticationNotice();
+        refreshPageAfterAuthentication();
         const name = state.user && state.user.name ? state.user.name : "Discord";
         status.textContent = authorized ? `${name} — accès RH` : `${name} — consultation publique`;
         if (state.stale) status.textContent += " (vérification différée)";
@@ -166,8 +167,12 @@ function renderAuthentication(state) {
         button.textContent = "Connexion Discord";
         button.onclick = async () => {
             button.disabled = true;
+            rememberAuthenticationReturnPage(document.getElementById("mainFrame").getAttribute("src"));
             try { await beginDiscordLogin(); }
-            catch (error) { showAuthenticationNotice(error.message || "Connexion Discord impossible pour le moment."); }
+            catch (error) {
+                takeAuthenticationReturnPage();
+                showAuthenticationNotice(error.message || "Connexion Discord impossible pour le moment.");
+            }
             finally { button.disabled = false; }
         };
     }
@@ -185,6 +190,17 @@ function clearAuthenticationNotice() {
     const notice = document.getElementById("authNotice");
     notice.textContent = "";
     notice.style.display = "none";
+}
+
+function refreshPageAfterAuthentication() {
+    const page = takeAuthenticationReturnPage();
+    if (!page) return;
+    let target;
+    try { target = new URL(page, window.location.href); }
+    catch { return; }
+    const siteRoot = new URL(".", window.location.href);
+    if (target.origin !== window.location.origin || !target.pathname.startsWith(siteRoot.pathname)) return;
+    document.getElementById("mainFrame").src = page;
 }
 
 function loadPage(page){

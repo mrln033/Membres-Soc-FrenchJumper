@@ -55,6 +55,7 @@ function loadConfigState(url, initialStorage = {}, afterLoad = "") {
   // Ramène l'objet hors du realm vm pour une comparaison stricte fiable.
   return JSON.parse(JSON.stringify({
     result: context.__result,
+    testResult: context.__testResult,
     storage: Object.fromEntries(values),
     replacedUrl
   }));
@@ -124,6 +125,28 @@ test("un retour OAuth valide stocke la session seulement si l'état correspond",
 test("une reconnexion réussie efface l'ancien avis de déconnexion", () => {
   assert.match(indexSource, /if \(authenticated\) \{\s*clearAuthenticationNotice\(\);/);
   assert.match(indexSource, /function clearAuthenticationNotice\(\) \{[\s\S]*notice\.textContent = "";[\s\S]*notice\.style\.display = "none";/);
+});
+
+test("mémorise la page courante une seule fois pendant la connexion", () => {
+  const page = "fiche.html?backend=gas&id=abc#historique";
+  const loaded = loadConfigState(
+    "https://site.example.test/index.html",
+    {},
+    `rememberAuthenticationReturnPage(${JSON.stringify(page)});
+     globalThis.__testResult = {
+       first: takeAuthenticationReturnPage(),
+       second: takeAuthenticationReturnPage()
+     };`
+  );
+  assert.deepEqual(loaded.testResult, { first: page, second: "" });
+  assert.equal(loaded.storage.FRJ_MEMBRES_AUTH_RETURN_PAGE, undefined);
+});
+
+test("rafraîchit après connexion uniquement une page interne mémorisée", () => {
+  assert.match(indexSource, /if \(authenticated\) \{[\s\S]*refreshPageAfterAuthentication\(\);/);
+  assert.match(indexSource, /target\.origin !== window\.location\.origin/);
+  assert.match(indexSource, /target\.pathname\.startsWith\(siteRoot\.pathname\)/);
+  assert.match(indexSource, /document\.getElementById\("mainFrame"\)\.src = page;/);
 });
 
 test("un refus d'autorisation déclasse immédiatement l'interface sans supprimer la session", () => {

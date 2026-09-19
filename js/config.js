@@ -5,6 +5,7 @@ const ADMIN_SESSION_KEY = "FRJ_MEMBRES_ADMIN_SESSION";
 const ADMIN_OAUTH_STATE_KEY = "FRJ_MEMBRES_ADMIN_OAUTH_STATE";
 const ADMIN_AUTH_ERROR_KEY = "FRJ_MEMBRES_ADMIN_AUTH_ERROR";
 const ADMIN_AUTH_CACHE_KEY = "FRJ_MEMBRES_AUTH_CACHE";
+const ADMIN_AUTH_RETURN_PAGE_KEY = "FRJ_MEMBRES_AUTH_RETURN_PAGE";
 const ADMIN_AUTH_MESSAGE_TYPE = "frj-discord-auth";
 const D1_HEALTH_TIMEOUT_MS = 3500;
 
@@ -75,6 +76,18 @@ function takeAuthenticationNotice() {
     if (!stored) return null;
     sessionStorage.removeItem(ADMIN_AUTH_ERROR_KEY);
     try { return JSON.parse(stored); } catch { return { message: stored, code: "" }; }
+}
+
+function rememberAuthenticationReturnPage(page) {
+    const value = String(page || "").trim();
+    if (value) sessionStorage.setItem(ADMIN_AUTH_RETURN_PAGE_KEY, value);
+    else sessionStorage.removeItem(ADMIN_AUTH_RETURN_PAGE_KEY);
+}
+
+function takeAuthenticationReturnPage() {
+    const page = sessionStorage.getItem(ADMIN_AUTH_RETURN_PAGE_KEY) || "";
+    sessionStorage.removeItem(ADMIN_AUTH_RETURN_PAGE_KEY);
+    return page;
 }
 
 function getAdminAuthConfig() {

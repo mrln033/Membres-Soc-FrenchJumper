@@ -32,6 +32,10 @@ Le Worker réalise le parcours OAuth2 Discord avec le scope minimal `identify`, 
 30 minutes, puis relit les rôles Discord du demandeur avant chaque action sensible. GAS vérifie la même signature et
 relit également les rôles avant ses écritures de secours.
 
+Pour D-004, le frontend conserve temporairement dans `sessionStorage` uniquement l'URL interne de la page affichée
+avant l'ouverture de Discord. Cette valeur est supprimée à la première connexion réussie, puis acceptée seulement si
+elle appartient à l'origine et à la racine GitHub Pages courantes. Elle ne contient ni jeton ni secret.
+
 Propriétés Apps Script à ajouter avant l'activation :
 
 ```text
