@@ -43,7 +43,8 @@ implémentés. Le Worker compatible, GAS v142 et le frontend sont déployés. La
   interne vers une fiche. La correction préparée lit l'URL active de `contentWindow`, avec le même contrôle d'origine ;
   elle ajoute aussi l'effacement automatique de l'avis de déconnexion. La correction est publiée par la PR #4 au
   commit `ed91e2e` ; la construction Pages, les contrôles publics et la seconde recette utilisateur sont réussis.
-  L'ajustement final demandé réduit la temporisation de 30 à 15 secondes et reste à publier.
+  L'ajustement final demandé réduit la temporisation de 30 à 15 secondes. Il est publié par la PR #5 au commit
+  `a264239` et la valeur `15000` a été vérifiée dans le fichier servi par GitHub Pages.
 
 Un compte absent du serveur ne reçoit aucune session : le frontend affiche un message explicite puis reste en
 consultation publique. Les erreurs Discord 401, 403, 429 et 5xx sont traitées comme une indisponibilité temporaire,

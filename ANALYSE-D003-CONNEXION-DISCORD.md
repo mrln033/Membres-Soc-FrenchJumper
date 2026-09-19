@@ -14,9 +14,9 @@ Le frontend a été publié par la PR #2 le 16 septembre 2026 à 21:06 Europe/Pa
 L'effacement de l'ancien avis de déconnexion après reconnexion et une première version de D-004 sont publiés par la
 PR #3 au commit `3bdd53e`. La recette réelle a montré que l'attribut `src` de l'iframe ne suivait pas une navigation
 interne vers une fiche. La correction lit l'URL active de l'iframe et masque automatiquement l'avis de déconnexion.
-Elle est publiée par la PR #4 au commit `ed91e2e` et validée par l'utilisateur. Le dernier ajustement demandé réduit
-le délai de 30 à 15 secondes et reste à publier. La recette GAS, l'activation `guild_members` et la fermeture legacy
-restent à effectuer dans D-001.
+Elle est publiée par la PR #4 au commit `ed91e2e` et validée par l'utilisateur. Le dernier ajustement réduit le délai
+de 30 à 15 secondes ; il est publié par la PR #5 au commit `a264239`. D-004 est terminée. La recette GAS, l'activation
+`guild_members` et la fermeture legacy restent à effectuer dans D-001.
 
 Application : Membres Soc FrenchJumper
 
