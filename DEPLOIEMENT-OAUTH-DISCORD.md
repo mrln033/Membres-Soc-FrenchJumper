@@ -37,7 +37,11 @@ implémentés. Le Worker compatible, GAS v142 et le frontend sont déployés. La
   avant la recette GAS ;
 - D-004 mémorise la page interne affichée avant la connexion et la recharge une seule fois après succès. Les paramètres
   de fiche et de backend sont conservés, y compris lorsque la popup est remplacée par le repli OAuth pleine page. Une
-  cible extérieure à la racine du site est refusée. Cette évolution est proposée dans la PR #3 et reste à publier.
+  cible extérieure à la racine du site est refusée. Cette évolution est publiée par la PR #3 au commit de fusion
+  `3bdd53e` ; la construction Pages et les contrôles publics automatisés ont réussi le 19 septembre 2026 à 12:26
+  Europe/Paris. La recette visuelle a révélé que l'attribut `src` conservait la liste initiale malgré la navigation
+  interne vers une fiche. La correction préparée lit l'URL active de `contentWindow`, avec le même contrôle d'origine ;
+  elle ajoute aussi l'effacement automatique après 30 secondes de l'avis de déconnexion. Sa publication reste à faire.
 
 Un compte absent du serveur ne reçoit aucune session : le frontend affiche un message explicite puis reste en
 consultation publique. Les erreurs Discord 401, 403, 429 et 5xx sont traitées comme une indisponibilité temporaire,
