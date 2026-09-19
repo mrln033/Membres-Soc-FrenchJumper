@@ -1,5 +1,12 @@
 import { EXIT_TYPES, getMemberTransition, normalizeAvatarName, parseEffectiveDate } from "./domain.js";
 import { removeDiscordRole } from "./discord.js";
+import {
+  enqueueDiscordRoleRefresh,
+  getCachedDiscordRoles,
+  handleDiscordRoleQueue,
+  isDiscordRoleMessage,
+  refreshDiscordRolesForMember
+} from "./discord-roles.js";
 import { authorizeAdminRequest, handleAuthRoute } from "./auth.js";
 import {
   flushPendingMutations,
@@ -80,11 +87,14 @@ export default {
   },
 
   async queue(batch, env) {
-    await handleSyncQueue(batch, env);
+    const discordMessages = batch.messages.filter(isDiscordRoleMessage);
+    const syncMessages = batch.messages.filter((message) => !isDiscordRoleMessage(message));
+    if (discordMessages.length) await handleDiscordRoleQueue({ messages: discordMessages }, env);
+    if (syncMessages.length) await handleSyncQueue({ messages: syncMessages }, env);
   },
 
   async scheduled(_controller, env) {
-    await Promise.all([flushPendingMutations(env), runSyncAudit(env)]);
+    await Promise.all([flushPendingMutations(env), runSyncAudit(env), enqueueDiscordRoleRefresh(env)]);
   }
 };
 
@@ -180,7 +190,10 @@ async function handleGet(url, env) {
       niveau: Number(row.niveau)
     } : null;
 
-    return publicJson({ membre, historique: historyResult.results });
+    const discordRoles = String(env.DISCORD_ROLE_DISPLAY_ENABLED || "false") === "true"
+      ? await getCachedDiscordRoles(env, memberId, false)
+      : { functions: [], activities: [], responsibilities: [], syncedAt: null, status: "DISABLED", error: null };
+    return publicJson({ membre, historique: historyResult.results, discordRoles });
   }
 
   return json({ error: "unknown action" }, 400);
@@ -191,6 +204,18 @@ async function handlePost(data, env) {
   if (data.action === "updateMembreInfos") return updateMemberInfo(data, env);
   if (data.action === "applyMembreAction") return applyMemberAction(data, env);
   if (data.action === "syncDiscordFromWeb") return syncDiscordFromWeb(data, env);
+  if (data.action === "getDiscordRolesForMember") {
+    if (String(env.DISCORD_ROLE_DISPLAY_ENABLED || "false") !== "true") {
+      return json({ functions: [], activities: [], responsibilities: [], syncedAt: null, status: "DISABLED", error: null });
+    }
+    return json(await getCachedDiscordRoles(env, String(data.membreId || "").trim(), true));
+  }
+  if (data.action === "refreshDiscordRoles") {
+    if (String(env.DISCORD_ROLE_SYNC_MODE || "off") !== "active") {
+      throw new ApiError(503, "La synchronisation des rôles Discord n'est pas encore activée");
+    }
+    return json(await refreshDiscordRolesForMember(env, String(data.membreId || "").trim()));
+  }
   if (data.action === "getSyncStatus") return json(await getSyncStatus(env));
   if (data.action === "runSyncAudit") return json(await runSyncAudit(env));
   if (data.action === "retryPendingSync") {

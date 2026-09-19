@@ -25,13 +25,21 @@
     "DISCORD_OAUTH_REDIRECT_URI": "https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev/auth/discord/callback",
     "RULES_ACCEPTED_ROLE_ID": "1189173135380058133",
     "GAS_SYNC_URL": "https://script.google.com/macros/s/AKfycbzf40jOrUs79_O5PASuc7Y-OOZv_C2RZV1bY7r97WhF8iVVQ6f4nIpBCCRh_0IOIozSew/exec",
-    "SYNC_MODE": "active"
+    "SYNC_MODE": "active",
+    // D-002 reste sans effet en production tant que la migration, GAS et la
+    // recette ne sont pas terminés. Activation explicite en deux temps.
+    "DISCORD_ROLE_SYNC_MODE": "active",
+    "DISCORD_ROLE_DISPLAY_ENABLED": "true"
   },
   "queues": {
     "producers": [
       {
         "binding": "SYNC_QUEUE",
         "queue": "frj-membres-sync"
+      },
+      {
+        "binding": "DISCORD_ROLE_QUEUE",
+        "queue": "frj-discord-role-sync"
       }
     ],
     "consumers": [
@@ -41,6 +49,14 @@
         "max_batch_timeout": 5,
         "max_retries": 5,
         "dead_letter_queue": "frj-membres-sync-dlq"
+      },
+      {
+        "queue": "frj-discord-role-sync",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 5,
+        "max_concurrency": 1,
+        "dead_letter_queue": "frj-discord-role-sync-dlq"
       }
     ]
   },

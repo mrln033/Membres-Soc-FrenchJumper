@@ -52,12 +52,23 @@ transmis dans l'URL ou ajouté au dépôt.
 Actions protégées dans `doPost` :
 
 - `syncDiscordFromWeb` ;
+- `getDiscordRolesForMember` ;
+- `refreshDiscordRoles` ;
 - `applyMembreAction` ;
 - `createOrOpenMembre` ;
 - `updateMembreInfos`.
 
-Les actions `replicateFromD1` et `getGasSyncSnapshot` conservent leur authentification séparée par
+Les actions `replicateFromD1`, `replicateDiscordRolesFromD1`, `replicateDiscordRolesBatchFromD1` et `getGasSyncSnapshot` conservent leur authentification séparée par
 `SYNC_SHARED_SECRET`. Les interactions Discord existantes restent traitées avant le routage Web.
+
+Pour D-002, `replicateDiscordRolesFromD1` accepte uniquement le secret partagé et crée au besoin les colonnes de
+cache dans `MEMBRES_SOC`. La lecture publique ne retourne jamais `ResponsabilitesDiscord`; cette colonne n'est lue
+que par `getDiscordRolesForMember` après validation de la session RH. `refreshDiscordRoles` transmet la session au
+Worker D1, qui relit Discord et réplique le résultat : GAS ne devient donc jamais une seconde source de vérité.
+La réplication périodique regroupe jusqu'à dix membres par appel GAS et verrouille brièvement l'écriture de la feuille,
+ce qui évite 125 exécutions séparées lors d'un remplissage complet sans autoriser d'écritures concurrentes incohérentes.
+Cette implémentation est publiée en production dans GAS v144 depuis le 19 septembre 2026. La version 142 constitue le
+retour arrière antérieur à D-002 ; l'URL `/exec` n'a pas changé.
 
 Le mode `legacy` reste volontairement actif pendant la recette du nouveau frontend publié. Après validation du
 parcours complet, passer `ADMIN_AUTH_MODE=discord` dans GAS. Le guide détaillé et le retour arrière figurent dans

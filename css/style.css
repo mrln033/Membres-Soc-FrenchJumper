@@ -215,6 +215,56 @@ gap:10px;
   text-align: center;
 }
 
+.discord-role-section + .discord-role-section {
+  margin-top: 16px;
+}
+
+.discord-role-section h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.discord-role-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.discord-role-badge {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.discord-role-function {
+  color: #fff;
+  background: #6c4dc4;
+  font-weight: 700;
+}
+
+.discord-role-activity {
+  color: #174a2b;
+  background: #d9f5e2;
+  border: 1px solid #9ed7af;
+}
+
+.discord-role-staff {
+  color: #5c3b00;
+  background: #fff3cd;
+  border: 1px solid #e6cb78;
+}
+
+.discord-roles-synced-at {
+  margin-top: 14px;
+  color: #666;
+  font-size: 0.8rem;
+  text-align: right;
+}
+
 .icon-discord{
 
 height:16px;

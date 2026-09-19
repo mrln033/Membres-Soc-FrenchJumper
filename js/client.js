@@ -500,7 +500,15 @@ async function loadFiche(membreId) {
       apiRequest("getFiche", { id: membreId })
     ]);
 
-    displayFiche(container, data.membre, data.historique);
+    let discordRoles = data.discordRoles || { functions: [], activities: [], responsibilities: [] };
+    if (isAdmin) {
+      try {
+        discordRoles = await apiRequest("getDiscordRolesForMember", { membreId }, "POST");
+      } catch (error) {
+        console.warn("Lecture des responsabilités Discord impossible :", error);
+      }
+    }
+    displayFiche(container, data.membre, data.historique, discordRoles);
 
   } catch (err) {
 
@@ -513,7 +521,7 @@ async function loadFiche(membreId) {
 // ================================
 // AFFICHAGE FICHE
 // ================================
-function displayFiche(container, membre, mouvements) {
+function displayFiche(container, membre, mouvements, discordRoles) {
 	console.log("Fonction : client.js - displayFiche(container, membre, mouvements)");
   container.innerHTML = "";
 
@@ -522,14 +530,14 @@ function displayFiche(container, membre, mouvements) {
     return;
   }
 
-  container.appendChild(buildCardMembre(membre, mouvements));
+  container.appendChild(buildCardMembre(membre, mouvements, discordRoles));
   container.appendChild(buildCardHistorique(mouvements)); // <== on passe tout l’historique
 }
 
 // ================================
 // CARTE MEMBRE
 // ================================
-function buildCardMembre(m, mouvements) {
+function buildCardMembre(m, mouvements, discordRoles) {
 	console.log("Fonction : client.js - buildCardMembre(m, mouvements)");
 
     const container = document.createElement("div");
@@ -547,6 +555,9 @@ function buildCardMembre(m, mouvements) {
         </div>
     `;
     container.appendChild(card1);
+
+    const roleCard = buildDiscordRolesCard(discordRoles);
+    if (roleCard) container.appendChild(roleCard);
 
     // -----------------------------
     // Card 2 : Informations
@@ -624,6 +635,14 @@ function buildCardMembre(m, mouvements) {
 		btnDiv.className = "fiche-actions-admin";
 
 		const gradeActuel = (m.grade || "").trim();
+		if (m.IDDiscord && discordRoles && discordRoles.status !== "DISABLED") {
+			const rolesBtn = document.createElement("button");
+			rolesBtn.className = "btn-fiche-action btn-refresh-discord-roles";
+			rolesBtn.type = "button";
+			rolesBtn.innerText = "🔄 Actualiser les rôles Discord";
+			rolesBtn.onclick = () => refreshDiscordRoles(m.id, rolesBtn);
+			btnDiv.appendChild(rolesBtn);
+		}
 		const actionIcons = {
 			"Nouvelle Entrée": "✅",
 			"Promotion": "⬆️",
@@ -711,6 +730,58 @@ function buildCardMembre(m, mouvements) {
 	}
 
     return container;
+}
+
+function buildDiscordRolesCard(roles) {
+    const source = roles || {};
+    const sections = [
+        ["Fonctions en jeu", source.functions, "discord-role-function"],
+        ["Activités", source.activities, "discord-role-activity"],
+        ["Responsabilités Discord", isAdmin ? source.responsibilities : [], "discord-role-staff"]
+    ].filter(([, values]) => Array.isArray(values) && values.length);
+    if (!sections.length) return null;
+    const card = document.createElement("div");
+    card.className = "card discord-roles-card";
+    card.id = "discordRolesCard";
+    card.innerHTML = sections.map(([title, values, className]) => `
+        <section class="discord-role-section">
+            <h3>${title}</h3>
+            <div class="discord-role-badges">
+                ${values.map(role => `<span class="discord-role-badge ${className}">${escapeHtml(role.label)}</span>`).join("")}
+            </div>
+        </section>
+    `).join("") + (isAdmin && source.syncedAt ? `
+        <div class="discord-roles-synced-at">Dernière synchronisation : ${escapeHtml(formatDiscordSyncDate(source.syncedAt))}</div>
+    ` : "");
+    return card;
+}
+
+function formatDiscordSyncDate(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value || "") : date.toLocaleString("fr-FR");
+}
+
+async function refreshDiscordRoles(membreId, button) {
+    button.disabled = true;
+    button.innerText = "⏳ Actualisation...";
+    try {
+        const roles = await apiRequest("refreshDiscordRoles", { membreId }, "POST");
+        const previous = document.getElementById("discordRolesCard");
+        const next = buildDiscordRolesCard(roles);
+        if (previous && next) previous.replaceWith(next);
+        else if (previous) previous.remove();
+        else if (next) document.querySelector("#ficheMembre .card")?.after(next);
+        button.innerText = "✅ Rôles actualisés";
+    } catch (error) {
+        console.error("Actualisation des rôles Discord impossible :", error);
+        button.innerText = "❌ Erreur";
+        await openInfoModal("Rôles Discord", "Actualisation impossible : " + (error.message || String(error)), "warning");
+    } finally {
+        setTimeout(() => {
+            button.disabled = false;
+            button.innerText = "🔄 Actualiser les rôles Discord";
+        }, 2000);
+    }
 }
 
 function getNowInputValue() {

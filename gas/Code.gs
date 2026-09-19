@@ -218,10 +218,20 @@ function doPost(e) {
     return getGasSyncSnapshot_(data);
   }
 
+  if (data.action === "replicateDiscordRolesFromD1") {
+    return replicateDiscordRolesFromD1_(data);
+  }
+
+  if (data.action === "replicateDiscordRolesBatchFromD1") {
+    return replicateDiscordRolesBatchFromD1_(data);
+  }
+
   // Les réplications disposent de leur secret propre. Seules les actions
   // provenant de l'interface Web passent par la session Admin Discord.
   const adminActions = [
     "syncDiscordFromWeb",
+    "getDiscordRolesForMember",
+    "refreshDiscordRoles",
     "applyMembreAction",
     "createOrOpenMembre",
     "updateMembreInfos"
@@ -246,6 +256,14 @@ function doPost(e) {
 
   if (data.action === "syncDiscordFromWeb") {
     return syncDiscordFromWeb(data);
+  }
+
+  if (data.action === "getDiscordRolesForMember") {
+    return discordRolesJson_(getDiscordRolesFromSheet_(data.membreId, true));
+  }
+
+  if (data.action === "refreshDiscordRoles") {
+    return refreshDiscordRolesViaD1_(data);
   }
 
   if (data.action === "applyMembreAction") {
@@ -574,13 +592,135 @@ function getFiche(membreId) {
   // tri DESC
   historique.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+  const discordRoles = getDiscordRolesFromSheet_(membreId, false);
+
   return ContentService
     .createTextOutput(JSON.stringify({
       membre: membre,           // null si pas trouvé
-      historique: historique
+      historique: historique,
+      discordRoles: discordRoles
     }))
     .setMimeType(ContentService.MimeType.JSON);
 
+}
+
+function replicateDiscordRolesFromD1_(data) {
+  return replicateDiscordRolesBatchFromD1_({
+    syncSecret: data.syncSecret,
+    snapshots: [{ memberId: data.memberId, roles: data.roles }]
+  });
+}
+
+function replicateDiscordRolesBatchFromD1_(data) {
+  const expected = PropertiesService.getScriptProperties().getProperty("SYNC_SHARED_SECRET");
+  if (!expected || String(data.syncSecret || "") !== expected) {
+    return discordRolesJson_({ success: false, error: "Unauthorized" });
+  }
+  const lock = LockService.getScriptLock();
+  try {
+    const snapshots = Array.isArray(data.snapshots) ? data.snapshots.slice(0, 10) : [];
+    if (!snapshots.length) throw new Error("Lot de rôles Discord vide");
+    lock.waitLock(30000);
+    const sheet = SpreadsheetApp.getActive().getSheetByName("MEMBRES_SOC");
+    const map = ensureDiscordRoleColumns_(sheet);
+    const values = sheet.getDataRange().getValues();
+    const rowsByMember = {};
+    for (let i = 1; i < values.length; i++) {
+      rowsByMember[String(values[i][map["MembreID"]])] = i + 1;
+    }
+    snapshots.forEach(function(snapshot) {
+      const memberId = String(snapshot.memberId || "").trim();
+      const row = rowsByMember[memberId];
+      if (!row) throw new Error("Membre introuvable dans GAS : " + memberId);
+      const roles = snapshot.roles || {};
+      setDiscordRoleCell_(sheet, row, map, "FonctionsDiscord", roles.functions);
+      setDiscordRoleCell_(sheet, row, map, "ActivitesDiscord", roles.activities);
+      setDiscordRoleCell_(sheet, row, map, "ResponsabilitesDiscord", roles.responsibilities);
+      setSyncCell_(sheet, row, map, "RolesDiscordSyncedAt", roles.syncedAt || new Date().toISOString());
+      setSyncCell_(sheet, row, map, "RolesDiscordStatus", roles.status || "OK");
+    });
+    SpreadsheetApp.flush();
+    return discordRolesJson_({ success: true, applied: snapshots.length });
+  } catch (err) {
+    return discordRolesJson_({ success: false, error: err.message });
+  } finally {
+    if (lock.hasLock()) lock.releaseLock();
+  }
+}
+
+function getDiscordRolesFromSheet_(memberId, includeStaff) {
+  const empty = { functions: [], activities: [], responsibilities: [], syncedAt: null, status: "PENDING", error: null };
+  const id = String(memberId || "").trim();
+  if (!id) return empty;
+  const sheet = SpreadsheetApp.getActive().getSheetByName("MEMBRES_SOC");
+  const map = getColumnMap(sheet);
+  if (map["FonctionsDiscord"] === undefined || map["ActivitesDiscord"] === undefined) return empty;
+  const values = sheet.getDataRange().getValues();
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][map["MembreID"]]) !== id) continue;
+    return {
+      functions: parseDiscordRoleCell_(values[i][map["FonctionsDiscord"]]),
+      activities: parseDiscordRoleCell_(values[i][map["ActivitesDiscord"]]),
+      responsibilities: includeStaff && map["ResponsabilitesDiscord"] !== undefined
+        ? parseDiscordRoleCell_(values[i][map["ResponsabilitesDiscord"]]) : [],
+      syncedAt: map["RolesDiscordSyncedAt"] === undefined ? null : String(values[i][map["RolesDiscordSyncedAt"]] || "") || null,
+      status: map["RolesDiscordStatus"] === undefined ? "PENDING" : String(values[i][map["RolesDiscordStatus"]] || "PENDING"),
+      error: null
+    };
+  }
+  return empty;
+}
+
+function refreshDiscordRolesViaD1_(data) {
+  try {
+    const url = PropertiesService.getScriptProperties().getProperty("D1_SYNC_URL") ||
+      "https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev";
+    const response = UrlFetchApp.fetch(url, {
+      method: "post",
+      contentType: "application/json",
+      headers: { Authorization: "Bearer " + String(data.adminSession || "") },
+      payload: JSON.stringify({ action: "refreshDiscordRoles", membreId: data.membreId }),
+      muteHttpExceptions: true
+    });
+    const result = JSON.parse(response.getContentText() || "{}");
+    if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
+      throw new Error(result.error || ("D1 HTTP " + response.getResponseCode()));
+    }
+    return discordRolesJson_(result);
+  } catch (err) {
+    return discordRolesJson_({ success: false, error: err.message });
+  }
+}
+
+function ensureDiscordRoleColumns_(sheet) {
+  const required = ["FonctionsDiscord", "ActivitesDiscord", "ResponsabilitesDiscord", "RolesDiscordSyncedAt", "RolesDiscordStatus"];
+  let map = getColumnMap(sheet);
+  required.forEach(function(header) {
+    if (map[header] !== undefined) return;
+    sheet.getRange(1, sheet.getLastColumn() + 1).setValue(header);
+    map = getColumnMap(sheet);
+  });
+  return map;
+}
+
+function setDiscordRoleCell_(sheet, row, map, header, roles) {
+  const safeRoles = Array.isArray(roles) ? roles.map(function(role) {
+    return { id: String(role.id || ""), label: String(role.label || "") };
+  }).filter(function(role) { return role.id && role.label; }) : [];
+  setSyncCell_(sheet, row, map, header, JSON.stringify(safeRoles));
+}
+
+function parseDiscordRoleCell_(value) {
+  try {
+    const parsed = JSON.parse(String(value || "[]"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function discordRolesJson_(payload) {
+  return ContentService.createTextOutput(JSON.stringify(payload)).setMimeType(ContentService.MimeType.JSON);
 }
 
 
