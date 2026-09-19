@@ -41,7 +41,9 @@ implémentés. Le Worker compatible, GAS v142 et le frontend sont déployés. La
   `3bdd53e` ; la construction Pages et les contrôles publics automatisés ont réussi le 19 septembre 2026 à 12:26
   Europe/Paris. La recette visuelle a révélé que l'attribut `src` conservait la liste initiale malgré la navigation
   interne vers une fiche. La correction préparée lit l'URL active de `contentWindow`, avec le même contrôle d'origine ;
-  elle ajoute aussi l'effacement automatique après 30 secondes de l'avis de déconnexion. Sa publication reste à faire.
+  elle ajoute aussi l'effacement automatique après 30 secondes de l'avis de déconnexion. La correction est publiée
+  par la PR #4 au commit `ed91e2e` ; la construction Pages et les contrôles publics sont réussis, avec un second test
+  utilisateur encore requis.
 
 Un compte absent du serveur ne reçoit aucune session : le frontend affiche un message explicite puis reste en
 consultation publique. Les erreurs Discord 401, 403, 429 et 5xx sont traitées comme une indisponibilité temporaire,
