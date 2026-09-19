@@ -35,7 +35,7 @@ relit également les rôles avant ses écritures de secours.
 Pour D-004, le frontend conserve temporairement dans `sessionStorage` uniquement l'URL interne de la page affichée
 avant l'ouverture de Discord. Cette valeur est supprimée à la première connexion réussie, puis acceptée seulement si
 elle appartient à l'origine et à la racine GitHub Pages courantes. Elle ne contient ni jeton ni secret.
-L'avis de déconnexion est retiré du stockage dès son affichage et masqué automatiquement après 30 secondes ; son délai
+L'avis de déconnexion est retiré du stockage dès son affichage et masqué automatiquement après 15 secondes ; son délai
 est annulé si une reconnexion réussie efface l'avis plus tôt.
 
 Propriétés Apps Script à ajouter avant l'activation :

@@ -188,7 +188,7 @@ function renderAuthentication(state) {
 }
 
 function showStoredAuthenticationNotice(notice) {
-    showAuthenticationNotice(notice.message, notice.code === "logged_out" ? 30000 : 0);
+    showAuthenticationNotice(notice.message, notice.code === "logged_out" ? 15000 : 0);
 }
 
 function showAuthenticationNotice(message, timeoutMs = 0) {
