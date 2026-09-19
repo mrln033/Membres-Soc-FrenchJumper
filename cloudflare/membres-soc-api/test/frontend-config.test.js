@@ -151,6 +151,11 @@ test("rafraîchit après connexion uniquement une page interne mémorisée", () 
   assert.match(indexSource, /document\.getElementById\("mainFrame"\)\.src = page;/);
 });
 
+test("recharge la fiche à la déconnexion pour retirer immédiatement les données RH", () => {
+  assert.match(indexSource, /const currentPage = getCurrentFramePage\(\);\s*logoutDiscord\(\);/);
+  assert.match(indexSource, /renderAuthentication\(authState\);\s*reloadInternalPage\(currentPage\);/);
+});
+
 test("mémorise l'URL réellement affichée dans l'iframe plutôt que son ancien attribut src", () => {
   assert.match(indexSource, /rememberAuthenticationReturnPage\(getCurrentFramePage\(\)\)/);
   assert.match(indexSource, /frame\.contentWindow\.location\.href/);
@@ -193,9 +198,15 @@ test("une panne de la lecture RH GAS conserve la fiche publique déjà affichée
   assert.match(loadFicheSource, /displayFiche\(container, data\.membre, data\.historique, publicDiscordRoles\)/);
   assert.match(loadFicheSource, /fiche publique conservée/);
   assert.ok(
-    loadFicheSource.indexOf("displayFiche(container") < loadFicheSource.indexOf('apiRequest("getDiscordRolesForMember"'),
+    loadFicheSource.indexOf("displayFiche(container") < loadFicheSource.indexOf("loadProtectedDiscordRoles(membreId)"),
     "la fiche publique doit être affichée avant l'enrichissement RH"
   );
+});
+
+test("lit les responsabilités via D1 lorsque la fiche publique utilise GAS", () => {
+  assert.match(clientSource, /if \(preferredBackend !== "gas"\)/);
+  assert.match(clientSource, /return apiRequestToBackend\(\s*"d1",\s*"getDiscordRolesForMember"/);
+  assert.match(clientSource, /await loadProtectedDiscordRoles\(membreId\)/);
 });
 
 test("sépare fonctions et activités en deux cartes responsives", () => {

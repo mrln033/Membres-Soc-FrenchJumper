@@ -297,3 +297,8 @@ par la PR #7 au commit `e8c8209`. Après la première recette, le frontend affic
 RH supplémentaire afin qu'une panne de cet enrichissement ne soit jamais bloquante. Les fonctions et activités sont
 présentées dans deux cartes responsives distinctes. La demande reste en recette jusqu'au contrôle utilisateur final sur
 ordinateur et mobile, des deux backends et du bouton RH.
+
+La seconde recette a montré deux compléments nécessaires : la déconnexion recharge désormais la fiche courante pour
+effacer immédiatement les responsabilités du DOM ; sur une fiche publique lue depuis GAS, l'enrichissement RH est lu
+depuis D1, qui porte déjà l'authentification OAuth et la revalidation des rôles Discord. GAS reste le backend de la fiche
+et de son historique, et l'échec de l'enrichissement protégé demeure non bloquant.

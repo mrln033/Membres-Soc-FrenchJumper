@@ -26,6 +26,9 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - La fiche rend d'abord le contrat public, puis enrichit séparément les responsabilités en accès RH : un échec de cet
   appel protégé conserve la consultation publique. Les fonctions et activités sont affichées dans deux cartes
   responsives distinctes.
+- En mode frontend `backend=gas`, la fiche publique et son historique proviennent de GAS, mais la lecture RH des
+  responsabilités appelle directement l'action D1 protégée avec la même session OAuth. La déconnexion recharge la page
+  interne courante pour éliminer immédiatement toute donnée RH déjà rendue.
 
 ## Sécurité de la migration
 

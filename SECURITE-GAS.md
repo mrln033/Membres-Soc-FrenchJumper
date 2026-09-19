@@ -70,6 +70,11 @@ ce qui évite 125 exécutions séparées lors d'un remplissage complet sans auto
 Cette implémentation est publiée en production dans GAS v144 depuis le 19 septembre 2026. La version 142 constitue le
 retour arrière antérieur à D-002 ; l'URL `/exec` n'a pas changé.
 
+Le frontend `backend=gas` lit toujours la fiche et l'historique publics dans GAS. Pour les responsabilités D-002,
+l'enrichissement RH utilise toutefois l'action protégée du Worker D1 : celui-ci est déjà l'émetteur de la session OAuth
+et revalide les rôles Discord. Aucun jeton n'est placé dans l'URL. À la déconnexion, l'iframe est rechargée afin que les
+données RH précédemment affichées ne subsistent jamais dans le DOM public.
+
 Le mode `legacy` reste volontairement actif pendant la recette du nouveau frontend publié. Après validation du
 parcours complet, passer `ADMIN_AUTH_MODE=discord` dans GAS. Le guide détaillé et le retour arrière figurent dans
 `DEPLOIEMENT-OAUTH-DISCORD.md`.

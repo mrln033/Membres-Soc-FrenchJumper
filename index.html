@@ -164,10 +164,12 @@ function renderAuthentication(state) {
         if (state.stale) status.textContent += " (vérification différée)";
         button.textContent = "Déconnexion";
         button.onclick = () => {
+            const currentPage = getCurrentFramePage();
             logoutDiscord();
             const notice = takeAuthenticationNotice();
             if (notice) showStoredAuthenticationNotice(notice);
             renderAuthentication(authState);
+            reloadInternalPage(currentPage);
         };
     } else {
         status.textContent = "Consultation publique";
@@ -221,6 +223,10 @@ function getCurrentFramePage() {
 
 function refreshPageAfterAuthentication() {
     const page = takeAuthenticationReturnPage();
+    reloadInternalPage(page);
+}
+
+function reloadInternalPage(page) {
     if (!page) return;
     let target;
     try { target = new URL(page, window.location.href); }

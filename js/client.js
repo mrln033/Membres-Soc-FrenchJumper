@@ -523,13 +523,31 @@ async function loadFiche(membreId) {
   if (isAdmin) {
     try {
       const protectedDiscordRoles = normalizeDiscordRoles(
-        await apiRequest("getDiscordRolesForMember", { membreId }, "POST")
+        await loadProtectedDiscordRoles(membreId)
       );
       replaceDiscordRolesCards(protectedDiscordRoles);
     } catch (error) {
       console.warn("Lecture des responsabilités Discord impossible, fiche publique conservée :", error);
     }
   }
+}
+
+async function loadProtectedDiscordRoles(membreId) {
+    if (preferredBackend !== "gas") {
+        return apiRequest("getDiscordRolesForMember", { membreId }, "POST");
+    }
+
+    // L'identité OAuth et la revalidation RH sont déjà portées par D1. En mode
+    // GAS, la fiche publique reste lue dans Sheets, tandis que cet enrichissement
+    // protégé évite le POST navigateur fragile vers la Web App Apps Script.
+    const adminAuthorization = await getAdminAuthorization();
+    return apiRequestToBackend(
+        "d1",
+        "getDiscordRolesForMember",
+        { membreId },
+        "POST",
+        adminAuthorization
+    );
 }
 
 // ================================

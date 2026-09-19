@@ -58,6 +58,10 @@ du cache peut donc dépasser ponctuellement la cible de dix minutes ; cette cibl
   conserve donc la fiche publique. Les fonctions et activités utilisent deux cartes responsives côte à côte, empilées
   automatiquement lorsque la largeur disponible est insuffisante. Ce correctif est publié par la PR #10 au commit
   `2d6977abdecb9bc942001179ce5cf48452265ce6` ; les fichiers JavaScript/CSS et la fiche GAS servis ont été contrôlés en HTTP 200.
+- La déconnexion recharge la page interne courante afin de reconstruire son affichage public et de supprimer toute
+  responsabilité RH déjà injectée dans le DOM. Lorsque `backend=gas`, la fiche publique reste fournie par GAS mais la
+  lecture protégée des responsabilités utilise D1, déjà responsable de la session OAuth et de sa revalidation Discord ;
+  une indisponibilité de cet enrichissement laisse la fiche GAS publique visible.
 
 ## Contrôles fonctionnels
 
