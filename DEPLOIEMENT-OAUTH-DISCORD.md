@@ -65,8 +65,8 @@ Le Worker revalide les rôles à chaque appel protégé. L'action de lecture `ge
 toutes les autres actions protégées continuent d'exiger RH. En mode GAS, l'enrichissement semi-privé passe également
 par le Worker D1, sans exposer la session dans l'URL.
 
-Mise en production du 20 septembre 2026 : Worker `cb729f06-1a5f-49ae-b823-ebd8fee39aa6`, frontend PR #13,
-45 tests automatisés réussis. Le contrôle HTTP confirme 1 324 membres, 3 218 mouvements, la politique
+Mise en production du 20 septembre 2026 : Worker `cb729f06-1a5f-49ae-b823-ebd8fee39aa6`, frontend PR #13 au commit
+de fusion `4bc3c447`, construction Pages réussie, 45 tests automatisés réussis. Le contrôle HTTP confirme 1 324 membres, 3 218 mouvements, la politique
 `guild_members` et le refus `401` de l'action protégée sans session. Retour arrière Worker immédiat :
 `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686`.
 
