@@ -7,10 +7,9 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - Base D1 distante : `frj-membres-soc` (`09b3c024-99f9-4add-a12c-ed214a462df5`), région WEUR.
 - Worker déployé : <https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev>.
 - La version préparée du site utilise D1 par défaut et redirige vers GAS si la sonde `/health` échoue.
-- `ADMIN_AUTH_MODE=discord` active OAuth Discord et `ALLOW_LEGACY_ADMIN_TOKEN=true` conserve encore temporairement
-  l'ancien jeton pendant la fenêtre de migration.
-- Les écritures exigent une session OAuth valide et l'un des rôles Discord autorisés, sauf usage explicite du repli
-  legacy tant qu'il n'est pas fermé.
+- OAuth Discord est l'unique authentification des accès RH. L'ancien jeton administrateur et ses variables de
+  compatibilité ont été supprimés le 20 septembre 2026.
+- Les écritures exigent une session OAuth valide et l'un des rôles Discord autorisés.
 - Lors d'une sortie, d'une désertion ou d'un bannissement, D1 retire aussi le rôle « Règlement Soc OK » (`1189173135380058133`).
 - Le Worker compatible D-003 est déployé depuis le 16 septembre 2026 sous la version
   `c475badb-3424-4b95-84d8-edafb36e6f2b`. Le frontend remplaçant `?admin=1` est publié depuis le commit `fcb60d9`.
@@ -28,6 +27,10 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
   `FRJ_MEMBER_ROLE_ID=464706220905857026`. La version `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686` est son retour arrière
   immédiat. Le frontend correspondant est publié par la PR #13 au commit de fusion `4bc3c447` ; la construction Pages
   et le contrôle direct des ressources servies ont réussi.
+- La clôture D-001 est active sous la version `b753d68b-7900-4f41-b09e-b565363c2b0e` : le code OAuth exclusif a été
+  déployé dans `f5df761e-ec5e-4b49-9bb9-88b738c87f01`, puis la suppression du secret historique `ADMIN_TOKEN` a créé
+  la version de configuration actuellement servie. L'utilisateur a validé le parcours sur PC ; aucune validation
+  mobile ou tablette n'est encore revendiquée. Le nettoyage frontend et la documentation sont publiés par la PR #18.
 - Le frontend D-002 est publié sur GitHub Pages depuis la PR #7, commit de fusion `e8c8209`.
 - La fiche rend d'abord le contrat public, puis enrichit séparément les responsabilités en accès RH ou Consultation FRJ : un échec de cet
   appel protégé conserve la consultation publique. Les fonctions et activités sont affichées dans deux cartes
@@ -44,7 +47,7 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - Les lectures sont publiques pour conserver le contrat actuel.
 - Toutes les écritures D1 exigent `Authorization: Bearer <session>`.
 - En mode Discord, le Worker relit les rôles du membre avant chaque écriture ; un retrait de rôle est donc immédiat.
-- `ALLOW_LEGACY_ADMIN_TOKEN=true` est exclusivement une garde de migration et doit être remis à `false` après publication.
+- Aucun jeton administrateur historique n'est accepté ; une session OAuth Discord est obligatoire.
 - Une écriture n'est jamais rejouée automatiquement vers l'autre backend : un délai réseau ne permet pas de savoir
   si la première écriture a déjà été appliquée.
 - La synchronisation standard passe par un Service Binding vers le Worker existant `discord-proxy` ; son code et son déploiement ne sont pas modifiés.
@@ -106,9 +109,8 @@ lorsque Discord ne permet momentanément pas de revalider les rôles. Seule la l
 Pour tester le site local avec D1 sans publier GitHub Pages, lancer `npm run dev:site`, puis ouvrir
 `http://127.0.0.1:8787/`. Le serveur écoute uniquement sur la machine locale.
 
-Secrets historiques nécessaires :
+Secrets nécessaires :
 
-- `ADMIN_TOKEN` : jeton réservé à l'interface d'administration D1 ;
 - `DISCORD_PROXY_SECRET` : secret déjà attendu par `discord-proxy` ;
 - `DISCORD_BOT_TOKEN` : token du bot déjà utilisé par GAS ;
 - `DISCORD_GUILD_ID` : identifiant du serveur Discord.
@@ -121,14 +123,12 @@ Configuration nécessaire à OAuth Discord :
 - `ADMIN_SESSION_SECRET` : secret aléatoire de signature, identique dans les propriétés Apps Script ;
 - `ADMIN_DISCORD_ROLE_IDS` : IDs des rôles autorisés, séparés par des virgules.
 
-Variables non secrètes de migration dans `wrangler.jsonc` :
+Variables non secrètes dans `wrangler.jsonc` :
 
 - `DISCORD_OAUTH_CLIENT_ID` : `1479825051522957462` ;
 - `DISCORD_OAUTH_REDIRECT_URI` : callback déclaré à l'identique dans le portail Discord ;
-- `ADMIN_AUTH_MODE` : `legacy` pendant l'installation, puis `discord` ;
 - `AUTH_LOGIN_POLICY` : `guild_members` pour conserver une session à tout membre du serveur ;
 - `FRJ_MEMBER_ROLE_ID` : `464706220905857026`, niveau « Consultation FRJ » en lecture seule ;
-- `ALLOW_LEGACY_ADMIN_TOKEN` : `true` pendant le chevauchement des frontends, puis impérativement `false`.
 - `DISCORD_ROLE_SYNC_MODE` : `off` tant que le cache D-002 n'est pas prêt, puis `active` après migration et publication GAS ;
 - `DISCORD_ROLE_DISPLAY_ENABLED` : `false` pendant le remplissage initial, puis `true` après comparaison D1/GAS.
 

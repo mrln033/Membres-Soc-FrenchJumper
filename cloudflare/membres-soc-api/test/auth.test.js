@@ -71,7 +71,7 @@ test("revalide le rôle Discord à chaque requête protégée", async () => {
   assert.match(denied.error, /Rôle Discord/);
 });
 
-test("accepte temporairement l'ancien token pendant la migration", async () => {
+test("refuse définitivement l'ancien token même si l'ancienne garde est fournie", async () => {
   const env = {
     ADMIN_AUTH_MODE: "discord",
     ALLOW_LEGACY_ADMIN_TOKEN: "true",
@@ -85,10 +85,11 @@ test("accepte temporairement l'ancien token pendant la migration", async () => {
     headers: { Authorization: "Bearer legacy-secret" }
   });
   const result = await authorizeAdminRequest(request, env, async () => {
-    throw new Error("Discord ne doit pas être appelé pour un token legacy");
+    throw new Error("Discord ne doit pas être appelé pour un token invalide");
   });
-  assert.equal(result.authorized, true);
-  assert.equal(result.user.id, "legacy");
+  assert.equal(result.authenticated, false);
+  assert.equal(result.authorized, false);
+  assert.equal(result.status, 401);
 });
 
 test("effectue le parcours OAuth et renvoie la session dans le fragment", async () => {

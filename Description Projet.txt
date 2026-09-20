@@ -1,6 +1,6 @@
 Projet = 'Membres Soc FrenchJumper'
 
-Dernière mise à jour de ce document : 19/09/2026
+Dernière mise à jour de ce document : 20/09/2026
 
 ------------------
 -= INSTRUCTIONS =-
@@ -42,22 +42,24 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 20/09/2026 à 13:13 Europe/Paris :
-- la production GitHub Pages contient D-002, D-005 et D-006 ; la PR #13 est fusionnée au commit `4bc3c447ffeacf8d587d0b92ba3af9cb146776ab` et sa construction Pages a réussi ;
-- le Worker D-006 `cb729f06-1a5f-49ae-b823-ebd8fee39aa6` est en production avec `AUTH_LOGIN_POLICY=guild_members` et le rôle FRJ `464706220905857026` ;
-- l'utilisateur valide l'ensemble des modifications réalisées et publiées à ce jour, notamment D-002, D-005 et D-006 ;
+État connu au 20/09/2026 à 14:39 Europe/Paris :
+- la production GitHub Pages contient D-002, D-005, D-006 et D-007 ;
+- D-001 est validée par l'utilisateur sur PC uniquement ; la recette mobile/tablette n'est pas encore revendiquée ;
+- le Worker `b753d68b-7900-4f41-b09e-b565363c2b0e` est en production avec OAuth Discord exclusif, `AUTH_LOGIN_POLICY=guild_members` et le rôle FRJ `464706220905857026` ;
+- GAS v145 est publié sur l'URL `/exec` existante avec la même exigence de session Discord ; v144 constitue le retour arrière immédiat ;
+- l'ancien secret Cloudflare `ADMIN_TOKEN` a été supprimé et l'ancien jeton est refusé en HTTP 401 ;
 - D-007 est publiée par la PR #16 au commit de fusion `6e38512c6553b16c25ffe2562ff118525c95ea5f` ; le contenu des cartes Fonctions, Activités et Responsabilités Discord est centré ;
 - le présent fichier de pilotage est versionné dans GitHub afin d'être consultable et modifiable depuis tout appareil ;
 - D1 est le backend choisi par défaut par le frontend ; « ?backend=gas » force le backend de secours GAS ;
-- l'authentification Admin Discord est activée côté configuration D1, mais « ALLOW_LEGACY_ADMIN_TOKEN=true » maintient encore le repli par ancien jeton ;
+- l'authentification Discord est l'unique authentification des accès RH côté D1 et GAS ;
 - la synchronisation bidirectionnelle GAS/D1 est configurée en mode actif dans le Worker ;
 - le lot 1 de D-002 est actif et validé côté frontend GitHub Pages, D1, Worker et GAS ;
 - Discord est l'unique source de vérité et l'unique interface de gestion des fonctions, activités et responsabilités ; le site les synchronise et les affiche uniquement en lecture seule.
 - l'analyse D-003 sur le remplacement de `?admin=1` est terminée ; les trois niveaux sont Accès RH, Consultation FRJ et Consultation publique ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
 
 Ordre conseillé :
-1. D-001 — valider complètement OAuth Discord sur GAS, puis fermer l'ancien accès par jeton ;
-2. traiter ensuite les nouvelles demandes ajoutées dans ce fichier selon leur priorité explicite.
+1. traiter les nouvelles demandes ajoutées dans ce fichier selon leur priorité explicite ;
+2. compléter ultérieurement, si souhaité, la recette d'affichage sur smartphone et tablette sans rouvrir D-001.
 
 ---------
 -= BUT =-
@@ -199,9 +201,7 @@ Attention : les IDs de serveur et de rôles sont des identifiants publics au sen
 ------------------------------
 Variables Cloudflare non secrètes versionnées dans wrangler.jsonc :
 - PUBLIC_SITE_ORIGIN
-- ADMIN_AUTH_MODE
 - AUTH_LOGIN_POLICY
-- ALLOW_LEGACY_ADMIN_TOKEN
 - DISCORD_OAUTH_CLIENT_ID
 - DISCORD_OAUTH_REDIRECT_URI
 - RULES_ACCEPTED_ROLE_ID
@@ -218,10 +218,8 @@ Secrets Cloudflare attendus, à stocker avec Wrangler et jamais dans Git :
 - DISCORD_GUILD_ID
 - DISCORD_PROXY_SECRET
 - SYNC_SHARED_SECRET
-- ADMIN_TOKEN, uniquement tant que le repli legacy reste volontairement ouvert
 
 Propriétés Apps Script attendues, jamais dans Git :
-- ADMIN_AUTH_MODE
 - ADMIN_SESSION_SECRET
 - ADMIN_DISCORD_ROLE_IDS
 - BOT_TOKEN
@@ -238,48 +236,12 @@ Stockage navigateur temporaire :
 - FRJ_MEMBRES_ADMIN_AUTH_ERROR : erreur du parcours OAuth ;
 - FRJ_MEMBRES_AUTH_CACHE : dernier état d'identité et d'autorisation validé, utilisé uniquement pour permettre le secours GAS si le Worker est momentanément inaccessible ;
 - FRJ_MEMBRES_AUTH_RETURN_PAGE : URL interne mémorisée pendant la connexion Discord puis consommée une seule fois afin de rafraîchir la page affichée ;
-- FRJ_MEMBRES_D1_ADMIN_TOKEN : ancien repli local, à supprimer lorsque D-001 sera clôturée.
+- aucun ancien jeton administrateur n'est conservé dans le navigateur.
 
 ------------------------
 -= DEMANDES À RÉALISER =-
 ------------------------
 >>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-008 <<<
-
-D-001 [SÉCURITÉ] [EN COURS]
-Demande : terminer la migration de l'authentification Admin vers Discord pour D1 et GAS, vérifier les rôles « Chef d'Expédition » et « Conseiller d'Expédition », puis fermer définitivement l'ancien accès par ADMIN_TOKEN.
-
-État au 16/09/2026 :
-- D1 est configuré avec ADMIN_AUTH_MODE=discord ;
-- le frontend sait effectuer le parcours OAuth Discord et stocker une session courte ;
-- D1 et GAS relisent les rôles Discord avant chaque écriture sensible ;
-- le repli legacy reste toutefois autorisé dans le Worker avec ALLOW_LEGACY_ADMIN_TOKEN=true ;
-- la configuration et la validation du mode Discord côté GAS doivent être confirmées ;
-- après recette D1 + GAS, passer ALLOW_LEGACY_ADMIN_TOKEN=false, redéployer, contrôler les écritures et seulement ensuite supprimer l'ancien secret ADMIN_TOKEN ;
-- suivre DEPLOIEMENT-OAUTH-DISCORD.md et conserver le point de retour documenté au commit da1060c.
-- intégrer lors de l'implémentation le plan validé par l'analyse D-003 : connexion ouverte à tous les membres du serveur Discord FRJ, droits RH accordés uniquement après contrôle des rôles, bouton Connexion/Déconnexion et suppression de la dépendance à `?admin=1`.
-- limiter toutefois l'émission d'une session aux membres présents sur le serveur Discord FRJ : un compte absent doit recevoir un message explicite puis être redirigé vers la consultation publique non authentifiée, sans écran bloqué ni boucle de connexion.
-
-Avancement au 16/09/2026 à 13:42 Europe/Paris :
-- publication du bouton Connexion/Déconnexion, de la suppression de `?admin=1` et du retour OAuth par popup compatible avec l'intégration en iframe ;
-- séparation côté Worker entre session Discord, Consultation FRJ et autorisation RH ; `AUTH_LOGIN_POLICY=guild_members` est activé depuis D-006 ;
-- distinction entre 401 (session invalide), 403 (session valide sans droit RH) et 503 (vérification Discord indisponible) ;
-- absence du serveur identifiée par le seul statut Discord 404, sans session et avec retour public non bloquant ;
-- adaptation de GAS afin qu'un rôle retiré refuse l'écriture sans supprimer à tort une session encore valide ;
-- 29 tests automatisés réussis, dont le nettoyage d'un refus OAuth, la validation anti-rejeu, l'effacement d'un ancien avis après reconnexion, la lecture de l'URL réellement affichée dans l'iframe, le rafraîchissement unique de la page interne mémorisée, le délai d'effacement de l'avis de déconnexion, le déclassement immédiat après retrait d'un rôle et le contrat HTTP 401/403/503, et contrôles de syntaxe Node réussis ;
-- Worker compatible déployé le 16/09/2026 sous la version `c475badb-3424-4b95-84d8-edafb36e6f2b`, avec `AUTH_LOGIN_POLICY=admin_only` et `ALLOW_LEGACY_ADMIN_TOKEN=true` ;
-- GAS publié le 16/09/2026 en version 142 sur le déploiement `/exec` existant ; la version 141 est le retour arrière immédiat ;
-- recette publique réussie : 1 324 membres retournés par GAS et D1, santé D1 valide et absence de session refusée en HTTP 401 ;
-- frontend publié par la PR #2 sur GitHub Pages le 16/09/2026 à 21:06 Europe/Paris, commit de fusion `fcb60d9ea13494c494e1490bc67e782a9d63573e` ; la fermeture de `ALLOW_LEGACY_ADMIN_TOKEN` reste à réaliser avant de clôturer D-001.
-
-Contrôle complémentaire au 16/09/2026 à 13:54 Europe/Paris : les tests frontend simulés prouvent qu'un ancien favori `?admin=1` n'accorde aucun droit, qu'un refus OAuth efface session et cache tout en conservant le message public, qu'une session n'est acceptée que si l'état anti-rejeu correspond et qu'un refus de rôle par D1 ou GAS masque immédiatement les commandes RH sans supprimer la session Discord. Le mapping des refus serveur vers 401, 403 et 503 est également testé directement.
-
-Contrôle de publication au 16/09/2026 à 21:08 Europe/Paris : GitHub Pages a construit sans erreur le commit `fcb60d9`. L'URL publique sert le bouton Discord, la page `oauth-callback.html` et l'appel `/auth/discord/login` ; la chaîne obsolète `admin=1` est absente du JavaScript publié. Les garde-fous `AUTH_LOGIN_POLICY=admin_only` et `ALLOW_LEGACY_ADMIN_TOKEN=true` restent actifs dans l'attente de la recette réelle avec les comptes Discord.
-
-Recette réelle au 16/09/2026 à 21:15 Europe/Paris : la connexion Discord du compte « Merlin » aboutit correctement et le frontend affiche « Merlin — accès RH » sur le backend D1. La session OAuth, la lecture du membre Discord et la reconnaissance d'un rôle RH sont donc validées. La page « Synchronisation GAS / D1 » s'affiche correctement, ce qui valide également une route D1 protégée avec relecture du rôle. La recette GAS reste à effectuer avant l'activation de `guild_members`.
-
-Correction au 16/09/2026 à 21:21 Europe/Paris : après une déconnexion puis une reconnexion réussie, l'avis « Vous êtes déconnecté. Consultation publique active. » restait visible sous le menu. `renderAuthentication` efface désormais tout ancien avis dès qu'un état authentifié est confirmé. Un test de non-régression a été ajouté. La correction est publiée par la PR #3 depuis le 19/09/2026.
-
-Évolution au 20/09/2026 à 07:38 Europe/Paris : D-006 active `AUTH_LOGIN_POLICY=guild_members` et ajoute le booléen serveur `frjMember`. Le rôle FRJ donne une lecture semi-privée des responsabilités Discord, sans aucun droit d'écriture ; les accès RH restent inchangés. Le Worker `cb729f06-1a5f-49ae-b823-ebd8fee39aa6` est déployé et contrôlé.
 
 D-002 [ÉVOLUTION] [EN PRODUCTION]
 Demande : afficher sur la fiche des membres leurs fonctions en jeu, activités en jeu et responsabilités Discord, sans les confondre avec le grade de la Soc ni avec les rôles donnant accès à l'administration du site.
@@ -348,6 +310,25 @@ Demande initiale :
 
 Réalisation :
 [Détail horodaté des travaux, fichiers et services concernés, contrôles, tests, migrations, déploiements, validations et éventuelles réserves.]
+
+[2026-09-20 14:39 Europe/Paris] Demande D-001 terminée.
+Demande initiale :
+D-001 [SÉCURITÉ] [À VALIDER]
+Demande : terminer la migration de l'authentification Admin vers Discord pour D1 et GAS, vérifier les rôles « Chef d'Expédition » et « Conseiller d'Expédition », puis fermer définitivement l'ancien accès par ADMIN_TOKEN.
+
+État au 16/09/2026 :
+- D1 est configuré avec ADMIN_AUTH_MODE=discord ;
+- le frontend sait effectuer le parcours OAuth Discord et stocker une session courte ;
+- D1 et GAS relisent les rôles Discord avant chaque écriture sensible ;
+- le repli legacy reste toutefois autorisé dans le Worker avec ALLOW_LEGACY_ADMIN_TOKEN=true ;
+- la configuration et la validation du mode Discord côté GAS doivent être confirmées ;
+- après recette D1 + GAS, passer ALLOW_LEGACY_ADMIN_TOKEN=false, redéployer, contrôler les écritures et seulement ensuite supprimer l'ancien secret ADMIN_TOKEN ;
+- suivre DEPLOIEMENT-OAUTH-DISCORD.md et conserver le point de retour documenté au commit da1060c.
+
+Précisions complémentaires reçues pendant la réalisation : intégrer le plan validé par D-003, avec une connexion ouverte aux membres du serveur Discord FRJ, des droits RH accordés uniquement après contrôle des rôles, le bouton Connexion/Déconnexion et la suppression de la dépendance à `?admin=1`. Un compte absent du serveur doit recevoir un message explicite puis être redirigé vers la consultation publique non authentifiée, sans blocage.
+
+Réalisation :
+[2026-09-20 14:39 Europe/Paris] L'utilisateur valide D-001 à ce stade de ses tests sur PC uniquement ; aucune validation smartphone ou tablette n'est revendiquée. Le Worker n'accepte désormais que les sessions OAuth Discord signées et revalide les rôles en direct : tout le code et les variables de repli legacy ont été retirés, puis la version active `b753d68b-7900-4f41-b09e-b565363c2b0e` a été déployée. L'ancien secret Cloudflare `ADMIN_TOKEN` a ensuite été supprimé ; sa valeur n'est pas récupérable et un retour volontaire à l'ancienne version exigerait de recréer explicitement ce secret. GAS v145 est publié sur le déploiement `/exec` existant et exige lui aussi une session Discord valide ; v144 est le retour arrière immédiat. Le frontend ne contient plus la clé locale, l'invite ni le chemin d'autorisation de l'ancien jeton. Contrôles réussis : 47 tests automatisés, syntaxes Worker/frontend/GAS, vérification Wrangler et dry-run ; D1 retourne 1 324 membres et 3 218 mouvements, GAS retourne 1 324 membres, un faux ancien jeton est refusé en HTTP 401 et une écriture GAS sans session retourne `authRequired=true`. Aucun changement de données ni migration D1 n'a été réalisé. Le code et la documentation de fermeture sont publiés par la PR GitHub #18.
 
 [2026-09-19 12:57 Europe/Paris] Demande D-004 terminée.
 Demande initiale :

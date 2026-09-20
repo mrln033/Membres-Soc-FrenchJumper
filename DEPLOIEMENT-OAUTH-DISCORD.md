@@ -16,6 +16,22 @@ momentanément incompatible avec le Worker ou avec GAS.
   sans menu, bouton ni écriture RH.
 - Le Worker et GAS relisent les rôles Discord à chaque écriture sensible.
 
+## Clôture D-001 — état actuel
+
+La migration est close depuis le 20 septembre 2026. L'utilisateur a validé le parcours sur PC uniquement ; aucune
+validation smartphone ou tablette n'est encore revendiquée.
+
+- Worker actif : `b753d68b-7900-4f41-b09e-b565363c2b0e`, issu du déploiement de code
+  `f5df761e-ec5e-4b49-9bb9-88b738c87f01` puis de la suppression du secret historique `ADMIN_TOKEN` ;
+- GAS : version 145 sur le déploiement `/exec` existant ; version 144 comme retour arrière immédiat ;
+- frontend et documentation : publication par la PR GitHub #18 ;
+- configuration : `AUTH_LOGIN_POLICY=guild_members`, OAuth Discord exclusif et aucune variable legacy ;
+- contrôles : 47 tests, syntaxes Worker/frontend/GAS, dry-run Wrangler, lectures publiques D1 et GAS, refus HTTP 401
+  d'un faux ancien jeton et refus explicite d'une écriture GAS sans session.
+
+Le secret `ADMIN_TOKEN` supprimé n'est pas récupérable. Réactiver volontairement une ancienne version nécessiterait
+de recréer ce secret ; ce scénario n'est pas un retour arrière ordinaire.
+
 ## Évolution D-003 : état de l'implémentation
 
 Le bouton Connexion/Déconnexion, le retour OAuth compatible iframe, l'état asynchrone et le contrat serveur sont
@@ -23,7 +39,7 @@ implémentés. Le Worker compatible, GAS v142 et le frontend sont déployés. La
 avec `AUTH_LOGIN_POLICY=admin_only`. D-006 active ensuite `guild_members` et ajoute le niveau Consultation FRJ sans
 élargir les droits d'écriture.
 
-État validé le 16 septembre 2026 à 14:34 Europe/Paris :
+État historique validé le 16 septembre 2026 à 14:34 Europe/Paris, avant la clôture D-001 :
 
 - Worker : version `c475badb-3424-4b95-84d8-edafb36e6f2b`, `ADMIN_AUTH_MODE=discord`,
   `AUTH_LOGIN_POLICY=admin_only`, `ALLOW_LEGACY_ADMIN_TOKEN=true` ;
@@ -124,8 +140,9 @@ Depuis `cloudflare/membres-soc-api` :
 npx wrangler secret list
 ```
 
-La liste doit déjà contenir au minimum `ADMIN_TOKEN`, `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`,
-`DISCORD_PROXY_SECRET` et `SYNC_SHARED_SECRET`. La commande ne révèle pas leurs valeurs.
+La liste actuelle doit contenir au minimum `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_PROXY_SECRET`,
+`SYNC_SHARED_SECRET`, `DISCORD_OAUTH_CLIENT_SECRET`, `ADMIN_SESSION_SECRET` et `ADMIN_DISCORD_ROLE_IDS`. Elle ne doit
+plus contenir `ADMIN_TOKEN`. La commande ne révèle pas les valeurs.
 
 Le Client ID public est déjà versionné dans `wrangler.jsonc`. Ajouter uniquement les secrets ; Wrangler demande
 leur valeur sans l'écrire dans le dépôt :
@@ -136,13 +153,13 @@ npx wrangler secret put ADMIN_SESSION_SECRET
 npx wrangler secret put ADMIN_DISCORD_ROLE_IDS
 ```
 
-## 5. Préparer GAS sans activer la protection
+## 5. Préparation GAS historique
 
 1. Vérifier `clasp show-authorized-user`, puis `clasp show-file-status`. Le projet est associé par `.clasp.json` au
    Script ID Membres Soc et `rootDir=gas` limite le push à `Code.gs`, `Sync.gs` et `appsscript.json`.
 2. Exécuter `clasp push` seulement après avoir comparé le projet distant ; cette commande remplace tout le contenu du
    projet Apps Script et ne doit donc jamais être lancée depuis un dossier incomplet.
-3. Dans **Paramètres du projet > Propriétés du script**, ajouter :
+3. Pendant la migration initiale, les propriétés suivantes étaient utilisées :
 
 ```text
 ADMIN_AUTH_MODE = legacy
@@ -153,9 +170,10 @@ ADMIN_DISCORD_ROLE_IDS = id_role_chef,id_role_conseiller
 4. Vérifier que `BOT_TOKEN` et `GUILD_ID` existent déjà.
 5. Lister les déploiements avec `clasp list-deployments`, puis mettre à jour le déploiement Web existant afin de
    conserver l'URL `/exec` actuelle ; ne pas créer une seconde Web App par défaut.
-6. Tester une lecture et une écriture avec le site actuel. Le mode `legacy` conserve ici le comportement antérieur.
+6. Tester une lecture et une écriture avec le site actuel. Cette étape historique est terminée ; `ADMIN_AUTH_MODE` est
+   désormais obsolète et ignorée par GAS v145.
 
-## 6. Déployer le Worker en mode compatible
+## 6. Déploiement Worker historique en mode compatible
 
 Dans `wrangler.jsonc`, conserver à ce stade :
 
@@ -184,7 +202,7 @@ npm run deploy
 
 Vérifier ensuite `/health`, les lectures publiques et une écriture avec l'ancien frontend.
 
-## 7. Ouvrir la fenêtre de migration OAuth
+## 7. Fenêtre historique de migration OAuth
 
 1. Passer `ADMIN_AUTH_MODE` à `discord` dans `wrangler.jsonc`.
 2. Laisser temporairement `ALLOW_LEGACY_ADMIN_TOKEN` à `true`.
@@ -209,33 +227,31 @@ Puis ouvrir `http://127.0.0.1:8787/`. Vérifier successivement :
 - modification puis consultation de sa fiche ;
 - conservation de `backend=gas` dans les liens après un basculement manuel.
 
-## 8. Publier le frontend puis fermer l'ancien accès
+## 8. Clôture réalisée
 
-1. Publier la nouvelle version de `gas/Code.gs` en conservant `ADMIN_AUTH_MODE=legacy` et la même URL `/exec`.
-2. Déployer le Worker avec `AUTH_LOGIN_POLICY=admin_only` et `ALLOW_LEGACY_ADMIN_TOKEN=true`.
-3. Publier les fichiers HTML/JS sur GitHub Pages.
-4. Vérifier sans paramètre que D1 est utilisé, qu'un ancien favori `?admin=1` est nettoyé et qu'il n'accorde aucun droit.
-5. Vérifier une connexion et une action RH sur D1, puis explicitement avec `?backend=gas`.
-6. Passer `AUTH_LOGIN_POLICY` à `guild_members`, renseigner `FRJ_MEMBER_ROLE_ID`, redéployer le Worker et tester les
-   quatre profils : RH, membre FRJ, membre sans rôle FRJ, compte absent du serveur.
-7. Dans GAS, passer `ADMIN_AUTH_MODE` de `legacy` à `discord`, republier puis refaire une écriture de recette.
-8. Passer `ALLOW_LEGACY_ADMIN_TOKEN` à `false`, redéployer le Worker et contrôler qu'un ancien token est refusé.
-9. Après vérification, supprimer l'ancien secret avec `wrangler secret delete ADMIN_TOKEN`.
+1. Le frontend OAuth et le nettoyage de `?admin=1` ont été publiés et testés.
+2. `AUTH_LOGIN_POLICY=guild_members` et `FRJ_MEMBER_ROLE_ID=464706220905857026` sont actifs.
+3. GAS v145 ne possède plus de branche legacy et conserve la même URL `/exec`.
+4. Le Worker ne possède plus de branche legacy ni les variables `ADMIN_AUTH_MODE` et `ALLOW_LEGACY_ADMIN_TOKEN`.
+5. Un faux ancien jeton est refusé en HTTP 401.
+6. Le secret `ADMIN_TOKEN` a été supprimé après ces contrôles.
 
 ## Retour arrière
 
-Le point Git antérieur à la première migration OAuth est `da1060c`. L'implémentation D-003 est préparée sur la branche
-`codex/cahier-des-charges-roles-discord` ; relever son commit exact avant la mise en production.
+Le retour arrière normal doit conserver OAuth Discord. Le point Git antérieur à la première migration OAuth est
+`da1060c`, mais il ne doit servir que de référence historique.
 
 En cas d'incident :
 
-1. Remettre `ADMIN_AUTH_MODE=legacy` dans les propriétés GAS.
-2. Remettre `AUTH_LOGIN_POLICY=admin_only` et conserver temporairement `ALLOW_LEGACY_ADMIN_TOKEN=true`.
-3. Revenir au déploiement Apps Script précédent via **Gérer les déploiements**.
-4. Dans `cloudflare/membres-soc-api`, exécuter `npx wrangler versions list`, puis
-   `npx wrangler rollback <VERSION_ID>` vers la version connue comme stable.
-5. Rétablir le frontend avec un `git revert` du commit de migration, puis republier GitHub Pages.
-6. Utiliser temporairement `?backend=gas` si D1 est la seule partie indisponible.
+1. Revenir si nécessaire de GAS v145 à v144 via **Gérer les déploiements** ; cette version conserve le même contrat de
+   session Discord et la même URL `/exec`.
+2. Dans `cloudflare/membres-soc-api`, examiner `npx wrangler versions list`, puis revenir à une version OAuth connue
+   comme stable. La version pré-clôture est `cb729f06-1a5f-49ae-b823-ebd8fee39aa6`.
+3. Rétablir le frontend avec un `git revert` du commit concerné, puis republier GitHub Pages.
+4. Utiliser temporairement `?backend=gas` si D1 est la seule partie indisponible.
+
+La version Worker pré-clôture référence l'ancien mécanisme. Son utilisation complète demanderait de recréer
+explicitement `ADMIN_TOKEN` ; elle n'est donc pas recommandée et ne doit jamais être engagée comme simple rollback.
 
 Ne jamais utiliser `git reset --hard` pour ce retour arrière : un revert conserve un historique explicite et
 réversible.

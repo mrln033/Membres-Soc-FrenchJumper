@@ -41,15 +41,11 @@ function createAuthError_(code, message) {
 }
 
 /**
- * Valide la session courte émise par le Worker puis relit les rôles Discord du
- * demandeur. Le mode legacy (valeur par défaut) conserve le comportement actuel
- * pendant le déploiement progressif et permet un retour arrière immédiat.
+ * Valide exclusivement la session courte émise par le Worker puis relit les
+ * rôles Discord du demandeur. L'ancien accès implicite legacy est supprimé.
  */
 function requireAdminSession_(data) {
   const properties = PropertiesService.getScriptProperties();
-  const mode = String(properties.getProperty("ADMIN_AUTH_MODE") || "legacy").toLowerCase();
-  if (mode !== "discord") return { id: "legacy", name: "Legacy admin" };
-
   const secret = properties.getProperty("ADMIN_SESSION_SECRET");
   if (!secret) throw createAuthError_("auth_unavailable", "Propriété Apps Script manquante : ADMIN_SESSION_SECRET");
   const token = String(data.adminSession || "");
