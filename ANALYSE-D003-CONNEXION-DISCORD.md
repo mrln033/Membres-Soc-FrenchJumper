@@ -1,6 +1,6 @@
 # D-003 — Connexion Discord et remplacement de `?admin=1`
 
-Statut : analyse terminée ; connexion `guild_members` activée par D-006, fermeture du repli legacy encore suivie dans D-001
+Statut : analyse terminée ; connexion `guild_members` activée par D-006 et repli legacy fermé par D-001
 
 Date : 16 septembre 2026
 
@@ -16,7 +16,9 @@ PR #3 au commit `3bdd53e`. La recette réelle a montré que l'attribut `src` de 
 interne vers une fiche. La correction lit l'URL active de l'iframe et masque automatiquement l'avis de déconnexion.
 Elle est publiée par la PR #4 au commit `ed91e2e` et validée par l'utilisateur. Le dernier ajustement réduit le délai
 de 30 à 15 secondes ; il est publié par la PR #5 au commit `a264239`. D-004 est terminée. D-006 active ensuite
-`guild_members` et distingue Consultation FRJ de la consultation publique ; la fermeture legacy reste à effectuer dans D-001.
+`guild_members` et distingue Consultation FRJ de la consultation publique. D-001 est ensuite close le 20 septembre
+2026 : Worker `b753d68b-7900-4f41-b09e-b565363c2b0e`, GAS v145, ancien secret `ADMIN_TOKEN` supprimé et validation
+utilisateur effectuée sur PC uniquement.
 Cette activation est déployée le 20 septembre 2026 sous la version Worker
 `cb729f06-1a5f-49ae-b823-ebd8fee39aa6` et publiée côté frontend par la PR #13.
 
@@ -222,12 +224,12 @@ Conséquence connue : si le Worker OAuth est indisponible, les lectures publique
 - contrôler un compte RH, un membre FRJ, un membre sans rôle FRJ, un compte absent du serveur avec retour public explicite, une session expirée et un retrait de rôle en cours de session ;
 - vérifier l'appel direct, l'iframe historique, le mobile, D1 et `backend=gas`.
 
-### Étape 4 — clôturer D-001
+### Étape 4 — D-001 clôturée le 20 septembre 2026
 
-- passer `ALLOW_LEGACY_ADMIN_TOKEN=false` ;
-- valider à nouveau toutes les écritures D1 et GAS ;
-- supprimer ensuite le secret `ADMIN_TOKEN` et la clé navigateur `FRJ_MEMBRES_D1_ADMIN_TOKEN` ;
-- conserver une procédure de rollback explicite sans supprimer les secrets de session partagés nécessaires à GAS.
+- les branches et variables legacy ont été retirées du Worker et de GAS ;
+- les parcours D1 et GAS ont été contrôlés et les protections refusent une requête sans session valide ;
+- le secret `ADMIN_TOKEN` et la clé navigateur `FRJ_MEMBRES_D1_ADMIN_TOKEN` ont été supprimés ;
+- les secrets de session partagés nécessaires à GAS sont conservés et le retour arrière est documenté.
 
 ## 6. Tests obligatoires
 
@@ -240,7 +242,7 @@ Conséquence connue : si le Worker OAuth est indisponible, les lectures publique
 - changement ou retrait de rôle après émission de la session ;
 - refus `403` d'une écriture avec session valide mais rôle insuffisant ;
 - validation du `state`, de l'origine de retour, de la taille des réponses Discord et des erreurs `429`/`5xx` ;
-- maintien du repli legacy uniquement pendant la fenêtre prévue.
+- refus de tout ancien jeton, y compris si d'anciennes variables d'environnement sont encore fournies à un test.
 
 ### Frontend
 
@@ -281,9 +283,9 @@ Chaque étape doit former un commit distinct et rester activable par configurati
 
 1. remettre `AUTH_LOGIN_POLICY=admin_only` pour refuser les connexions non RH sans revenir sur tout le Worker ;
 2. restaurer temporairement l'ancien frontend si le nouveau menu pose problème ;
-3. conserver `ALLOW_LEGACY_ADMIN_TOKEN=true` uniquement pendant la fenêtre de retour arrière ;
-4. revenir à la version Worker précédente avec la procédure documentée ;
-5. restaurer la version GAS précédente sans changer l'URL `/exec` ;
+3. revenir à une version Worker OAuth connue avec la procédure documentée ;
+4. restaurer la version GAS précédente sans changer l'URL `/exec` ;
+5. ne pas réactiver l'ancien jeton : son secret a été supprimé et devrait être recréé explicitement pour rouvrir ce mécanisme ;
 6. ne supprimer aucune donnée métier, car D-003 ne demande aucune migration D1 ni modification de feuille.
 
 ## 9. Fichiers qui seront concernés par l'implémentation

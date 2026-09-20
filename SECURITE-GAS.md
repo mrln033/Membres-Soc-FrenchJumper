@@ -38,13 +38,14 @@ elle appartient à l'origine et à la racine GitHub Pages courantes. Elle ne con
 L'avis de déconnexion est retiré du stockage dès son affichage et masqué automatiquement après 15 secondes ; son délai
 est annulé si une reconnexion réussie efface l'avis plus tôt.
 
-Propriétés Apps Script à ajouter avant l'activation :
+Propriétés Apps Script nécessaires :
 
 ```text
-ADMIN_AUTH_MODE = legacy
 ADMIN_SESSION_SECRET = valeur identique au secret Cloudflare
 ADMIN_DISCORD_ROLE_IDS = id_role_chef,id_role_conseiller
 ```
+
+`ADMIN_AUTH_MODE` est obsolète et ignorée depuis GAS v145 : aucune branche d'authentification legacy ne subsiste.
 
 `BOT_TOKEN` et `GUILD_ID` sont utilisés côté GAS pour interroger le membre Discord. Aucun de ces secrets ne doit être
 transmis dans l'URL ou ajouté au dépôt.
@@ -68,17 +69,18 @@ par `getDiscordRolesForMember` côté Worker D1 après validation d'une session 
 Worker D1, qui relit Discord et réplique le résultat : GAS ne devient donc jamais une seconde source de vérité.
 La réplication périodique regroupe jusqu'à dix membres par appel GAS et verrouille brièvement l'écriture de la feuille,
 ce qui évite 125 exécutions séparées lors d'un remplissage complet sans autoriser d'écritures concurrentes incohérentes.
-Cette implémentation est publiée en production dans GAS v144 depuis le 19 septembre 2026. La version 142 constitue le
-retour arrière antérieur à D-002 ; l'URL `/exec` n'a pas changé.
+Cette implémentation est publiée en production depuis GAS v144. GAS v145, actif depuis le 20 septembre 2026, ferme
+définitivement l'authentification legacy ; v144 est le retour arrière immédiat et la version 142 reste le repère
+antérieur à D-002. L'URL `/exec` n'a pas changé.
 
 Le frontend `backend=gas` lit toujours la fiche et l'historique publics dans GAS. Pour les responsabilités D-002,
 l'enrichissement semi-privé utilise toutefois l'action protégée du Worker D1 : celui-ci est déjà l'émetteur de la session OAuth
 et revalide les rôles Discord. Aucun jeton n'est placé dans l'URL. À la déconnexion, l'iframe est rechargée afin que les
 données RH précédemment affichées ne subsistent jamais dans le DOM public.
 
-Le mode `legacy` reste volontairement actif pendant la recette du nouveau frontend publié. Après validation du
-parcours complet, passer `ADMIN_AUTH_MODE=discord` dans GAS. Le guide détaillé et le retour arrière figurent dans
-`DEPLOIEMENT-OAUTH-DISCORD.md`.
+OAuth Discord est désormais l'unique authentification des actions RH dans GAS. La validation utilisateur a été
+effectuée sur PC ; aucune validation smartphone ou tablette n'est encore revendiquée. Le guide détaillé et le retour
+arrière figurent dans `DEPLOIEMENT-OAUTH-DISCORD.md`.
 
 ### Évolution D-003 en déploiement progressif
 
