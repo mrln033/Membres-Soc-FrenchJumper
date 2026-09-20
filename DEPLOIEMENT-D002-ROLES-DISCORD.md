@@ -35,8 +35,22 @@ fiche. Elles permettent de déployer le code sans modifier le site visible.
 9. Passer `DISCORD_ROLE_DISPLAY_ENABLED` à `true`, publier ensuite le frontend et tester ordinateur/mobile, public/RH,
    D1/GAS et le bouton `Actualiser les rôles Discord`.
 
-Les changements de configuration Cron peuvent demander jusqu'à quinze minutes pour se propager. Le premier remplissage
-du cache peut donc dépasser ponctuellement la cible de dix minutes ; cette cible s'applique au fonctionnement stabilisé.
+Les changements de configuration Cron peuvent demander jusqu'à quinze minutes pour se propager. Le remplissage initial
+peut être lancé manuellement ; en fonctionnement stabilisé, la collecte automatique a lieu une fois par jour à 03:17 UTC.
+
+## Réduction de consommation du 20 septembre 2026
+
+- Le cron passe de toutes les dix minutes à une exécution quotidienne, adaptée à la faible fréquence des changements.
+- Le catalogue D1 est lu une fois par lot de dix messages au lieu d'une fois par membre.
+- Un snapshot Discord identique ne réécrit plus toutes les lignes `member_discord_roles` ; seul l'état de contrôle est daté.
+- La migration `0004_reduce_discord_role_writes.sql` supprime l'index `(member_id)` redondant avec la clé primaire
+  `(member_id, discord_role_id)`.
+- Avec 125 membres Discord, la charge Queue nominale passe d'environ 54 000 à 375 opérations par jour, hors reprises.
+- Avant déploiement, D1 signalait sur 24 h 1 457 019 rows read et 14 953 rows written. La sauvegarde locale ignorée
+  par Git est `seed/d1-pre-0004-20260920.sql`.
+- La migration distante est appliquée et le Worker de production est `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686`.
+  Le contrôle post-déploiement retourne 1 324 membres et 3 218 mouvements ; la version de retour arrière est
+  `8968e108-2274-49ac-9b97-50aff3b81c73`.
 
 ## Publication du 19 septembre 2026
 
@@ -53,24 +67,31 @@ du cache peut donc dépasser ponctuellement la cible de dix minutes ; cette cibl
 - Le frontend a été publié par la PR #7 au commit `e8c8209adc221ea63a887213358730d9a1877ff9`. La construction GitHub Pages
   a réussi ; `index.html`, `fiche.html`, `js/client.js` et `css/style.css` répondent en HTTP 200, avec le bouton RH,
   le rendu des badges et le masquage public des responsabilités présents dans les ressources servies.
-- Après la première recette, le chargement de fiche a été rendu indépendant de l'enrichissement RH : la réponse
+- Après la première recette, le chargement de fiche a été rendu indépendant de l'enrichissement protégé : la réponse
   publique est affichée avant la lecture protégée des responsabilités. Une erreur GAS/Discord sur cette seconde lecture
   conserve donc la fiche publique. Les fonctions et activités utilisent deux cartes responsives côte à côte, empilées
   automatiquement lorsque la largeur disponible est insuffisante. Ce correctif est publié par la PR #10 au commit
   `2d6977abdecb9bc942001179ce5cf48452265ce6` ; les fichiers JavaScript/CSS et la fiche GAS servis ont été contrôlés en HTTP 200.
 - La déconnexion recharge la page interne courante afin de reconstruire son affichage public et de supprimer toute
-  responsabilité RH déjà injectée dans le DOM. Lorsque `backend=gas`, la fiche publique reste fournie par GAS mais la
+  responsabilité semi-privée déjà injectée dans le DOM. Lorsque `backend=gas`, la fiche publique reste fournie par GAS mais la
   lecture protégée des responsabilités utilise D1, déjà responsable de la session OAuth et de sa revalidation Discord ;
   une indisponibilité de cet enrichissement laisse la fiche GAS publique visible.
 
 ## Contrôles fonctionnels
 
 - Les fonctions et activités apparaissent en consultation publique et les catégories vides restent masquées.
-- Les responsabilités Administrateur/Modérateur n'apparaissent qu'en accès RH.
+- Les responsabilités Administrateur/Modérateur n'apparaissent qu'en accès RH ou en Consultation FRJ, définie par le
+  rôle FRJ `464706220905857026`.
 - Administrateur/Modérateur ne donnent aucun droit RH.
+- Consultation FRJ ne donne aucun bouton ni droit d'écriture ; le rafraîchissement manuel reste RH.
 - Le bouton RH relit Discord, actualise D1, puis réplique vers GAS sans modifier de rôle.
 - Une panne Discord ou de la lecture RH GAS ne bloque pas l'ouverture de la fiche publique.
 - Les fonctions restent modifiables uniquement dans Discord.
+
+D-006 est déployée le 20 septembre 2026 sous la version Worker
+`cb729f06-1a5f-49ae-b823-ebd8fee39aa6`, puis publiée côté frontend par la PR #13. Les contrôles valident 45 tests,
+la santé D1 à 1 324 membres / 3 218 mouvements, `AUTH_LOGIN_POLICY=guild_members` et le refus `401` de la lecture
+protégée sans session. La version Worker `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686` est le retour arrière immédiat.
 
 ## Retour arrière
 

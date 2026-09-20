@@ -10,16 +10,18 @@ momentanément incompatible avec le Worker ou avec GAS.
 - Une panne détectée de D1 redirige la page courante vers `backend=gas` sans rejouer automatiquement une écriture.
 - `admin=1` est ignoré puis retiré de l'URL ; l'affichage RH provient exclusivement de la session Discord vérifiée.
 - Un utilisateur est autorisé s'il porte au moins un rôle listé dans `ADMIN_DISCORD_ROLE_IDS`.
-- Tout membre du serveur peut se connecter après activation de `AUTH_LOGIN_POLICY=guild_members`, sans obtenir
-  automatiquement de droit RH.
+- `AUTH_LOGIN_POLICY=guild_members` permet à tout membre du serveur de se connecter sans obtenir automatiquement de
+  droit RH.
+- Le rôle déclaré dans `FRJ_MEMBER_ROLE_ID` donne le niveau « Consultation FRJ » : lecture des responsabilités Discord,
+  sans menu, bouton ni écriture RH.
 - Le Worker et GAS relisent les rôles Discord à chaque écriture sensible.
 
 ## Évolution D-003 : état de l'implémentation
 
 Le bouton Connexion/Déconnexion, le retour OAuth compatible iframe, l'état asynchrone et le contrat serveur sont
-implémentés. Le Worker compatible, GAS v142 et le frontend sont déployés. La variable
-`AUTH_LOGIN_POLICY=admin_only` maintient le périmètre de connexion antérieur pendant la recette. Le passage final à
-`guild_members` n'intervient qu'après une recette RH réussie.
+implémentés. Le Worker compatible, GAS v142 et le frontend sont déployés. La recette RH historique a d'abord été menée
+avec `AUTH_LOGIN_POLICY=admin_only`. D-006 active ensuite `guild_members` et ajoute le niveau Consultation FRJ sans
+élargir les droits d'écriture.
 
 État validé le 16 septembre 2026 à 14:34 Europe/Paris :
 
@@ -49,6 +51,24 @@ implémentés. Le Worker compatible, GAS v142 et le frontend sont déployés. La
 Un compte absent du serveur ne reçoit aucune session : le frontend affiche un message explicite puis reste en
 consultation publique. Les erreurs Discord 401, 403, 429 et 5xx sont traitées comme une indisponibilité temporaire,
 jamais comme une fausse absence du serveur.
+
+## Évolution D-006 : trois niveaux d'accès
+
+- Accès RH : session Discord portant Chef d'Expédition ou Conseiller d'Expédition ; responsabilités, fonctions et
+  activités visibles, commandes et modifications RH autorisées.
+- Consultation FRJ : session portant le rôle FRJ `464706220905857026` sans rôle RH ; responsabilités, fonctions et
+  activités visibles, aucune modification autorisée.
+- Consultation publique : session sans rôle FRJ ou visite anonyme ; fonctions et activités visibles, responsabilités
+  masquées, aucune modification autorisée.
+
+Le Worker revalide les rôles à chaque appel protégé. L'action de lecture `getDiscordRolesForMember` accepte RH ou FRJ ;
+toutes les autres actions protégées continuent d'exiger RH. En mode GAS, l'enrichissement semi-privé passe également
+par le Worker D1, sans exposer la session dans l'URL.
+
+Mise en production du 20 septembre 2026 : Worker `cb729f06-1a5f-49ae-b823-ebd8fee39aa6`, frontend PR #13,
+45 tests automatisés réussis. Le contrôle HTTP confirme 1 324 membres, 3 218 mouvements, la politique
+`guild_members` et le refus `401` de l'action protégée sans session. Retour arrière Worker immédiat :
+`8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686`.
 
 ## 1. Relever les deux IDs de rôles Discord
 
@@ -145,6 +165,14 @@ Dans `wrangler.jsonc`, conserver à ce stade :
 "ALLOW_LEGACY_ADMIN_TOKEN": "true"
 ```
 
+Cette valeur correspond à la phase historique de migration. Après publication du frontend D-006, la configuration
+active devient :
+
+```jsonc
+"AUTH_LOGIN_POLICY": "guild_members",
+"FRJ_MEMBER_ROLE_ID": "464706220905857026"
+```
+
 Puis :
 
 ```powershell
@@ -188,8 +216,8 @@ Puis ouvrir `http://127.0.0.1:8787/`. Vérifier successivement :
 3. Publier les fichiers HTML/JS sur GitHub Pages.
 4. Vérifier sans paramètre que D1 est utilisé, qu'un ancien favori `?admin=1` est nettoyé et qu'il n'accorde aucun droit.
 5. Vérifier une connexion et une action RH sur D1, puis explicitement avec `?backend=gas`.
-6. Passer `AUTH_LOGIN_POLICY` à `guild_members`, redéployer le Worker et tester les trois profils : RH, membre sans rôle,
-   compte absent du serveur.
+6. Passer `AUTH_LOGIN_POLICY` à `guild_members`, renseigner `FRJ_MEMBER_ROLE_ID`, redéployer le Worker et tester les
+   quatre profils : RH, membre FRJ, membre sans rôle FRJ, compte absent du serveur.
 7. Dans GAS, passer `ADMIN_AUTH_MODE` de `legacy` à `discord`, republier puis refaire une écriture de recette.
 8. Passer `ALLOW_LEGACY_ADMIN_TOKEN` à `false`, redéployer le Worker et contrôler qu'un ancien token est refusé.
 9. Après vérification, supprimer l'ancien secret avec `wrangler secret delete ADMIN_TOKEN`.

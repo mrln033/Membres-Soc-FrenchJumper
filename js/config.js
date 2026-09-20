@@ -18,7 +18,7 @@ const API_BACKENDS = Object.freeze({ gas: GAS_API_URL, d1: D1_API_URL });
 let authConfigPromise = null;
 let authStatePromise = null;
 let backendReadyPromise = null;
-let authState = Object.freeze({ authenticated: false, authorized: false, user: null, reason: null });
+let authState = Object.freeze({ authenticated: false, authorized: false, frjMember: false, user: null, reason: null });
 let isAdmin = false;
 
 consumeDiscordAuthCallback();
@@ -107,7 +107,7 @@ async function ensureAuthState(force = false) {
     if (authStatePromise) return authStatePromise;
     authStatePromise = (async () => {
         const session = sessionStorage.getItem(ADMIN_SESSION_KEY) || "";
-        if (!session) return applyAuthState({ authenticated: false, authorized: false, user: null, reason: null });
+        if (!session) return applyAuthState({ authenticated: false, authorized: false, frjMember: false, user: null, reason: null });
         try {
             const response = await fetch(D1_API_URL + "/auth/session", {
                 cache: "no-store",
@@ -116,11 +116,12 @@ async function ensureAuthState(force = false) {
             const result = await response.json().catch(() => ({}));
             if (response.status === 401 || result.authenticated !== true) {
                 clearStoredSession();
-                return applyAuthState({ authenticated: false, authorized: false, user: null, reason: "invalid_session" });
+                return applyAuthState({ authenticated: false, authorized: false, frjMember: false, user: null, reason: "invalid_session" });
             }
             return applyAuthState({
                 authenticated: true,
                 authorized: result.authorized === true,
+                frjMember: result.frjMember === true,
                 user: result.user || null,
                 reason: result.reason || (response.ok ? null : "discord_unavailable")
             });
@@ -129,7 +130,7 @@ async function ensureAuthState(force = false) {
             if (cached && cached.authenticated) {
                 return applyAuthState({ ...cached, stale: true, reason: "verification_unavailable" }, false);
             }
-            return applyAuthState({ authenticated: false, authorized: false, user: null, reason: "verification_unavailable", stale: true }, false);
+            return applyAuthState({ authenticated: false, authorized: false, frjMember: false, user: null, reason: "verification_unavailable", stale: true }, false);
         }
     })().finally(() => { authStatePromise = null; });
     return authStatePromise;
@@ -138,6 +139,7 @@ async function ensureAuthState(force = false) {
 function applyAuthState(nextState, persist = true) {
     authState = Object.freeze({
         authenticated: Boolean(nextState.authenticated), authorized: Boolean(nextState.authorized),
+        frjMember: Boolean(nextState.frjMember),
         user: nextState.user || null, reason: nextState.reason || null, stale: Boolean(nextState.stale)
     });
     isAdmin = authState.authorized;
@@ -173,6 +175,14 @@ async function getAdminAuthorization() {
     return token;
 }
 
+async function getFrjReadAuthorization() {
+    const state = await ensureAuthState();
+    if (state.authenticated && (state.authorized || state.frjMember)) {
+        return sessionStorage.getItem(ADMIN_SESSION_KEY) || "";
+    }
+    throw new Error("Connexion Discord avec le rôle FRJ requise pour consulter les responsabilités Discord.");
+}
+
 function clearStoredSession() {
     sessionStorage.removeItem(ADMIN_SESSION_KEY);
     sessionStorage.removeItem(ADMIN_AUTH_CACHE_KEY);
@@ -182,15 +192,18 @@ function clearStoredSession() {
 function clearAdminAuthorization() {
     clearStoredSession();
     sessionStorage.removeItem(D1_ADMIN_TOKEN_KEY);
-    applyAuthState({ authenticated: false, authorized: false, user: null, reason: null });
+    applyAuthState({ authenticated: false, authorized: false, frjMember: false, user: null, reason: null });
 }
 
-function markAuthorizationDenied(reason = "role_required") {
+function markAuthorizationDenied(reason = "role_required", confirmedFrjMember = null) {
     const cached = readCachedAuthState();
     const session = sessionStorage.getItem(ADMIN_SESSION_KEY) || "";
     return applyAuthState({
         authenticated: Boolean(session),
         authorized: false,
+        frjMember: confirmedFrjMember === null
+            ? Boolean(cached && cached.frjMember)
+            : confirmedFrjMember === true,
         user: authState.user || (cached && cached.user) || null,
         reason
     });

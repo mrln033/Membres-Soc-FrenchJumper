@@ -59,8 +59,13 @@ async function apiRequestToBackend(backend, action, data, method, adminAuthoriza
     }
 
     if (backend === "d1" && res.status === 403) {
-        markAuthorizationDenied("role_required");
-        throw new ApiRequestError("Votre compte Discord ne possède plus un rôle RH autorisé.", 403, backend);
+        const errorPayload = await res.json().catch(() => ({}));
+        markAuthorizationDenied(errorPayload.reason || "role_required", errorPayload.frjMember === true);
+        throw new ApiRequestError(
+            errorPayload.error || "Votre compte Discord ne possède plus le niveau d'accès requis.",
+            403,
+            backend
+        );
     }
 
     if (!res.ok) {
@@ -520,7 +525,7 @@ async function loadFiche(membreId) {
     return;
   }
 
-  if (isAdmin) {
+  if (canViewDiscordResponsibilities()) {
     try {
       const protectedDiscordRoles = normalizeDiscordRoles(
         await loadProtectedDiscordRoles(membreId)
@@ -533,21 +538,21 @@ async function loadFiche(membreId) {
 }
 
 async function loadProtectedDiscordRoles(membreId) {
-    if (preferredBackend !== "gas") {
-        return apiRequest("getDiscordRolesForMember", { membreId }, "POST");
-    }
-
-    // L'identité OAuth et la revalidation RH sont déjà portées par D1. En mode
-    // GAS, la fiche publique reste lue dans Sheets, tandis que cet enrichissement
-    // protégé évite le POST navigateur fragile vers la Web App Apps Script.
-    const adminAuthorization = await getAdminAuthorization();
+    // L'identité OAuth et les niveaux RH/FRJ sont portés par D1. La fiche
+    // publique peut rester lue dans GAS, mais cet enrichissement semi-privé
+    // utilise toujours la session Discord vérifiée par le Worker.
+    const readAuthorization = await getFrjReadAuthorization();
     return apiRequestToBackend(
         "d1",
         "getDiscordRolesForMember",
         { membreId },
         "POST",
-        adminAuthorization
+        readAuthorization
     );
+}
+
+function canViewDiscordResponsibilities() {
+    return isAdmin || (authState && authState.frjMember === true);
 }
 
 // ================================
@@ -766,7 +771,7 @@ function buildCardMembre(m, mouvements, discordRoles) {
 
 function buildDiscordRolesCard(roles) {
     const source = normalizeDiscordRoles(roles);
-    const staff = isAdmin ? source.responsibilities : [];
+    const staff = canViewDiscordResponsibilities() ? source.responsibilities : [];
     const showFunctions = source.functions.length || staff.length;
     const showActivities = source.activities.length;
     if (!showFunctions && !showActivities) return null;
@@ -787,7 +792,7 @@ function buildDiscordRolesCard(roles) {
                     ${buildDiscordRoleBadges(staff, "discord-role-staff")}
                 </section>
             ` : ""}
-            ${isAdmin && source.syncedAt ? `
+            ${canViewDiscordResponsibilities() && source.syncedAt ? `
                 <div class="discord-roles-synced-at">Dernière synchronisation : ${escapeHtml(formatDiscordSyncDate(source.syncedAt))}</div>
             ` : ""}
         `;

@@ -21,10 +21,20 @@ test("configure explicitement la synchronisation et la garde d'affichage", () =>
   assert.match(config, /"DISCORD_ROLE_DISPLAY_ENABLED": "(?:false|true)"/);
   assert.match(config, /"binding": "DISCORD_ROLE_QUEUE"/);
   assert.match(config, /"max_concurrency": 1/);
+  assert.match(config, /"crons": \["17 3 \* \* \*"\]/);
+  assert.doesNotMatch(config, /\*\/10 \* \* \* \*/);
+  assert.match(config, /"AUTH_LOGIN_POLICY": "guild_members"/);
+  assert.match(config, /"FRJ_MEMBER_ROLE_ID": "464706220905857026"/);
 });
 
-test("masque les catégories vides et réserve les responsabilités à l'accès RH", () => {
-  assert.match(client, /const staff = isAdmin \? source\.responsibilities : \[\]/);
+test("limite les lectures et écritures D1 du rafraîchissement périodique", () => {
+  assert.match(worker, /const allowedRoleIds = await getActiveDiscordRoleIds\(env\);/);
+  assert.match(worker, /LEFT JOIN member_discord_role_sync s ON s\.member_id = m\.id/);
+  assert.doesNotMatch(worker, /UPDATE member_discord_roles SET last_seen_at/);
+});
+
+test("masque les catégories vides et réserve les responsabilités aux accès RH ou FRJ", () => {
+  assert.match(client, /const staff = canViewDiscordResponsibilities\(\) \? source\.responsibilities : \[\]/);
   assert.match(client, /if \(!showFunctions && !showActivities\) return null/);
   assert.match(client, /if \(showFunctions\)/);
   assert.match(client, /if \(showActivities\)/);

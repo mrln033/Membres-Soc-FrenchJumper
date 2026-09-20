@@ -1,6 +1,6 @@
 # D-003 — Connexion Discord et remplacement de `?admin=1`
 
-Statut : analyse terminée ; Worker, GAS et frontend compatibles déployés, recette Discord et activation finale encore en cours dans D-001
+Statut : analyse terminée ; connexion `guild_members` activée par D-006, fermeture du repli legacy encore suivie dans D-001
 
 Date : 16 septembre 2026
 
@@ -15,8 +15,10 @@ L'effacement de l'ancien avis de déconnexion après reconnexion et une premièr
 PR #3 au commit `3bdd53e`. La recette réelle a montré que l'attribut `src` de l'iframe ne suivait pas une navigation
 interne vers une fiche. La correction lit l'URL active de l'iframe et masque automatiquement l'avis de déconnexion.
 Elle est publiée par la PR #4 au commit `ed91e2e` et validée par l'utilisateur. Le dernier ajustement réduit le délai
-de 30 à 15 secondes ; il est publié par la PR #5 au commit `a264239`. D-004 est terminée. La recette GAS, l'activation
-`guild_members` et la fermeture legacy restent à effectuer dans D-001.
+de 30 à 15 secondes ; il est publié par la PR #5 au commit `a264239`. D-004 est terminée. D-006 active ensuite
+`guild_members` et distingue Consultation FRJ de la consultation publique ; la fermeture legacy reste à effectuer dans D-001.
+Cette activation est déployée le 20 septembre 2026 sous la version Worker
+`cb729f06-1a5f-49ae-b823-ebd8fee39aa6` et publiée côté frontend par la PR #13.
 
 Application : Membres Soc FrenchJumper
 
@@ -27,7 +29,12 @@ La demande est réalisable sans migration D1 et sans modifier les données méti
 - **authentification** : connaître l'identité Discord de la personne connectée ;
 - **autorisation RH** : vérifier que cette personne porte actuellement le rôle `Chef d'Expédition` ou `Conseiller d'Expédition`.
 
-La cible recommandée permet à tout membre du serveur Discord FRJ de se connecter, même sans rôle RH. Un membre sans rôle RH reste sur l'interface publique, voit son état de connexion et peut se déconnecter, mais ne voit aucun menu ni bouton d'administration. Un compte absent du serveur Discord ne reçoit aucune session : après un message explicite, l'application revient automatiquement en consultation publique non authentifiée. Cet échec n'est jamais bloquant. Les écritures continuent d'être refusées côté Worker et côté GAS si le rôle requis n'est pas porté.
+La cible permet à tout membre du serveur Discord FRJ de se connecter, même sans rôle RH. Un membre portant le rôle FRJ
+voit son identité et le niveau « Consultation FRJ » ainsi que les responsabilités Discord en lecture seule. Un membre
+sans ce rôle reste au niveau public ; aucun de ces deux profils ne voit les menus ni boutons d'administration. Un compte
+absent du serveur Discord ne reçoit aucune session : après un message explicite, l'application revient automatiquement
+en consultation publique non authentifiée. Cet échec n'est jamais bloquant. Les écritures continuent d'être refusées
+côté Worker et côté GAS si le rôle RH requis n'est pas porté.
 
 La suppression de `?admin=1` est donc possible. Elle doit être faite par étapes afin de ne pas interrompre l'application en production et de conserver le backend GAS de secours.
 
@@ -73,7 +80,8 @@ Cette organisation protège déjà les écritures côté serveur, mais elle peut
 Le bouton placé en bas du menu doit toujours être visible :
 
 - `Connexion Discord` lorsqu'aucune session valide n'existe ;
-- le nom Discord et `Aucun droit RH` pour une session valide sans rôle autorisé ;
+- le nom Discord et `Consultation FRJ` pour une session valide portant le rôle FRJ ;
+- le nom Discord et `consultation publique` pour une session valide sans rôle FRJ ni rôle RH ;
 - le nom Discord et l'état `Accès RH` pour une session autorisée ;
 - `Déconnexion` dès qu'une personne est connectée.
 
@@ -103,6 +111,7 @@ Réponse cible de `GET /auth/session` pour une session valide :
 {
   "authenticated": true,
   "authorized": false,
+  "frjMember": true,
   "user": {
     "id": "123456789012345678",
     "name": "Nom Discord"
@@ -111,7 +120,10 @@ Réponse cible de `GET /auth/session` pour une session valide :
 }
 ```
 
-Une session absente, invalide ou expirée retourne `401`. Une session valide sans rôle RH ne doit pas être assimilée à une déconnexion : les routes de statut répondent `200` avec `authorized: false`, tandis qu'une tentative d'écriture retourne `403`. Cette distinction permet de masquer les droits sans déconnecter la personne.
+Une session absente, invalide ou expirée retourne `401`. Une session valide sans rôle RH ne doit pas être assimilée à
+une déconnexion : les routes de statut répondent `200` avec `authorized: false` et indiquent séparément `frjMember`,
+tandis qu'une tentative d'écriture retourne `403`. La lecture des responsabilités accepte `authorized` ou `frjMember` ;
+toute écriture exige toujours `authorized: true`.
 
 L'absence du serveur doit posséder un code fonctionnel stable, par exemple `not_guild_member`, distinct du texte affiché. Le frontend supprime toute ancienne session, affiche un message français compréhensible, nettoie le fragment OAuth puis recharge l'état public. Une réponse Discord `429`, `401`, `403` ou `5xx` ne doit jamais être interprétée à tort comme une absence du serveur : elle produit un message de connexion temporairement impossible, puis le même retour public non bloquant.
 
@@ -206,7 +218,8 @@ Conséquence connue : si le Worker OAuth est indisponible, les lectures publique
 ### Étape 3 — ouvrir la connexion aux membres du serveur
 
 - passer la politique à `AUTH_LOGIN_POLICY=guild_members` ;
-- contrôler un compte RH, un membre sans rôle RH, un compte absent du serveur avec retour public explicite, une session expirée et un retrait de rôle en cours de session ;
+- configurer `FRJ_MEMBER_ROLE_ID=464706220905857026` ;
+- contrôler un compte RH, un membre FRJ, un membre sans rôle FRJ, un compte absent du serveur avec retour public explicite, une session expirée et un retrait de rôle en cours de session ;
 - vérifier l'appel direct, l'iframe historique, le mobile, D1 et `backend=gas`.
 
 ### Étape 4 — clôturer D-001

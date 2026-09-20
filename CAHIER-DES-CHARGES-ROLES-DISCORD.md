@@ -66,7 +66,8 @@ Responsabilités Discord
 - Les responsabilités Discord sont affichées dans un bloc distinct et plus discret.
 - Les badges doivent revenir correctement à la ligne sur mobile.
 - Une catégorie vide reste masquée.
-- La date de dernière synchronisation est visible en mode Admin ; elle peut rester masquée en consultation publique.
+- La date de dernière synchronisation et les responsabilités sont visibles en accès RH et en Consultation FRJ ; elles
+  restent masquées en consultation publique.
 - Un retard ou une panne Discord ne doit pas empêcher l’ouverture de la fiche : les dernières données connues sont affichées.
 
 ## 4. Source et synchronisation des données
@@ -85,19 +86,20 @@ Cloudflare D1 (cache principal du site)
 Google Sheets / GAS (backend de repli)
 ```
 
-### 4.2 Synchronisation périodique recommandée
+### 4.2 Synchronisation périodique déployée
 
-- Une tâche Cloudflare est déclenchée toutes les 10 minutes.
+- Une tâche Cloudflare est déclenchée une fois par jour à 03:17 UTC.
 - Elle programme les membres à contrôler dans une file, par petits lots.
 - Une file dédiée et limitée à un seul lot concurrent isole ces lectures Discord de la file de réplication métier GAS/D1 et évite une rafale de requêtes.
 - Le Worker interroge Discord sans exposer le token du bot au navigateur.
 - Pour chaque membre, il conserve seulement les rôles présents dans le catalogue configuré.
-- Seuls les changements réels entraînent une écriture dans D1.
-- Toute modification D1 est ensuite répliquée vers GAS par la file de synchronisation.
+- Le catalogue est lu une seule fois par lot et les associations membre/rôle inchangées ne sont pas réécrites.
+- Seul l'état de contrôle est horodaté à chaque passage ; un snapshot modifié est ensuite répliqué vers GAS.
 - Les limites et consignes de ralentissement retournées par Discord doivent être respectées.
 - Un échec ponctuel doit être retenté sans effacer les dernières informations connues.
 
-Le délai cible de propagation d’une modification réalisée directement dans Discord est donc de 0 à 10 minutes.
+Le délai cible automatique de propagation d’une modification réalisée directement dans Discord est donc de 0 à
+24 heures. Le bouton RH permet une propagation immédiate lorsqu'une actualisation ne peut pas attendre le prochain cycle.
 
 ### 4.3 Rafraîchissement ponctuel
 
@@ -116,7 +118,7 @@ La consultation publique utilisera les données en cache et ne sollicitera pas D
 
 La connexion permanente au Gateway Discord n’est pas retenue pour la première version. Elle imposerait la gestion d’une connexion persistante, des heartbeats, des reconnexions et des événements `GUILD_MEMBER_UPDATE`.
 
-Elle pourra être étudiée ultérieurement si un délai maximal de 10 minutes devient insuffisant.
+Elle pourra être étudiée ultérieurement si le cycle quotidien complété par le rafraîchissement manuel devient insuffisant.
 
 ## 5. Modification des rôles
 
@@ -193,13 +195,15 @@ Le format exact devra être stable et lisible par GAS. Ces champs sont des copie
 - Aucun ID de rôle sensible ni secret n’est fourni directement par le navigateur pour décider d’une autorisation.
 - Toute modification déclenchée depuis le site exige une session OAuth valide.
 - Les droits RH du site continuent d’être vérifiés à partir des rôles `Chef d’Expédition` et `Conseiller d’Expédition`.
+- Le rôle FRJ `464706220905857026` donne uniquement accès à la lecture semi-privée des responsabilités Discord ; il
+  n'accorde aucune commande ni écriture RH.
 - Le rôle demandé doit appartenir à une liste blanche de rôles gérables.
 - Les rôles `Administrateur`, `Modérateurs`, les grades et les rôles techniques sont explicitement exclus de toute modification par cette nouvelle interface.
 - Les opérations d’ajout et de retrait doivent être idempotentes et journalisées.
 - Les réponses d’erreur Discord doivent être filtrées avant d’être affichées à l’utilisateur.
 - Conformément à l'analyse D-003, une connexion Discord ne donnera pas automatiquement un droit RH : tout membre du
-  serveur pourra être authentifié, mais seuls `Chef d'Expédition` et `Conseiller d'Expédition` pourront
-  accéder aux commandes d'administration. Un compte absent du serveur ne recevra aucune session ; après un message
+  serveur pourra être authentifié. Les membres portant le rôle FRJ verront les responsabilités Discord en lecture seule,
+  mais seuls `Chef d'Expédition` et `Conseiller d'Expédition` pourront accéder aux commandes d'administration. Un compte absent du serveur ne recevra aucune session ; après un message
   explicite, il reviendra en consultation publique non authentifiée sans blocage. Le détail du remplacement de `?admin=1`, publié en mode de migration protégé dans le Worker, GAS et le frontend, figure dans
   `ANALYSE-D003-CONNEXION-DISCORD.md`.
 
@@ -275,11 +279,11 @@ Décisions du 19 septembre 2026 :
 2. fonctions en jeu : `Enzoboy` (`464706697408020482`) et `Pilote PF13` (`1538203076434075668`) ;
 3. activités en jeu : `Chasseur` (`811239593675456523`), `Mineur` (`811240383127879691`), `Crafteur` (`811240450123890688`), `Tradeur` (`1070296235782701097`), `Healeur` (`811240547552854050`), `Sweateur` (`811240494390312973`) et `Streameur` (`962964676956790844`) ;
 4. les catégories vides sont masquées ;
-5. la synchronisation automatique s'exécute toutes les dix minutes et un rafraîchissement manuel est disponible pour les utilisateurs RH ;
+5. la synchronisation automatique s'exécute une fois par jour à 03:17 UTC et un rafraîchissement manuel est disponible pour les utilisateurs RH ;
 6. Discord est l'unique source de vérité et l'unique interface de gestion : le site est intégralement en lecture seule pour ces catégories ;
 7. `Chef d’Expédition` et `Conseiller d’Expédition` restent les seuls rôles donnant accès aux fonctions RH du site ;
 8. le rôle du bot `FrenchJumper` (`1483748622771290134`) est placé immédiatement sous `Administrateur` ; la permission de modifier les rôles ne fait pas partie du lot 1 ;
-9. le délai cible de propagation est validé à zéro à dix minutes.
+9. le délai cible automatique de propagation est validé à zéro à vingt-quatre heures, avec actualisation manuelle immédiate.
 
 ## 13. Recommandation de départ
 
@@ -292,13 +296,25 @@ Le lot 2 reste reporté. Toute ouverture future d'une modification depuis le sit
 Le 19 septembre 2026, le lot 1 a été déployé progressivement sur GAS, D1 et le Worker. Le cache initial a traité les
 125 membres éligibles en 8 min 13 s, sans erreur définitive ni réplication GAS restante. La lecture publique réelle
 confirme l'affichage des fonctions et activités et l'absence des responsabilités dans le contrat non authentifié.
-Le Worker de production est `8968e108-2274-49ac-9b97-50aff3b81c73`, GAS est en version 144 et le frontend est publié
-par la PR #7 au commit `e8c8209`. Après la première recette, le frontend affiche la fiche publique avant toute lecture
+Le Worker de production est `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686`, GAS est en version 144 et le frontend est publié
+par la PR #7 au commit `e8c8209`. La version Worker `8968e108-2274-49ac-9b97-50aff3b81c73` reste le retour arrière
+immédiat. Après la première recette, le frontend affiche la fiche publique avant toute lecture
 RH supplémentaire afin qu'une panne de cet enrichissement ne soit jamais bloquante. Les fonctions et activités sont
 présentées dans deux cartes responsives distinctes. La demande reste en recette jusqu'au contrôle utilisateur final sur
 ordinateur et mobile, des deux backends et du bouton RH.
 
 La seconde recette a montré deux compléments nécessaires : la déconnexion recharge désormais la fiche courante pour
-effacer immédiatement les responsabilités du DOM ; sur une fiche publique lue depuis GAS, l'enrichissement RH est lu
+effacer immédiatement les responsabilités du DOM ; sur une fiche publique lue depuis GAS, l'enrichissement protégé est lu
 depuis D1, qui porte déjà l'authentification OAuth et la revalidation des rôles Discord. GAS reste le backend de la fiche
 et de son historique, et l'échec de l'enrichissement protégé demeure non bloquant.
+
+Le 20 septembre 2026, l'audit de consommation a conduit à remplacer le cycle de dix minutes par un cycle quotidien,
+à mutualiser la lecture du catalogue par lot, à supprimer les réécritures d'associations inchangées et à retirer
+l'index D1 redondant via la migration `0004_reduce_discord_role_writes.sql`. La recette finale en production valide
+39 tests automatisés, 1 324 membres, 3 218 mouvements, 118 caches Discord `OK`, 7 `ABSENT`, le refus `401` sans
+session et une fiche synchronisée contenant fonctions et activités. Le lot 1 est en production finale.
+
+La demande D-006 étend ensuite l'affichage sans modifier la source de vérité : les responsabilités Discord deviennent
+semi-privées et sont visibles en accès RH ou pour une session portant le rôle FRJ `464706220905857026`. Les fonctions
+et activités restent publiques. Le bouton de rafraîchissement et toutes les modifications métier restent réservés à
+l'accès RH ; fonctions, activités et responsabilités demeurent gérées exclusivement dans Discord.
