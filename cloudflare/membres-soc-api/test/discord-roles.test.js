@@ -38,5 +38,8 @@ test("masque les catégories vides et réserve les responsabilités aux accès R
   assert.match(client, /if \(!showFunctions && !showActivities\) return null/);
   assert.match(client, /if \(showFunctions\)/);
   assert.match(client, /if \(showActivities\)/);
-  assert.match(client, /Actualiser les rôles Discord/);
+  assert.match(client, /Actualiser les rôles depuis Discord/);
+  assert.match(client, /Synchroniser vers Discord/);
+  assert.doesNotMatch(client, /Actualiser les rôles Discord/);
+  assert.doesNotMatch(client, /Synchroniser Discord/);
 });

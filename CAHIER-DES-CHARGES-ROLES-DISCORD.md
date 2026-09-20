@@ -103,7 +103,7 @@ Le délai cible automatique de propagation d’une modification réalisée direc
 
 ### 4.3 Rafraîchissement ponctuel
 
-Le mode Admin disposera d’un bouton `Actualiser les rôles Discord` sur la fiche.
+Le mode RH dispose d’un bouton `Actualiser les rôles depuis Discord` sur la fiche.
 
 Cette action devra :
 
