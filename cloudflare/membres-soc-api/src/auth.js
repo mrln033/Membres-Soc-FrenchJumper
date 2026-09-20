@@ -17,8 +17,8 @@ export async function handleAuthRoute(request, url, env, fetcher = fetch) {
 
   if (url.pathname === "/auth/config") {
     return json({
-      mode: getAdminAuthMode(env),
-      configured: getAdminAuthMode(env) !== "discord" || isDiscordAuthConfigured(env),
+      mode: "discord",
+      configured: isDiscordAuthConfigured(env),
       loginPolicy: getDiscordLoginPolicy(env)
     });
   }
@@ -108,41 +108,13 @@ export async function handleAuthRoute(request, url, env, fetcher = fetch) {
   return null;
 }
 
-/**
- * Valide une action administrateur. Le mode legacy permet un déploiement sans
- * rupture avant l'activation explicite d'OAuth dans la configuration.
- */
+/** Valide une session OAuth Discord et relit les rôles courants. */
 export async function authorizeAdminRequest(request, env, fetcher = fetch) {
   const bearer = getBearerToken(request);
-  if (getAdminAuthMode(env) === "legacy") {
-    const authorized = await constantTimeSecretEquals(bearer, env.ADMIN_TOKEN);
-    return {
-      authenticated: authorized,
-      authorized,
-      frjMember: authorized,
-      status: authorized ? 200 : 401,
-      user: authorized ? { id: "legacy", name: "Legacy admin" } : null
-    };
-  }
-
   let session;
   try {
     session = await verifySignedToken(bearer, env.ADMIN_SESSION_SECRET, ADMIN_AUDIENCE);
   } catch (error) {
-    // Fenêtre de migration volontaire : l'ancien frontend peut continuer à
-    // écrire entre l'activation OAuth du Worker et la publication du site.
-    if (String(env.ALLOW_LEGACY_ADMIN_TOKEN || "").toLowerCase() === "true") {
-      const legacyAuthorized = await constantTimeSecretEquals(bearer, env.ADMIN_TOKEN);
-      if (legacyAuthorized) {
-        return {
-          authenticated: true,
-          authorized: true,
-          frjMember: true,
-          status: 200,
-          user: { id: "legacy", name: "Legacy admin" }
-        };
-      }
-    }
     return {
       authenticated: false,
       authorized: false,
@@ -203,12 +175,6 @@ export async function authorizeAdminRequest(request, env, fetcher = fetch) {
       error: publicAuthErrorMessage(error)
     };
   }
-}
-
-export function getAdminAuthMode(env) {
-  return String(env.ADMIN_AUTH_MODE || "legacy").trim().toLowerCase() === "discord"
-    ? "discord"
-    : "legacy";
 }
 
 export function getDiscordLoginPolicy(env) {
@@ -439,19 +405,6 @@ export class DiscordAccessError extends Error {
 function getBearerToken(request) {
   const header = request.headers.get("Authorization") || "";
   return header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-}
-
-async function constantTimeSecretEquals(supplied, expected) {
-  if (!supplied || !expected) return false;
-  // subtle.verify est disponible à la fois dans Workers et dans Node, à la
-  // différence de l'extension timingSafeEqual propre au runtime Workers.
-  const message = new TextEncoder().encode("frj-admin-token-check");
-  const [expectedKey, suppliedKey] = await Promise.all([
-    importHmacKey(expected, ["sign"]),
-    importHmacKey(supplied, ["verify"])
-  ]);
-  const signature = await crypto.subtle.sign("HMAC", expectedKey, message);
-  return crypto.subtle.verify("HMAC", suppliedKey, signature, message);
 }
 
 async function importHmacKey(secret, usages) {

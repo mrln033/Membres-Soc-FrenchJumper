@@ -37,7 +37,7 @@ function loadConfigState(url, initialStorage = {}, afterLoad = "") {
     crypto: webcrypto,
     CustomEvent: class CustomEvent { constructor(type, options) { this.type = type; this.detail = options?.detail; } },
     btoa,
-    fetch: async () => Response.json({ mode: "legacy", configured: true }),
+    fetch: async () => Response.json({ mode: "discord", configured: true }),
     window,
     history: { replaceState(_state, _title, urlValue) { replacedUrl = urlValue; } },
     document: {
@@ -80,6 +80,12 @@ test("sélectionne D1 et supprime l'ancien paramètre admin", () => {
   const legacyAdmin = loadConfigState("https://site.example.test/index.html?admin=1");
   assert.equal(legacyAdmin.storage.admin, undefined);
   assert.equal(legacyAdmin.replacedUrl, "/index.html");
+});
+
+test("ne conserve plus aucun chemin frontend vers l'ancien jeton Admin", () => {
+  assert.doesNotMatch(configSource, /FRJ_MEMBRES_D1_ADMIN_TOKEN/);
+  assert.doesNotMatch(configSource, /Jeton administrateur D1/);
+  assert.doesNotMatch(configSource, /window\.prompt/);
 });
 
 test("accepte GAS sans tenir compte de la casse et le conserve dans les liens", () => {

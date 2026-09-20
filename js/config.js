@@ -1,6 +1,5 @@
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzf40jOrUs79_O5PASuc7Y-OOZv_C2RZV1bY7r97WhF8iVVQ6f4nIpBCCRh_0IOIozSew/exec";
 const D1_API_URL = "https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev";
-const D1_ADMIN_TOKEN_KEY = "FRJ_MEMBRES_D1_ADMIN_TOKEN";
 const ADMIN_SESSION_KEY = "FRJ_MEMBRES_ADMIN_SESSION";
 const ADMIN_OAUTH_STATE_KEY = "FRJ_MEMBRES_ADMIN_OAUTH_STATE";
 const ADMIN_AUTH_ERROR_KEY = "FRJ_MEMBRES_ADMIN_AUTH_ERROR";
@@ -160,19 +159,9 @@ function dispatchAuthStateChanged() {
 async function getAdminAuthorization() {
     const state = await ensureAuthState();
     if (state.authorized) return sessionStorage.getItem(ADMIN_SESSION_KEY) || "";
-    const config = await getAdminAuthConfig();
-    if (config.mode === "discord") {
-        throw new Error(state.authenticated
-            ? "Votre compte Discord est connecté, mais ne possède pas un rôle RH autorisé."
-            : "Connexion Discord requise pour cette action.");
-    }
-    let token = sessionStorage.getItem(D1_ADMIN_TOKEN_KEY) || "";
-    if (!token) {
-        token = String(window.prompt("Jeton administrateur D1 :") || "").trim();
-        if (!token) throw new Error("Action annulée : aucun jeton administrateur D1 fourni.");
-        sessionStorage.setItem(D1_ADMIN_TOKEN_KEY, token);
-    }
-    return token;
+    throw new Error(state.authenticated
+        ? "Votre compte Discord est connecté, mais ne possède pas un rôle RH autorisé."
+        : "Connexion Discord requise pour cette action.");
 }
 
 async function getFrjReadAuthorization() {
@@ -191,7 +180,6 @@ function clearStoredSession() {
 
 function clearAdminAuthorization() {
     clearStoredSession();
-    sessionStorage.removeItem(D1_ADMIN_TOKEN_KEY);
     applyAuthState({ authenticated: false, authorized: false, frjMember: false, user: null, reason: null });
 }
 

@@ -12,16 +12,11 @@
   },
   "vars": {
     "PUBLIC_SITE_ORIGIN": "https://mrln033.github.io",
-    // Garde de déploiement : passer à "discord" seulement après avoir posé les
-    // secrets OAuth/session et publié la nouvelle version GAS.
-    "ADMIN_AUTH_MODE": "discord",
     // Tout membre du serveur peut ouvrir une session ; les droits RH restent
     // vérifiés séparément à chaque action sensible.
     "AUTH_LOGIN_POLICY": "guild_members",
     // Donne le niveau d'affichage « Consultation FRJ », sans droit d'écriture.
     "FRJ_MEMBER_ROLE_ID": "464706220905857026",
-    // À laisser vrai uniquement durant le chevauchement ancien/nouveau frontend.
-    "ALLOW_LEGACY_ADMIN_TOKEN": "true",
     // Identifiant public de l'application Discord utilisée pour OAuth.
     "DISCORD_OAUTH_CLIENT_ID": "1479825051522957462",
     "DISCORD_OAUTH_REDIRECT_URI": "https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev/auth/discord/callback",
