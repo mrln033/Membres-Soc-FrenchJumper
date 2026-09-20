@@ -42,8 +42,8 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 20/09/2026 à 07:38 Europe/Paris :
-- la production GitHub Pages contient D-002 et reçoit D-005/D-006 par la PR #13 ;
+État connu au 20/09/2026 à 07:42 Europe/Paris :
+- la production GitHub Pages contient D-002, D-005 et D-006 ; la PR #13 est fusionnée au commit `4bc3c447ffeacf8d587d0b92ba3af9cb146776ab` et sa construction Pages a réussi ;
 - le Worker D-006 `cb729f06-1a5f-49ae-b823-ebd8fee39aa6` est en production avec `AUTH_LOGIN_POLICY=guild_members` et le rôle FRJ `464706220905857026` ;
 - le présent fichier de pilotage est versionné dans GitHub afin d'être consultable et modifiable depuis tout appareil ;
 - D1 est le backend choisi par défaut par le frontend ; « ?backend=gas » force le backend de secours GAS ;
@@ -404,7 +404,7 @@ Demande : Synchronisation GAS / D1
 	Losque l'on est sur cette page, un bouton '<< Accueil' est présent en haut à gauche. L'appui sur ce bouton a un effet surprenant : il recharge l'intégralité du shell dans la zone de droite, dupliquant par la meme occasion le menu de gauche.
 
 Réalisation :
-[2026-09-20 07:38 Europe/Paris] Le lien « << Accueil » de `sync.html` cible désormais le contexte parent immédiat. Depuis la page chargée dans l'iframe, il remplace ainsi le shell courant au lieu de charger une seconde copie de `index.html` dans la zone centrale. Un test automatisé protège explicitement l'attribut `target="_parent"`. Publication frontend par la PR #13.
+[2026-09-20 07:42 Europe/Paris] Le lien « << Accueil » de `sync.html` cible désormais le contexte parent immédiat. Depuis la page chargée dans l'iframe, il remplace ainsi le shell courant au lieu de charger une seconde copie de `index.html` dans la zone centrale. Un test automatisé protège explicitement l'attribut `target="_parent"`. Publication frontend par la PR #13, commit de fusion `4bc3c447ffeacf8d587d0b92ba3af9cb146776ab` ; construction GitHub Pages réussie et attribut contrôlé dans le fichier servi.
 
 [2026-09-20 07:38 Europe/Paris] Demande D-006 terminée.
 Demande initiale :
@@ -419,7 +419,7 @@ Demande : Connexion Discord
 	- Consultation Publique => membre du serveur ou non, pas de role 'FRJ' => Affichage Fonctions et Activités / aucune modification possible
 
 Réalisation :
-[2026-09-20 07:38 Europe/Paris] Mise en place des trois niveaux demandés. L'accès RH reste défini par les rôles Chef/Conseiller et conserve seul les commandes de modification. Le rôle FRJ `464706220905857026` produit l'intitulé « Nom — Consultation FRJ » et autorise uniquement l'enrichissement des fiches avec les responsabilités Discord. Une session sans rôle FRJ reste en consultation publique ; un compte absent du serveur ne reçoit toujours aucune session et revient sans blocage au public après le message explicite. Fonctions et activités restent publiques, tandis que la lecture semi-privée passe toujours par le Worker D1, y compris lorsque la fiche utilise GAS. Le retrait d'un rôle est revalidé côté serveur et purge l'ancien niveau du cache frontend. Worker `cb729f06-1a5f-49ae-b823-ebd8fee39aa6` déployé ; santé production validée avec 1 324 membres et 3 218 mouvements, politique `guild_members`, refus anonyme `401`. Publication frontend par la PR #13. Validation locale : 45 tests automatisés, syntaxes Worker/frontend et dry-run Wrangler réussis. Aucun changement GAS ni migration D1.
+[2026-09-20 07:42 Europe/Paris] Mise en place des trois niveaux demandés. L'accès RH reste défini par les rôles Chef/Conseiller et conserve seul les commandes de modification. Le rôle FRJ `464706220905857026` produit l'intitulé « Nom — Consultation FRJ » et autorise uniquement l'enrichissement des fiches avec les responsabilités Discord. Une session sans rôle FRJ reste en consultation publique ; un compte absent du serveur ne reçoit toujours aucune session et revient sans blocage au public après le message explicite. Fonctions et activités restent publiques, tandis que la lecture semi-privée passe toujours par le Worker D1, y compris lorsque la fiche utilise GAS. Le retrait d'un rôle est revalidé côté serveur et purge l'ancien niveau du cache frontend. Worker `cb729f06-1a5f-49ae-b823-ebd8fee39aa6` déployé ; santé production validée avec 1 324 membres et 3 218 mouvements, politique `guild_members`, refus anonyme `401`. Frontend publié par la PR #13 au commit de fusion `4bc3c447ffeacf8d587d0b92ba3af9cb146776ab` ; construction Pages réussie et ressources servies contrôlées. Validation locale : 45 tests automatisés, syntaxes Worker/frontend et dry-run Wrangler réussis. Aucun changement GAS ni migration D1.
 
 [2026-09-16 13:14 Europe/Paris] Demande D-003 terminée.
 Demande initiale :
