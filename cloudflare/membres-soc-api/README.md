@@ -30,7 +30,7 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - La clôture D-001 est active sous la version `b753d68b-7900-4f41-b09e-b565363c2b0e` : le code OAuth exclusif a été
   déployé dans `f5df761e-ec5e-4b49-9bb9-88b738c87f01`, puis la suppression du secret historique `ADMIN_TOKEN` a créé
   la version de configuration actuellement servie. L'utilisateur a validé le parcours sur PC ; aucune validation
-  mobile ou tablette n'est encore revendiquée.
+  mobile ou tablette n'est encore revendiquée. Le nettoyage frontend et la documentation sont publiés par la PR #18.
 - Le frontend D-002 est publié sur GitHub Pages depuis la PR #7, commit de fusion `e8c8209`.
 - La fiche rend d'abord le contrat public, puis enrichit séparément les responsabilités en accès RH ou Consultation FRJ : un échec de cet
   appel protégé conserve la consultation publique. Les fonctions et activités sont affichées dans deux cartes

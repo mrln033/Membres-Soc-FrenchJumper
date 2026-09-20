@@ -24,6 +24,7 @@ validation smartphone ou tablette n'est encore revendiquée.
 - Worker actif : `b753d68b-7900-4f41-b09e-b565363c2b0e`, issu du déploiement de code
   `f5df761e-ec5e-4b49-9bb9-88b738c87f01` puis de la suppression du secret historique `ADMIN_TOKEN` ;
 - GAS : version 145 sur le déploiement `/exec` existant ; version 144 comme retour arrière immédiat ;
+- frontend et documentation : publication par la PR GitHub #18 ;
 - configuration : `AUTH_LOGIN_POLICY=guild_members`, OAuth Discord exclusif et aucune variable legacy ;
 - contrôles : 47 tests, syntaxes Worker/frontend/GAS, dry-run Wrangler, lectures publiques D1 et GAS, refus HTTP 401
   d'un faux ancien jeton et refus explicite d'une écriture GAS sans session.
