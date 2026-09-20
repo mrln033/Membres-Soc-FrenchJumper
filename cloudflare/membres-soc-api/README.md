@@ -54,6 +54,9 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
   traite séparément les rôles et le pseudonyme : un refus hiérarchique sur le pseudonyme devient un avertissement
   explicite sans masquer la réussite des rôles. Son déploiement versionné utilise `worker/wrangler.jsonc` avec
   conservation obligatoire des variables distantes.
+- D-009 est déployée avec le proxy `0f99dd88-a6a9-4ad0-b944-5d0c0250f933` et le Worker D1
+  `158c60f0-55a9-4508-bf58-c719c989fff6`. Leurs retours arrière immédiats sont respectivement
+  `35944e35-d9d4-4c3e-aa59-46348f9701a1` et `b753d68b-7900-4f41-b09e-b565363c2b0e`.
 - Le retrait du rôle « Règlement Soc OK » est exécuté directement par ce nouveau Worker, uniquement après une synchronisation standard réussie et uniquement pour un mouvement de sortie.
 
 ## Synchronisation bidirectionnelle

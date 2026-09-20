@@ -46,7 +46,7 @@ Règles d'intervention :
 - la production GitHub Pages contient D-002, D-005, D-006, D-007 et D-008 ;
 - D-001 est validée par l'utilisateur sur PC uniquement ; la recette mobile/tablette n'est pas encore revendiquée ;
 - le Worker `b753d68b-7900-4f41-b09e-b565363c2b0e` est en production avec OAuth Discord exclusif, `AUTH_LOGIN_POLICY=guild_members` et le rôle FRJ `464706220905857026` ;
-- GAS v145 est publié sur l'URL `/exec` existante avec la même exigence de session Discord ; v144 constitue le retour arrière immédiat ;
+- GAS v146 est publié sur l'URL `/exec` existante avec la même exigence de session Discord ; v145 constitue le retour arrière immédiat ;
 - l'ancien secret Cloudflare `ADMIN_TOKEN` a été supprimé et l'ancien jeton est refusé en HTTP 401 ;
 - D-007 est publiée par la PR #16 au commit de fusion `6e38512c6553b16c25ffe2562ff118525c95ea5f` ; le contenu des cartes Fonctions, Activités et Responsabilités Discord est centré ;
 - le présent fichier de pilotage est versionné dans GitHub afin d'être consultable et modifiable depuis tout appareil ;
@@ -56,6 +56,7 @@ Règles d'intervention :
 - le lot 1 de D-002 est actif et validé côté frontend GitHub Pages, D1, Worker et GAS ;
 - Discord est l'unique source de vérité et l'unique interface de gestion des fonctions, activités et responsabilités ; le site les synchronise et les affiche uniquement en lecture seule.
 - l'analyse D-003 sur le remplacement de `?admin=1` est terminée ; les trois niveaux sont Accès RH, Consultation FRJ et Consultation publique ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
+- D-009 est déployée côté proxy Discord (`0f99dd88-a6a9-4ad0-b944-5d0c0250f933`), Worker D1 (`158c60f0-55a9-4508-bf58-c719c989fff6`) et GAS v146 ; sa publication frontend reste à terminer.
 
 Ordre conseillé :
 1. traiter les nouvelles demandes ajoutées dans ce fichier selon leur priorité explicite ;
@@ -319,7 +320,7 @@ Demande : ok pour la solution numéro 1... avec un message plus explicite sur le
 Contexte conservé : le clic sur « Synchroniser vers Discord » depuis la fiche de « Merlin Merzhin Lesage » renvoyait `Discord HTTP 403` / `Missing Permissions` / code Discord `50013`. La solution numéro 1 validée consiste à conserver le bot sous le rôle Administrateur, à ne pas élargir ses permissions et à traiter séparément la synchronisation des rôles et la modification du pseudonyme.
 
 Réalisation :
-[2026-09-20 15:44 Europe/Paris] Le proxy Discord synchronise d'abord les rôles Soc ; un échec de cette phase reste bloquant. La modification du pseudonyme s'exécute ensuite séparément : si Discord la refuse à cause de la hiérarchie, les rôles restent considérés comme synchronisés et le résultat contient l'avertissement explicite « Les rôles Discord ont bien été synchronisés. Le pseudonyme n'a pas été modifié, car le rôle du bot FrenchJumper est placé sous le rôle le plus élevé de ce membre dans la hiérarchie Discord. » D1 et GAS transmettent cet avertissement au frontend, qui affiche « Synchronisation Discord partielle » et l'explication au lieu d'un échec global. Les notifications RH de GAS distinguent également ce succès partiel. Aucun rôle ni droit supplémentaire n'est accordé au bot. Trois tests couvrent le succès complet, le refus du pseudonyme après succès des rôles et l'échec bloquant d'un rôle ; la suite passe à 50 tests. Déploiements et recette de production à consigner après publication.
+[2026-09-20 15:44 Europe/Paris] Le proxy Discord synchronise d'abord les rôles Soc ; un échec de cette phase reste bloquant. La modification du pseudonyme s'exécute ensuite séparément : si Discord la refuse à cause de la hiérarchie, les rôles restent considérés comme synchronisés et le résultat contient l'avertissement explicite « Les rôles Discord ont bien été synchronisés. Le pseudonyme n'a pas été modifié, car le rôle du bot FrenchJumper est placé sous le rôle le plus élevé de ce membre dans la hiérarchie Discord. » D1 et GAS transmettent cet avertissement au frontend, qui affiche « Synchronisation Discord partielle » et l'explication au lieu d'un échec global. Les notifications RH de GAS distinguent également ce succès partiel. Aucun rôle ni droit supplémentaire n'est accordé au bot. Trois tests couvrent le succès complet, le refus du pseudonyme après succès des rôles et l'échec bloquant d'un rôle ; la suite passe à 50 tests. Proxy `0f99dd88-a6a9-4ad0-b944-5d0c0250f933`, Worker D1 `158c60f0-55a9-4508-bf58-c719c989fff6` et GAS v146 déployés ; retours arrière immédiats : proxy `35944e35-d9d4-4c3e-aa59-46348f9701a1`, Worker D1 `b753d68b-7900-4f41-b09e-b565363c2b0e` et GAS v145. Les contrôles HTTP confirment le refus anonyme du proxy et la santé D1 avec 1 324 membres et 3 218 mouvements. Aucun membre Discord n'a été modifié pendant les contrôles techniques ; la recette réelle reste à effectuer volontairement depuis la fiche.
 
 [2026-09-20 15:23 Europe/Paris] Demande D-008 terminée.
 Demande initiale :
@@ -467,6 +468,7 @@ Complément de réalisation :
 - cloudflare/membres-soc-api/README.md : état et exploitation du Worker D1 ;
 - cloudflare/membres-soc-api/wrangler.jsonc : bindings et variables publiques Cloudflare ;
 - cloudflare/membres-soc-api/package.json : commandes locales de test, migration et déploiement.
+- worker/README.md : comportement, sécurité, déploiement et retour arrière du proxy Discord partagé.
 
 Commandes locales principales depuis cloudflare/membres-soc-api :
 - npm install
