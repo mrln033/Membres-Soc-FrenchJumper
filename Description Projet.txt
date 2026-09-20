@@ -319,7 +319,7 @@ Demande : je voudrais changer l'intitulé des boutons en mode RH sur la fiche me
 - 'Synchroniser Discord' devient 'Synchroniser vers Discord'
 
 Réalisation :
-[2026-09-20 15:23 Europe/Paris] Les deux libellés de la fiche membre ont été remplacés dans tous leurs états d'affichage et de restauration après action : « Actualiser les rôles depuis Discord » et « Synchroniser vers Discord ». La logique, les appels D1/GAS et les droits RH ne sont pas modifiés. Les documentations D-002 et un test de non-régression protègent désormais les nouveaux libellés et l'absence des anciens textes. Contrôles réussis : 47 tests automatisés, vérification de syntaxe du frontend et contrôles Node du Worker. Publication GitHub Pages à effectuer.
+[2026-09-20 15:23 Europe/Paris] Les deux libellés de la fiche membre ont été remplacés dans tous leurs états d'affichage et de restauration après action : « Actualiser les rôles depuis Discord » et « Synchroniser vers Discord ». La logique, les appels D1/GAS et les droits RH ne sont pas modifiés. Les documentations D-002 et un test de non-régression protègent désormais les nouveaux libellés et l'absence des anciens textes. Contrôles réussis : 47 tests automatisés, vérification de syntaxe du frontend et contrôles Node du Worker. Publication GitHub Pages par la PR #19.
 
 [2026-09-20 14:39 Europe/Paris] Demande D-001 terminée.
 Demande initiale :
