@@ -3,5 +3,22 @@
   "name": "discord-proxy",
   "main": "worker.js",
   "compatibility_date": "2026-03-08",
-  "keep_vars": true
+  "secrets": {
+    "required": [
+      "DISCORD_BOT_TOKEN",
+      "SYNC_SHARED_SECRET"
+    ]
+  },
+  "vars": {
+    "APPS_SCRIPT_URL": "https://script.google.com/macros/s/AKfycbzf40jOrUs79_O5PASuc7Y-OOZv_C2RZV1bY7r97WhF8iVVQ6f4nIpBCCRh_0IOIozSew/exec",
+    "DISCORD_PUBLIC_KEY": "77fa72b87fdbd15a8eea4a5d4a6a39d7d5d1dfc91ad6e29721d7c62da20b2b24",
+    "GUILD_ID": "442710603300208652",
+    "ROLE_FRJ": "464706220905857026",
+    "ROLE_GRADE1": "1116022491429748746",
+    "ROLE_GRADE2": "1115190061194018877",
+    "ROLE_GRADE3": "1115188218992808037",
+    "ROLE_GRADE4": "1115188114802094120",
+    "ROLE_GRADE5": "1115186713829060679",
+    "ROLE_GRADE6": "1115185373748936714"
+  }
 }

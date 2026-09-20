@@ -84,6 +84,19 @@ GAS renvoie un succès partiel avec un avertissement explicite au site et dans l
 le rôle Administrateur et ne reçoit aucun droit supplémentaire.
 Ce contrat est publié dans GAS v146 sur l'URL `/exec` existante ; GAS v145 est le retour arrière immédiat.
 
+## Secrets du proxy Discord
+
+Le Worker `discord-proxy` utilise exclusivement deux secrets Cloudflare chiffrés : `DISCORD_BOT_TOKEN` et
+`SYNC_SHARED_SECRET`. Les anciens bindings en clair `BOT_TOKEN`, `SECRET` et `BOT_KEY` ont été retirés de la version
+active D-010. La configuration `worker/wrangler.jsonc` déclare toutes les variables non sensibles et les secrets
+obligatoires ; ses déploiements ne doivent jamais employer `--keep-vars`.
+
+Une version Cloudflare historique peut conserver ses anciens bindings. La suppression dans la version active ne
+remplace donc pas la rotation : le jeton du bot doit être régénéré dans le portail Discord, puis enregistré dans le
+secret `DISCORD_BOT_TOKEN` sans le copier dans le dépôt ni dans une conversation. La rotation de
+`SYNC_SHARED_SECRET` doit être coordonnée entre le proxy, le secret D1 `DISCORD_PROXY_SECRET` et la propriété Apps
+Script `DISCORD_PROXY_SECRET`, afin d'éviter une interruption des synchronisations.
+
 OAuth Discord est désormais l'unique authentification des actions RH dans GAS. La validation utilisateur a été
 effectuée sur PC ; aucune validation smartphone ou tablette n'est encore revendiquée. Le guide détaillé et le retour
 arrière figurent dans `DEPLOIEMENT-OAUTH-DISCORD.md`.
