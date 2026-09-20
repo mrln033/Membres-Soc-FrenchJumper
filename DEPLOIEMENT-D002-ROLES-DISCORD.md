@@ -33,7 +33,7 @@ fiche. Elles permettent de déployer le code sans modifier le site visible.
 8. Comparer plusieurs fiches dans Discord, D1 et GAS, dont une sans rôle suivi, une avec plusieurs activités et une
    responsabilité Discord. Une erreur Discord doit laisser la dernière copie consultable.
 9. Passer `DISCORD_ROLE_DISPLAY_ENABLED` à `true`, publier ensuite le frontend et tester ordinateur/mobile, public/RH,
-   D1/GAS et le bouton `Actualiser les rôles Discord`.
+   D1/GAS et le bouton `Actualiser les rôles depuis Discord`.
 
 Les changements de configuration Cron peuvent demander jusqu'à quinze minutes pour se propager. Le remplissage initial
 peut être lancé manuellement ; en fonctionnement stabilisé, la collecte automatique a lieu une fois par jour à 03:17 UTC.

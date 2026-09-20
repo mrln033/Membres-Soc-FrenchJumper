@@ -676,7 +676,7 @@ function buildCardMembre(m, mouvements, discordRoles) {
 			const rolesBtn = document.createElement("button");
 			rolesBtn.className = "btn-fiche-action btn-refresh-discord-roles";
 			rolesBtn.type = "button";
-			rolesBtn.innerText = "🔄 Actualiser les rôles Discord";
+			rolesBtn.innerText = "🔄 Actualiser les rôles depuis Discord";
 			rolesBtn.onclick = () => refreshDiscordRoles(m.id, rolesBtn);
 			btnDiv.appendChild(rolesBtn);
 		}
@@ -711,13 +711,13 @@ function buildCardMembre(m, mouvements, discordRoles) {
 		});
 
 		// -----------------------------
-		// Bouton Synchroniser Discord
+		// Bouton Synchroniser vers Discord
 		// -----------------------------
 		if(m.IDDiscord && gradeActuel !== "Chef d'Expédition") {
 			const btn = document.createElement("button");
 			btn.className = "btn-fiche-action btn-sync-discord";
 			btn.type = "button";
-			btn.innerText = "🔄 Synchroniser Discord";
+			btn.innerText = "🔄 Synchroniser vers Discord";
 
 			btn.onclick = async () => {
 
@@ -744,7 +744,7 @@ function buildCardMembre(m, mouvements, discordRoles) {
 
 					setTimeout(() => {
 						btn.disabled = false;
-						btn.innerText = "🔄 Synchroniser Discord";
+						btn.innerText = "🔄 Synchroniser vers Discord";
 					}, 2000);
 
 				}
@@ -857,7 +857,7 @@ async function refreshDiscordRoles(membreId, button) {
     } finally {
         setTimeout(() => {
             button.disabled = false;
-            button.innerText = "🔄 Actualiser les rôles Discord";
+            button.innerText = "🔄 Actualiser les rôles depuis Discord";
         }, 2000);
     }
 }
