@@ -266,3 +266,11 @@ test("sépare fonctions et activités en deux cartes responsives", () => {
   assert.match(clientSource, /discord-activities-card/);
   assert.match(styleSource, /\.discord-roles-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(auto-fit, minmax\(260px, 1fr\)\)/);
 });
+
+test("centre tout le contenu des cartes Fonctions et Activités", () => {
+  assert.match(styleSource, /\.discord-role-card\s*\{[\s\S]*text-align:\s*center/);
+  assert.match(styleSource, /\.discord-role-badges\s*\{[\s\S]*justify-content:\s*center/);
+  assert.match(styleSource, /\.discord-role-badge\s*\{[\s\S]*justify-content:\s*center/);
+  assert.match(styleSource, /\.discord-staff-section\s*\{[\s\S]*text-align:\s*center/);
+  assert.match(styleSource, /\.discord-roles-synced-at\s*\{[\s\S]*text-align:\s*center/);
+});

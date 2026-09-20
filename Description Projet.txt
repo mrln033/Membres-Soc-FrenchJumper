@@ -242,7 +242,7 @@ Stockage navigateur temporaire :
 ------------------------
 -= DEMANDES À RÉALISER =-
 ------------------------
->>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-007 <<<
+>>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-008 <<<
 
 D-001 [SÉCURITÉ] [EN COURS]
 Demande : terminer la migration de l'authentification Admin vers Discord pour D1 et GAS, vérifier les rôles « Chef d'Expédition » et « Conseiller d'Expédition », puis fermer définitivement l'ancien accès par ADMIN_TOKEN.
@@ -422,6 +422,17 @@ Réalisation :
 [2026-09-20 07:42 Europe/Paris] Mise en place des trois niveaux demandés. L'accès RH reste défini par les rôles Chef/Conseiller et conserve seul les commandes de modification. Le rôle FRJ `464706220905857026` produit l'intitulé « Nom — Consultation FRJ » et autorise uniquement l'enrichissement des fiches avec les responsabilités Discord. Une session sans rôle FRJ reste en consultation publique ; un compte absent du serveur ne reçoit toujours aucune session et revient sans blocage au public après le message explicite. Fonctions et activités restent publiques, tandis que la lecture semi-privée passe toujours par le Worker D1, y compris lorsque la fiche utilise GAS. Le retrait d'un rôle est revalidé côté serveur et purge l'ancien niveau du cache frontend. Worker `cb729f06-1a5f-49ae-b823-ebd8fee39aa6` déployé ; santé production validée avec 1 324 membres et 3 218 mouvements, politique `guild_members`, refus anonyme `401`. Frontend publié par la PR #13 au commit de fusion `4bc3c447ffeacf8d587d0b92ba3af9cb146776ab` ; construction Pages réussie et ressources servies contrôlées. Validation locale : 45 tests automatisés, syntaxes Worker/frontend et dry-run Wrangler réussis. Aucun changement GAS ni migration D1.
 
 [2026-09-20 08:51 Europe/Paris] Validation utilisateur : l'ensemble des modifications réalisées et mises en production à ce jour est validé, y compris D-005 et D-006. La recette utilisateur finale est donc close. Cette validation ne modifie pas le reliquat technique déjà identifié dans D-001 concernant la fermeture ultérieure du repli `ALLOW_LEGACY_ADMIN_TOKEN`.
+
+[2026-09-20 13:11 Europe/Paris] Demande D-007 terminée.
+Demande initiale :
+D-007 [AJUSTEMENT] [À FAIRE]
+Demande : j'iamerais que tout le texte et les badges soient centrés dans les tuiles Fonctions et Activités
+
+Précision complémentaire :
+les Responsabilités Discord peuvent aussi etre centrées
+
+Réalisation :
+[2026-09-20 13:11 Europe/Paris] Centrage de l'intégralité du contenu des cartes Fonctions et Activités : titres, sous-titre Responsabilités Discord, badges de fonctions, activités et responsabilités, ainsi que la date de dernière synchronisation. Les règles restent compatibles avec le retour à la ligne des badges et la grille responsive ordinateur/mobile. Un test automatisé dédié protège chaque règle de centrage ; la suite complète passe à 46 tests. Aucun changement Worker, GAS ou D1 n'est nécessaire.
 
 [2026-09-16 13:14 Europe/Paris] Demande D-003 terminée.
 Demande initiale :
