@@ -17,6 +17,8 @@ interne vers une fiche. La correction lit l'URL active de l'iframe et masque aut
 Elle est publiée par la PR #4 au commit `ed91e2e` et validée par l'utilisateur. Le dernier ajustement réduit le délai
 de 30 à 15 secondes ; il est publié par la PR #5 au commit `a264239`. D-004 est terminée. D-006 active ensuite
 `guild_members` et distingue Consultation FRJ de la consultation publique ; la fermeture legacy reste à effectuer dans D-001.
+Cette activation est déployée le 20 septembre 2026 sous la version Worker
+`cb729f06-1a5f-49ae-b823-ebd8fee39aa6` et publiée côté frontend par la PR #13.
 
 Application : Membres Soc FrenchJumper
 

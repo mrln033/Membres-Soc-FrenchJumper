@@ -24,6 +24,9 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - Le Worker optimisé actif depuis le 20 septembre 2026 est `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686`. La version
   D-002 précédente `8968e108-2274-49ac-9b97-50aff3b81c73` reste le repère de retour arrière. Le remplissage initial
   a traité 125 membres en 8 min 13 s (118 `OK`, 7 `ABSENT`, 0 `ERROR`) et n'a laissé aucune réplication GAS en attente.
+- D-006 est déployée sous la version `cb729f06-1a5f-49ae-b823-ebd8fee39aa6` avec `guild_members` et
+  `FRJ_MEMBER_ROLE_ID=464706220905857026`. La version `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686` est son retour arrière
+  immédiat. Le frontend correspondant est publié par la PR #13.
 - Le frontend D-002 est publié sur GitHub Pages depuis la PR #7, commit de fusion `e8c8209`.
 - La fiche rend d'abord le contrat public, puis enrichit séparément les responsabilités en accès RH ou Consultation FRJ : un échec de cet
   appel protégé conserve la consultation publique. Les fonctions et activités sont affichées dans deux cartes

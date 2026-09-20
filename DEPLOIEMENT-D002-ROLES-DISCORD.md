@@ -88,6 +88,11 @@ peut être lancé manuellement ; en fonctionnement stabilisé, la collecte autom
 - Une panne Discord ou de la lecture RH GAS ne bloque pas l'ouverture de la fiche publique.
 - Les fonctions restent modifiables uniquement dans Discord.
 
+D-006 est déployée le 20 septembre 2026 sous la version Worker
+`cb729f06-1a5f-49ae-b823-ebd8fee39aa6`, puis publiée côté frontend par la PR #13. Les contrôles valident 45 tests,
+la santé D1 à 1 324 membres / 3 218 mouvements, `AUTH_LOGIN_POLICY=guild_members` et le refus `401` de la lecture
+protégée sans session. La version Worker `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686` est le retour arrière immédiat.
+
 ## Retour arrière
 
 1. Remettre immédiatement `DISCORD_ROLE_DISPLAY_ENABLED=false` pour masquer les blocs.

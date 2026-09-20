@@ -42,20 +42,20 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 19/09/2026 à 17:58 Europe/Paris :
-- la production GitHub Pages contient le frontend D-002 publié par le commit de fusion `e8c8209` de la PR #7 ;
-- la branche de travail courante « codex/d002-discord-roles-readonly » contient l'implémentation et le suivi documentaire de D-002 ;
-- le présent fichier de pilotage est versionné sur cette branche afin d'être consultable et modifiable depuis GitHub ;
+État connu au 20/09/2026 à 07:38 Europe/Paris :
+- la production GitHub Pages contient D-002 et reçoit D-005/D-006 par la PR #13 ;
+- le Worker D-006 `cb729f06-1a5f-49ae-b823-ebd8fee39aa6` est en production avec `AUTH_LOGIN_POLICY=guild_members` et le rôle FRJ `464706220905857026` ;
+- le présent fichier de pilotage est versionné dans GitHub afin d'être consultable et modifiable depuis tout appareil ;
 - D1 est le backend choisi par défaut par le frontend ; « ?backend=gas » force le backend de secours GAS ;
 - l'authentification Admin Discord est activée côté configuration D1, mais « ALLOW_LEGACY_ADMIN_TOKEN=true » maintient encore le repli par ancien jeton ;
 - la synchronisation bidirectionnelle GAS/D1 est configurée en mode actif dans le Worker ;
-- le lot 1 de D-002 est actif côté frontend GitHub Pages, D1, Worker et GAS ; il attend la recette utilisateur finale ;
+- le lot 1 de D-002 est actif et validé côté frontend GitHub Pages, D1, Worker et GAS ;
 - Discord est l'unique source de vérité et l'unique interface de gestion des fonctions, activités et responsabilités ; le site les synchronise et les affiche uniquement en lecture seule.
-- l'analyse D-003 sur le remplacement de `?admin=1` est terminée dans ANALYSE-D003-CONNEXION-DISCORD.md ; le Worker, GAS et le frontend sont publiés en mode de migration protégé dans D-001 ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
+- l'analyse D-003 sur le remplacement de `?admin=1` est terminée ; les trois niveaux sont Accès RH, Consultation FRJ et Consultation publique ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
 
 Ordre conseillé :
-1. D-001 — mettre en œuvre le plan D-003, valider complètement OAuth Discord sur D1 et GAS, puis fermer l'ancien accès par jeton ;
-2. D-002 — réaliser le lot 1 en lecture seule, le tester sur D1 et GAS, puis le publier par étapes avec retour arrière ;
+1. D-001 — valider complètement OAuth Discord sur GAS, puis fermer l'ancien accès par jeton ;
+2. effectuer la recette utilisateur finale D-005/D-006 sur GitHub Pages, notamment avec un compte portant uniquement le rôle FRJ ;
 3. traiter ensuite les nouvelles demandes ajoutées dans ce fichier selon leur priorité explicite.
 
 ---------
@@ -242,7 +242,7 @@ Stockage navigateur temporaire :
 ------------------------
 -= DEMANDES À RÉALISER =-
 ------------------------
->>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-005 <<<
+>>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-007 <<<
 
 D-001 [SÉCURITÉ] [EN COURS]
 Demande : terminer la migration de l'authentification Admin vers Discord pour D1 et GAS, vérifier les rôles « Chef d'Expédition » et « Conseiller d'Expédition », puis fermer définitivement l'ancien accès par ADMIN_TOKEN.
@@ -260,7 +260,7 @@ Demande : terminer la migration de l'authentification Admin vers Discord pour D1
 
 Avancement au 16/09/2026 à 13:42 Europe/Paris :
 - publication du bouton Connexion/Déconnexion, de la suppression de `?admin=1` et du retour OAuth par popup compatible avec l'intégration en iframe ;
-- séparation côté Worker entre session Discord et autorisation RH, avec connexion possible des membres sans rôle lorsque `AUTH_LOGIN_POLICY=guild_members` sera activé ;
+- séparation côté Worker entre session Discord, Consultation FRJ et autorisation RH ; `AUTH_LOGIN_POLICY=guild_members` est activé depuis D-006 ;
 - distinction entre 401 (session invalide), 403 (session valide sans droit RH) et 503 (vérification Discord indisponible) ;
 - absence du serveur identifiée par le seul statut Discord 404, sans session et avec retour public non bloquant ;
 - adaptation de GAS afin qu'un rôle retiré refuse l'écriture sans supprimer à tort une session encore valide ;
@@ -268,7 +268,7 @@ Avancement au 16/09/2026 à 13:42 Europe/Paris :
 - Worker compatible déployé le 16/09/2026 sous la version `c475badb-3424-4b95-84d8-edafb36e6f2b`, avec `AUTH_LOGIN_POLICY=admin_only` et `ALLOW_LEGACY_ADMIN_TOKEN=true` ;
 - GAS publié le 16/09/2026 en version 142 sur le déploiement `/exec` existant ; la version 141 est le retour arrière immédiat ;
 - recette publique réussie : 1 324 membres retournés par GAS et D1, santé D1 valide et absence de session refusée en HTTP 401 ;
-- frontend publié par la PR #2 sur GitHub Pages le 16/09/2026 à 21:06 Europe/Paris, commit de fusion `fcb60d9ea13494c494e1490bc67e782a9d63573e` ; la recette réelle des profils Discord, l'activation `guild_members` puis la fermeture de `ALLOW_LEGACY_ADMIN_TOKEN` restent à réaliser avant de clôturer D-001.
+- frontend publié par la PR #2 sur GitHub Pages le 16/09/2026 à 21:06 Europe/Paris, commit de fusion `fcb60d9ea13494c494e1490bc67e782a9d63573e` ; la fermeture de `ALLOW_LEGACY_ADMIN_TOKEN` reste à réaliser avant de clôturer D-001.
 
 Contrôle complémentaire au 16/09/2026 à 13:54 Europe/Paris : les tests frontend simulés prouvent qu'un ancien favori `?admin=1` n'accorde aucun droit, qu'un refus OAuth efface session et cache tout en conservant le message public, qu'une session n'est acceptée que si l'état anti-rejeu correspond et qu'un refus de rôle par D1 ou GAS masque immédiatement les commandes RH sans supprimer la session Discord. Le mapping des refus serveur vers 401, 403 et 503 est également testé directement.
 
@@ -277,6 +277,8 @@ Contrôle de publication au 16/09/2026 à 21:08 Europe/Paris : GitHub Pages a co
 Recette réelle au 16/09/2026 à 21:15 Europe/Paris : la connexion Discord du compte « Merlin » aboutit correctement et le frontend affiche « Merlin — accès RH » sur le backend D1. La session OAuth, la lecture du membre Discord et la reconnaissance d'un rôle RH sont donc validées. La page « Synchronisation GAS / D1 » s'affiche correctement, ce qui valide également une route D1 protégée avec relecture du rôle. La recette GAS reste à effectuer avant l'activation de `guild_members`.
 
 Correction au 16/09/2026 à 21:21 Europe/Paris : après une déconnexion puis une reconnexion réussie, l'avis « Vous êtes déconnecté. Consultation publique active. » restait visible sous le menu. `renderAuthentication` efface désormais tout ancien avis dès qu'un état authentifié est confirmé. Un test de non-régression a été ajouté. La correction est publiée par la PR #3 depuis le 19/09/2026.
+
+Évolution au 20/09/2026 à 07:38 Europe/Paris : D-006 active `AUTH_LOGIN_POLICY=guild_members` et ajoute le booléen serveur `frjMember`. Le rôle FRJ donne une lecture semi-privée des responsabilités Discord, sans aucun droit d'écriture ; les accès RH restent inchangés. Le Worker `cb729f06-1a5f-49ae-b823-ebd8fee39aa6` est déployé et contrôlé.
 
 D-002 [ÉVOLUTION] [EN PRODUCTION]
 Demande : afficher sur la fiche des membres leurs fonctions en jeu, activités en jeu et responsabilités Discord, sans les confondre avec le grade de la Soc ni avec les rôles donnant accès à l'administration du site.
@@ -328,30 +330,9 @@ Mise en production finale au 20/09/2026 :
 - la migration `0004_reduce_discord_role_writes.sql` a supprimé l'index redondant ; la sauvegarde préalable est `seed/d1-pre-0004-20260920.sql` ;
 - le Worker `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686` sert 100 % du trafic ; `8968e108-2274-49ac-9b97-50aff3b81c73` est le retour arrière immédiat ;
 - la recette production valide 39 tests automatisés, 1 324 membres, 3 218 mouvements, 118 caches Discord `OK`, 7 `ABSENT`, le cache HTTP public et le refus `401` d'une action sans session.
-
-
-
-D-005 [TYPE] [À FAIRE]
-Demande : Synchronisation GAS / D1
-	Losque l'on est sur cette page, un bouton '<< Accueil' est présent en haut à gauche. L'appui sur ce bouton a un effet surprenant : il recharge l'intégralité du shell dans la zone de droite, dupliquant par la meme occasion le menu de gauche.
-
-
-
-D-006 [TYPE] [À FAIRE]
-Demande : Connexion Discord
-	Je voudrais modifier un des niveaux d'accès. Actuellement, une connexion Discord sans accès RH et inconnu du serveur sont considérées de la même manière.
-	J'aimerais qu'un membre du serveur FrenchJumper connecté soit traité différemment : au-dessu du bouton, faire apparaitre son nom et son niveau d'accès (a l'instar des membres RH) : 'Toto - Consultation FRJ' par exemple.
-	De ce fait, l'affichage des fonctions discord sur les fiches membres est accordées à la 'Consultation FRJ', rendant ces indication semi-privées ,)
-	Il existera donc 3 niveaux :
-	- Accès RH => défini à la connexion Discord après vérification des roles => Affichage Fonctions Discord, Fonctions et Activités / modification accordées
-	- Consultation FRJ => membre du serveur, role 'FRJ' => Affichage Fonctions Discord, Fonctions et Activités / aucune modification possible
-	- Consultation Publique => membre du serveur ou non, pas de role 'FRJ' => Affichage Fonctions et Activités / aucune modification possible
-
-
-
 Modèle à copier pour une nouvelle demande :
 
-D-005 [TYPE] [À FAIRE]
+D-007 [TYPE] [À FAIRE]
 Demande :
 [Décrire ici le problème, le résultat attendu, les pages ou services concernés, les règles à préserver et, si possible, les critères de validation.]
 
@@ -415,6 +396,30 @@ Réalisation :
 [16/09/2026] Création du présent fichier de pilotage à partir de l'historique Git, de l'état du code et des documents techniques du projet. Mise en place des identifiants permanents D-NNN, du point de reprise, du registre des variables sans leurs valeurs secrètes, des demandes encore ouvertes et de l'historique synthétique des réalisations.
 
 [16/09/2026] Clarification de la règle de clôture des demandes : une demande terminée doit être retirée de la liste ouverte puis recopiée intégralement et sans reformulation dans « Réalisations effectuées », immédiatement suivie du détail horodaté de la réalisation, de ses contrôles et de son éventuel déploiement.
+
+[2026-09-20 07:38 Europe/Paris] Demande D-005 terminée.
+Demande initiale :
+D-005 [TYPE] [À FAIRE]
+Demande : Synchronisation GAS / D1
+	Losque l'on est sur cette page, un bouton '<< Accueil' est présent en haut à gauche. L'appui sur ce bouton a un effet surprenant : il recharge l'intégralité du shell dans la zone de droite, dupliquant par la meme occasion le menu de gauche.
+
+Réalisation :
+[2026-09-20 07:38 Europe/Paris] Le lien « << Accueil » de `sync.html` cible désormais le contexte parent immédiat. Depuis la page chargée dans l'iframe, il remplace ainsi le shell courant au lieu de charger une seconde copie de `index.html` dans la zone centrale. Un test automatisé protège explicitement l'attribut `target="_parent"`. Publication frontend par la PR #13.
+
+[2026-09-20 07:38 Europe/Paris] Demande D-006 terminée.
+Demande initiale :
+D-006 [TYPE] [À FAIRE]
+Demande : Connexion Discord
+	Je voudrais modifier un des niveaux d'accès. Actuellement, une connexion Discord sans accès RH et inconnu du serveur sont considérées de la même manière.
+	J'aimerais qu'un membre du serveur FrenchJumper connecté soit traité différemment : au-dessu du bouton, faire apparaitre son nom et son niveau d'accès (a l'instar des membres RH) : 'Toto - Consultation FRJ' par exemple.
+	De ce fait, l'affichage des fonctions discord sur les fiches membres est accordées à la 'Consultation FRJ', rendant ces indication semi-privées ,)
+	Il existera donc 3 niveaux :
+	- Accès RH => défini à la connexion Discord après vérification des roles => Affichage Fonctions Discord, Fonctions et Activités / modification accordées
+	- Consultation FRJ => membre du serveur, role 'FRJ' => Affichage Fonctions Discord, Fonctions et Activités / aucune modification possible
+	- Consultation Publique => membre du serveur ou non, pas de role 'FRJ' => Affichage Fonctions et Activités / aucune modification possible
+
+Réalisation :
+[2026-09-20 07:38 Europe/Paris] Mise en place des trois niveaux demandés. L'accès RH reste défini par les rôles Chef/Conseiller et conserve seul les commandes de modification. Le rôle FRJ `464706220905857026` produit l'intitulé « Nom — Consultation FRJ » et autorise uniquement l'enrichissement des fiches avec les responsabilités Discord. Une session sans rôle FRJ reste en consultation publique ; un compte absent du serveur ne reçoit toujours aucune session et revient sans blocage au public après le message explicite. Fonctions et activités restent publiques, tandis que la lecture semi-privée passe toujours par le Worker D1, y compris lorsque la fiche utilise GAS. Le retrait d'un rôle est revalidé côté serveur et purge l'ancien niveau du cache frontend. Worker `cb729f06-1a5f-49ae-b823-ebd8fee39aa6` déployé ; santé production validée avec 1 324 membres et 3 218 mouvements, politique `guild_members`, refus anonyme `401`. Publication frontend par la PR #13. Validation locale : 45 tests automatisés, syntaxes Worker/frontend et dry-run Wrangler réussis. Aucun changement GAS ni migration D1.
 
 [2026-09-16 13:14 Europe/Paris] Demande D-003 terminée.
 Demande initiale :
