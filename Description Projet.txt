@@ -42,10 +42,11 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 20/09/2026 à 08:51 Europe/Paris :
+État connu au 20/09/2026 à 13:13 Europe/Paris :
 - la production GitHub Pages contient D-002, D-005 et D-006 ; la PR #13 est fusionnée au commit `4bc3c447ffeacf8d587d0b92ba3af9cb146776ab` et sa construction Pages a réussi ;
 - le Worker D-006 `cb729f06-1a5f-49ae-b823-ebd8fee39aa6` est en production avec `AUTH_LOGIN_POLICY=guild_members` et le rôle FRJ `464706220905857026` ;
 - l'utilisateur valide l'ensemble des modifications réalisées et publiées à ce jour, notamment D-002, D-005 et D-006 ;
+- D-007 est publiée par la PR #16 au commit de fusion `6e38512c6553b16c25ffe2562ff118525c95ea5f` ; le contenu des cartes Fonctions, Activités et Responsabilités Discord est centré ;
 - le présent fichier de pilotage est versionné dans GitHub afin d'être consultable et modifiable depuis tout appareil ;
 - D1 est le backend choisi par défaut par le frontend ; « ?backend=gas » force le backend de secours GAS ;
 - l'authentification Admin Discord est activée côté configuration D1, mais « ALLOW_LEGACY_ADMIN_TOKEN=true » maintient encore le repli par ancien jeton ;
@@ -432,7 +433,7 @@ Précision complémentaire :
 les Responsabilités Discord peuvent aussi etre centrées
 
 Réalisation :
-[2026-09-20 13:11 Europe/Paris] Centrage de l'intégralité du contenu des cartes Fonctions et Activités : titres, sous-titre Responsabilités Discord, badges de fonctions, activités et responsabilités, ainsi que la date de dernière synchronisation. Les règles restent compatibles avec le retour à la ligne des badges et la grille responsive ordinateur/mobile. Un test automatisé dédié protège chaque règle de centrage ; la suite complète passe à 46 tests. Aucun changement Worker, GAS ou D1 n'est nécessaire.
+[2026-09-20 13:13 Europe/Paris] Centrage de l'intégralité du contenu des cartes Fonctions et Activités : titres, sous-titre Responsabilités Discord, badges de fonctions, activités et responsabilités, ainsi que la date de dernière synchronisation. Les règles restent compatibles avec le retour à la ligne des badges et la grille responsive ordinateur/mobile. Un test automatisé dédié protège chaque règle de centrage ; la suite complète passe à 46 tests. Publication par la PR #16 au commit de fusion `6e38512c6553b16c25ffe2562ff118525c95ea5f` ; construction GitHub Pages réussie et règles CSS contrôlées dans la ressource servie. Aucun changement Worker, GAS ou D1.
 
 [2026-09-16 13:14 Europe/Paris] Demande D-003 terminée.
 Demande initiale :
