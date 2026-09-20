@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import { syncDiscordRolesAndNickname } from "./discord-sync.js";
 
 const DISCORD_API = "https://discord.com/api/v10";
 const DEFAULT_APPS_SCRIPT_URL =
@@ -52,59 +53,33 @@ async function handleDiscordSync(request) {
     nomAvatar: nomAvatar
   });
 
-  const rolesToAdd = [];
-  const rolesToRemove = [];
+  const result = await syncDiscordRolesAndNickname({
+    discordId,
+    guildId: config.guildId,
+    niveau,
+    nomAvatar,
+    roles: config.roles,
+    requestDiscord: (path, options) => discordRequest(path, options, config.botToken)
+  });
 
-  if (niveau >= 1 && niveau <= 6) {
-    rolesToAdd.push(config.roles.ROLE_FRJ);
-    rolesToAdd.push(config.roles[`GRADE${niveau}`]);
-
-    for (let i = 1; i <= 6; i++) {
-      if (i !== niveau) {
-        rolesToRemove.push(config.roles[`GRADE${i}`]);
-      }
-    }
-  } else {
-    rolesToRemove.push(config.roles.ROLE_FRJ);
-    for (let i = 1; i <= 6; i++) {
-      rolesToRemove.push(config.roles[`GRADE${i}`]);
-    }
+  if (!result.success) {
+    console.error(JSON.stringify({
+      message: "Synchronisation des rôles Discord échouée",
+      discordId,
+      error: result.error
+    }));
+    return jsonResponse(result, 502);
   }
 
-  try {
-    for (const roleId of rolesToRemove) {
-      await discordRequest(
-        `/guilds/${config.guildId}/members/${discordId}/roles/${roleId}`,
-        { method: "DELETE" },
-        config.botToken
-      );
-    }
-
-    for (const roleId of rolesToAdd) {
-      await discordRequest(
-        `/guilds/${config.guildId}/members/${discordId}/roles/${roleId}`,
-        { method: "PUT" },
-        config.botToken
-      );
-    }
-
-    if (nomAvatar) {
-      await discordRequest(
-        `/guilds/${config.guildId}/members/${discordId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nick: nomAvatar.slice(0, 32) })
-        },
-        config.botToken
-      );
-    }
-
-    return jsonResponse({ success: true });
-  } catch (err) {
-    console.error("Synchronisation Discord échouée", err.message);
-    return jsonResponse({ success: false, error: err.message }, 502);
+  if (result.warning) {
+    console.warn(JSON.stringify({
+      message: "Synchronisation Discord partielle",
+      discordId,
+      warningCode: result.warningCode
+    }));
   }
+
+  return jsonResponse(result);
 }
 
 async function handleDiscordInteraction(request) {

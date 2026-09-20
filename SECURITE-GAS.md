@@ -78,6 +78,12 @@ l'enrichissement semi-privé utilise toutefois l'action protégée du Worker D1 
 et revalide les rôles Discord. Aucun jeton n'est placé dans l'URL. À la déconnexion, l'iframe est rechargée afin que les
 données RH précédemment affichées ne subsistent jamais dans le DOM public.
 
+Pour la commande RH « Synchroniser vers Discord », GAS transmet le résultat détaillé du proxy. Les rôles Soc sont
+traités en premier et restent bloquants. Si seuls les droits de hiérarchie empêchent le changement de pseudonyme,
+GAS renvoie un succès partiel avec un avertissement explicite au site et dans la notification RH ; le bot reste sous
+le rôle Administrateur et ne reçoit aucun droit supplémentaire.
+Ce contrat est publié dans GAS v146 sur l'URL `/exec` existante ; GAS v145 est le retour arrière immédiat.
+
 OAuth Discord est désormais l'unique authentification des actions RH dans GAS. La validation utilisateur a été
 effectuée sur PC ; aucune validation smartphone ou tablette n'est encore revendiquée. Le guide détaillé et le retour
 arrière figurent dans `DEPLOIEMENT-OAUTH-DISCORD.md`.

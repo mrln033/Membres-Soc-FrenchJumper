@@ -381,7 +381,12 @@ async function syncDiscordFromWeb(data, env) {
     removeExitRole: Number(member.level) === 0
   }, env);
   if (!result.success) return json(result, 502);
-  return json({ success: true, message: `✅ Synchronisation envoyée pour ${member.avatar_name}` });
+  return json({
+    success: true,
+    message: `✅ Synchronisation envoyée pour ${member.avatar_name}`,
+    warningCode: result.warningCode || null,
+    warning: result.warning || null
+  });
 }
 
 async function syncDiscordMember(member, env) {
@@ -428,7 +433,10 @@ async function syncDiscordMember(member, env) {
 
     return {
       success: true,
-      removedRulesAcceptedRole: Boolean(member.removeExitRole)
+      removedRulesAcceptedRole: Boolean(member.removeExitRole),
+      nicknameUpdated: result.nicknameUpdated !== false,
+      warningCode: result.warningCode || null,
+      warning: result.warning || null
     };
   } catch (error) {
     console.error(JSON.stringify({ message: "Discord sync failed", error: error.message, memberId: member.discordId }));
