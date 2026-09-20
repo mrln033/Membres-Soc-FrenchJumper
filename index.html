@@ -154,13 +154,16 @@ function renderAuthentication(state) {
     const button = document.getElementById("authButton");
     const authorized = state && state.authorized === true;
     const authenticated = state && state.authenticated === true;
+    const frjMember = state && state.frjMember === true;
     document.getElementById("menuNouveauMembre").style.display = authorized ? "" : "none";
     document.getElementById("menuSynchronisation").style.display = authorized && preferredBackend === "d1" ? "" : "none";
     if (authenticated) {
         clearAuthenticationNotice();
         refreshPageAfterAuthentication();
         const name = state.user && state.user.name ? state.user.name : "Discord";
-        status.textContent = authorized ? `${name} — accès RH` : `${name} — consultation publique`;
+        status.textContent = authorized
+            ? `${name} — accès RH`
+            : frjMember ? `${name} — Consultation FRJ` : `${name} — consultation publique`;
         if (state.stale) status.textContent += " (vérification différée)";
         button.textContent = "Déconnexion";
         button.onclick = () => {

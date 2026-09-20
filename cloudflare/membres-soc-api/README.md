@@ -14,8 +14,9 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - Lors d'une sortie, d'une désertion ou d'un bannissement, D1 retire aussi le rôle « Règlement Soc OK » (`1189173135380058133`).
 - Le Worker compatible D-003 est déployé depuis le 16 septembre 2026 sous la version
   `c475badb-3424-4b95-84d8-edafb36e6f2b`. Le frontend remplaçant `?admin=1` est publié depuis le commit `fcb60d9`.
-- `AUTH_LOGIN_POLICY=admin_only` garde le comportement de production pendant la migration. Après publication conjointe
-  du frontend et de GAS, `guild_members` permettra à un membre du serveur sans rôle RH de rester connecté sans droit.
+- `AUTH_LOGIN_POLICY=guild_members` permet à tout membre du serveur de conserver une session. Le rôle FRJ
+  (`FRJ_MEMBER_ROLE_ID`) accorde le niveau de lecture « Consultation FRJ » ; les rôles RH restent seuls habilités à
+  modifier les données.
 - Un compte absent du serveur ne reçoit jamais de session et revient, après un message explicite, à la consultation
   publique non bloquante. Une panne Discord est identifiée séparément.
 - D-002 est activée avec `DISCORD_ROLE_SYNC_MODE=active` et `DISCORD_ROLE_DISPLAY_ENABLED=true`. Discord reste
@@ -24,10 +25,10 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
   D-002 précédente `8968e108-2274-49ac-9b97-50aff3b81c73` reste le repère de retour arrière. Le remplissage initial
   a traité 125 membres en 8 min 13 s (118 `OK`, 7 `ABSENT`, 0 `ERROR`) et n'a laissé aucune réplication GAS en attente.
 - Le frontend D-002 est publié sur GitHub Pages depuis la PR #7, commit de fusion `e8c8209`.
-- La fiche rend d'abord le contrat public, puis enrichit séparément les responsabilités en accès RH : un échec de cet
+- La fiche rend d'abord le contrat public, puis enrichit séparément les responsabilités en accès RH ou Consultation FRJ : un échec de cet
   appel protégé conserve la consultation publique. Les fonctions et activités sont affichées dans deux cartes
   responsives distinctes.
-- En mode frontend `backend=gas`, la fiche publique et son historique proviennent de GAS, mais la lecture RH des
+- En mode frontend `backend=gas`, la fiche publique et son historique proviennent de GAS, mais la lecture semi-privée des
   responsabilités appelle directement l'action D1 protégée avec la même session OAuth. La déconnexion recharge la page
   interne courante pour éliminer immédiatement toute donnée RH déjà rendue.
 
@@ -68,7 +69,7 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
   clé primaire composite.
 - Une erreur Discord conserve la dernière copie connue. Un membre réellement absent du serveur reçoit une copie vide.
 - Les fonctions et activités sont publiques. Les responsabilités Administrateur/Modérateur sont retournées uniquement
-  par une action protégée RH.
+  par une action protégée accessible aux sessions RH ou porteuses du rôle FRJ.
 - D1 réplique les snapshots vers les colonnes GAS `FonctionsDiscord`, `ActivitesDiscord`,
   `ResponsabilitesDiscord`, `RolesDiscordSyncedAt` et `RolesDiscordStatus`.
 - Le consommateur regroupe jusqu'à dix snapshots dans une seule exécution GAS ; GAS verrouille l'écriture du lot afin
@@ -77,7 +78,7 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 ## Contrat HTTP compatible
 
 - `GET /auth/config` : mode OAuth public et politique de connexion ;
-- `GET /auth/session` : `401` si la session est invalide, sinon identité et booléen `authorized` ;
+- `GET /auth/session` : `401` si la session est invalide, sinon identité et booléens `authorized` / `frjMember` ;
 - `GET /?action=getMembres`
 - `GET /?action=getMouvements`
 - `GET /?action=getMouvementsMensuels`
@@ -85,8 +86,9 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - `POST /` avec une action `createOrOpenMembre`, `applyMembreAction`, `updateMembreInfos`, `syncDiscordFromWeb`,
   `getDiscordRolesForMember` ou `refreshDiscordRoles`
 
-Les routes protégées répondent `401` pour une session absente/invalide, `403` pour une session valide sans rôle RH
-et `503` lorsque Discord ne permet momentanément pas de revalider les rôles.
+Les routes protégées répondent `401` pour une session absente/invalide, `403` pour un niveau insuffisant et `503`
+lorsque Discord ne permet momentanément pas de revalider les rôles. Seule la lecture
+`getDiscordRolesForMember` accepte le niveau FRJ ; toutes les écritures exigent toujours l'accès RH.
 
 ## Travail local
 
@@ -120,7 +122,8 @@ Variables non secrètes de migration dans `wrangler.jsonc` :
 - `DISCORD_OAUTH_CLIENT_ID` : `1479825051522957462` ;
 - `DISCORD_OAUTH_REDIRECT_URI` : callback déclaré à l'identique dans le portail Discord ;
 - `ADMIN_AUTH_MODE` : `legacy` pendant l'installation, puis `discord` ;
-- `AUTH_LOGIN_POLICY` : `admin_only` pendant le chevauchement, puis `guild_members` après publication du nouveau frontend ;
+- `AUTH_LOGIN_POLICY` : `guild_members` pour conserver une session à tout membre du serveur ;
+- `FRJ_MEMBER_ROLE_ID` : `464706220905857026`, niveau « Consultation FRJ » en lecture seule ;
 - `ALLOW_LEGACY_ADMIN_TOKEN` : `true` pendant le chevauchement des frontends, puis impérativement `false`.
 - `DISCORD_ROLE_SYNC_MODE` : `off` tant que le cache D-002 n'est pas prêt, puis `active` après migration et publication GAS ;
 - `DISCORD_ROLE_DISPLAY_ENABLED` : `false` pendant le remplissage initial, puis `true` après comparaison D1/GAS.

@@ -62,8 +62,9 @@ Les actions `replicateFromD1`, `replicateDiscordRolesFromD1`, `replicateDiscordR
 `SYNC_SHARED_SECRET`. Les interactions Discord existantes restent traitées avant le routage Web.
 
 Pour D-002, `replicateDiscordRolesFromD1` accepte uniquement le secret partagé et crée au besoin les colonnes de
-cache dans `MEMBRES_SOC`. La lecture publique ne retourne jamais `ResponsabilitesDiscord`; cette colonne n'est lue
-que par `getDiscordRolesForMember` après validation de la session RH. `refreshDiscordRoles` transmet la session au
+cache dans `MEMBRES_SOC`. La lecture publique ne retourne jamais `ResponsabilitesDiscord`; cette colonne est enrichie
+par `getDiscordRolesForMember` côté Worker D1 après validation d'une session RH ou porteuse du rôle FRJ.
+`refreshDiscordRoles` reste strictement RH et transmet la session au
 Worker D1, qui relit Discord et réplique le résultat : GAS ne devient donc jamais une seconde source de vérité.
 La réplication périodique regroupe jusqu'à dix membres par appel GAS et verrouille brièvement l'écriture de la feuille,
 ce qui évite 125 exécutions séparées lors d'un remplissage complet sans autoriser d'écritures concurrentes incohérentes.
@@ -71,7 +72,7 @@ Cette implémentation est publiée en production dans GAS v144 depuis le 19 sept
 retour arrière antérieur à D-002 ; l'URL `/exec` n'a pas changé.
 
 Le frontend `backend=gas` lit toujours la fiche et l'historique publics dans GAS. Pour les responsabilités D-002,
-l'enrichissement RH utilise toutefois l'action protégée du Worker D1 : celui-ci est déjà l'émetteur de la session OAuth
+l'enrichissement semi-privé utilise toutefois l'action protégée du Worker D1 : celui-ci est déjà l'émetteur de la session OAuth
 et revalide les rôles Discord. Aucun jeton n'est placé dans l'URL. À la déconnexion, l'iframe est rechargée afin que les
 données RH précédemment affichées ne subsistent jamais dans le DOM public.
 
@@ -87,6 +88,8 @@ sur GitHub Pages depuis le commit `fcb60d9`. L'évolution sépare explicitement 
 
 - la session Discord, accessible à tout membre du serveur FRJ correctement authentifié, même sans rôle RH ;
 - l'autorisation RH, réservée aux rôles `Chef d'Expédition` et `Conseiller d'Expédition` et relue avant chaque écriture.
+- la Consultation FRJ, accordée par le rôle FRJ `464706220905857026`, qui permet seulement la lecture des
+  responsabilités Discord et n'accorde aucune écriture.
 
 GAS continue à vérifier lui-même la signature, l'expiration et les rôles courants. Un utilisateur connecté sans
 rôle RH restera connecté mais ses écritures seront refusées. Le plan complet, les tests, l'iframe et le déploiement

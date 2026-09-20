@@ -7,12 +7,13 @@ import {
   parseRoleIds,
   verifySignedToken
 } from "../src/auth.js";
-import { authorizationErrorResponse } from "../src/index.js";
+import { authorizationErrorResponse, canReadDiscordResponsibilities } from "../src/index.js";
 
 const secret = "test-session-secret-with-enough-entropy";
 const userId = "123456789012345678";
 const guildId = "223456789012345678";
 const adminRoleId = "323456789012345678";
+const frjRoleId = "423456789012345678";
 
 test("crée et vérifie une session Admin signée", async () => {
   const token = await createSignedToken({
@@ -167,10 +168,54 @@ test("connecte un membre du serveur sans lui accorder les droits RH", async () =
   assert.deepEqual(await sessionResponse.json(), {
     authenticated: true,
     authorized: false,
+    frjMember: false,
     user: { id: userId, name: "Membre Test" },
     reason: "role_required",
     error: "Rôle Discord administrateur requis"
   });
+});
+
+test("accorde la Consultation FRJ sans accorder les droits RH", async () => {
+  const token = await createSignedToken({
+    aud: "frj-membres-admin",
+    sub: userId,
+    name: "Membre FRJ",
+    exp: Math.floor(Date.now() / 1000) + 60
+  }, secret);
+  const env = {
+    ADMIN_AUTH_MODE: "discord",
+    ADMIN_SESSION_SECRET: secret,
+    ADMIN_DISCORD_ROLE_IDS: adminRoleId,
+    FRJ_MEMBER_ROLE_ID: frjRoleId,
+    DISCORD_BOT_TOKEN: "bot-test",
+    DISCORD_GUILD_ID: guildId
+  };
+  const request = new Request("https://api.example.test/auth/session", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const response = await handleAuthRoute(
+    request,
+    new URL(request.url),
+    env,
+    async () => Response.json({ roles: [frjRoleId] })
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    authenticated: true,
+    authorized: false,
+    frjMember: true,
+    user: { id: userId, name: "Membre FRJ" },
+    reason: "role_required",
+    error: "Rôle Discord administrateur requis"
+  });
+});
+
+test("sépare lecture FRJ et écritures RH", () => {
+  assert.equal(canReadDiscordResponsibilities({ authorized: true, frjMember: false }), true);
+  assert.equal(canReadDiscordResponsibilities({ authorized: false, frjMember: true }), true);
+  assert.equal(canReadDiscordResponsibilities({ authorized: false, frjMember: false }), false);
+  assert.equal(canReadDiscordResponsibilities(null), false);
 });
 
 test("refuse un compte absent du serveur avec un code fonctionnel explicite", async () => {

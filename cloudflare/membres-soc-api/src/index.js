@@ -64,10 +64,13 @@ export default {
           return withCors(json(await receiveGasMutation(env, data)), origin, env);
         }
         const authorization = await authorizeAdminRequest(request, env);
-        if (!authorization.authorized) {
+        const readsDiscordResponsibilities = data.action === "getDiscordRolesForMember";
+        const mayReadDiscordResponsibilities = canReadDiscordResponsibilities(authorization);
+        if ((readsDiscordResponsibilities && !mayReadDiscordResponsibilities) ||
+            (!readsDiscordResponsibilities && !authorization.authorized)) {
           return withCors(authorizationErrorResponse(authorization), origin, env);
         }
-        return withCors(await handlePost(data, env), origin, env);
+        return withCors(await handlePost(data, env, authorization), origin, env);
       }
 
       return withCors(json({ error: "Method not allowed" }, 405), origin, env);
@@ -199,7 +202,7 @@ async function handleGet(url, env) {
   return json({ error: "unknown action" }, 400);
 }
 
-async function handlePost(data, env) {
+async function handlePost(data, env, authorization = {}) {
   if (data.action === "createOrOpenMembre") return createOrOpenMember(data, env);
   if (data.action === "updateMembreInfos") return updateMemberInfo(data, env);
   if (data.action === "applyMembreAction") return applyMemberAction(data, env);
@@ -208,7 +211,11 @@ async function handlePost(data, env) {
     if (String(env.DISCORD_ROLE_DISPLAY_ENABLED || "false") !== "true") {
       return json({ functions: [], activities: [], responsibilities: [], syncedAt: null, status: "DISABLED", error: null });
     }
-    return json(await getCachedDiscordRoles(env, String(data.membreId || "").trim(), true));
+    return json(await getCachedDiscordRoles(
+      env,
+      String(data.membreId || "").trim(),
+      authorization.authorized === true || authorization.frjMember === true
+    ));
   }
   if (data.action === "refreshDiscordRoles") {
     if (String(env.DISCORD_ROLE_SYNC_MODE || "off") !== "active") {
@@ -587,8 +594,13 @@ export function authorizationErrorResponse(authorization) {
     error: authorization.error || (status === 403 ? "Rôle Discord administrateur requis" : "Session invalide"),
     authenticated: Boolean(authorization.authenticated),
     authorized: false,
+    frjMember: Boolean(authorization.frjMember),
     reason: authorization.reason || null
   }, status);
+}
+
+export function canReadDiscordResponsibilities(authorization) {
+  return Boolean(authorization && (authorization.authorized === true || authorization.frjMember === true));
 }
 
 function allowedOrigins(env) {

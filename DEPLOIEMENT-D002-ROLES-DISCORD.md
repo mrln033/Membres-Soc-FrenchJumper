@@ -67,21 +67,23 @@ peut être lancé manuellement ; en fonctionnement stabilisé, la collecte autom
 - Le frontend a été publié par la PR #7 au commit `e8c8209adc221ea63a887213358730d9a1877ff9`. La construction GitHub Pages
   a réussi ; `index.html`, `fiche.html`, `js/client.js` et `css/style.css` répondent en HTTP 200, avec le bouton RH,
   le rendu des badges et le masquage public des responsabilités présents dans les ressources servies.
-- Après la première recette, le chargement de fiche a été rendu indépendant de l'enrichissement RH : la réponse
+- Après la première recette, le chargement de fiche a été rendu indépendant de l'enrichissement protégé : la réponse
   publique est affichée avant la lecture protégée des responsabilités. Une erreur GAS/Discord sur cette seconde lecture
   conserve donc la fiche publique. Les fonctions et activités utilisent deux cartes responsives côte à côte, empilées
   automatiquement lorsque la largeur disponible est insuffisante. Ce correctif est publié par la PR #10 au commit
   `2d6977abdecb9bc942001179ce5cf48452265ce6` ; les fichiers JavaScript/CSS et la fiche GAS servis ont été contrôlés en HTTP 200.
 - La déconnexion recharge la page interne courante afin de reconstruire son affichage public et de supprimer toute
-  responsabilité RH déjà injectée dans le DOM. Lorsque `backend=gas`, la fiche publique reste fournie par GAS mais la
+  responsabilité semi-privée déjà injectée dans le DOM. Lorsque `backend=gas`, la fiche publique reste fournie par GAS mais la
   lecture protégée des responsabilités utilise D1, déjà responsable de la session OAuth et de sa revalidation Discord ;
   une indisponibilité de cet enrichissement laisse la fiche GAS publique visible.
 
 ## Contrôles fonctionnels
 
 - Les fonctions et activités apparaissent en consultation publique et les catégories vides restent masquées.
-- Les responsabilités Administrateur/Modérateur n'apparaissent qu'en accès RH.
+- Les responsabilités Administrateur/Modérateur n'apparaissent qu'en accès RH ou en Consultation FRJ, définie par le
+  rôle FRJ `464706220905857026`.
 - Administrateur/Modérateur ne donnent aucun droit RH.
+- Consultation FRJ ne donne aucun bouton ni droit d'écriture ; le rafraîchissement manuel reste RH.
 - Le bouton RH relit Discord, actualise D1, puis réplique vers GAS sans modifier de rôle.
 - Une panne Discord ou de la lecture RH GAS ne bloque pas l'ouverture de la fiche publique.
 - Les fonctions restent modifiables uniquement dans Discord.

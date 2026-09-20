@@ -93,11 +93,12 @@ export async function handleAuthRoute(request, url, env, fetcher = fetch) {
   if (url.pathname === "/auth/session") {
     const authorization = await authorizeAdminRequest(request, env, fetcher);
     if (!authorization.authenticated) {
-      return json({ authenticated: false, authorized: false, error: authorization.error }, 401);
+      return json({ authenticated: false, authorized: false, frjMember: false, error: authorization.error }, 401);
     }
     return json({
       authenticated: true,
       authorized: authorization.authorized,
+      frjMember: authorization.frjMember === true,
       user: authorization.user,
       reason: authorization.reason || null,
       error: authorization.error || null
@@ -118,6 +119,7 @@ export async function authorizeAdminRequest(request, env, fetcher = fetch) {
     return {
       authenticated: authorized,
       authorized,
+      frjMember: authorized,
       status: authorized ? 200 : 401,
       user: authorized ? { id: "legacy", name: "Legacy admin" } : null
     };
@@ -135,6 +137,7 @@ export async function authorizeAdminRequest(request, env, fetcher = fetch) {
         return {
           authenticated: true,
           authorized: true,
+          frjMember: true,
           status: 200,
           user: { id: "legacy", name: "Legacy admin" }
         };
@@ -143,6 +146,7 @@ export async function authorizeAdminRequest(request, env, fetcher = fetch) {
     return {
       authenticated: false,
       authorized: false,
+      frjMember: false,
       status: 401,
       user: null,
       error: error instanceof Error ? error.message : "Session administrateur invalide"
@@ -151,13 +155,38 @@ export async function authorizeAdminRequest(request, env, fetcher = fetch) {
 
   const user = { id: session.sub, name: session.name || "Discord" };
   try {
-    await requireAllowedDiscordRole(session.sub, env, fetcher);
-    return { authenticated: true, authorized: true, status: 200, user };
+    const member = await requireGuildMembership(session.sub, env, fetcher);
+    const roles = member.roles.map(String);
+    const allowedRoleIds = parseRoleIds(env.ADMIN_DISCORD_ROLE_IDS);
+    const authorized = roles.some((roleId) => allowedRoleIds.has(roleId));
+    const frjRoleId = String(env.FRJ_MEMBER_ROLE_ID || "").trim();
+    const frjMember = /^\d{17,20}$/.test(frjRoleId) && roles.includes(frjRoleId);
+    return {
+      authenticated: true,
+      authorized,
+      frjMember,
+      status: 200,
+      reason: authorized ? null : "role_required",
+      user,
+      error: authorized ? null : "Rôle Discord administrateur requis"
+    };
   } catch (error) {
+    if (error instanceof DiscordAccessError && error.code === "not_guild_member") {
+      return {
+        authenticated: false,
+        authorized: false,
+        frjMember: false,
+        status: 401,
+        reason: error.code,
+        user: null,
+        error: publicAuthErrorMessage(error)
+      };
+    }
     if (error instanceof DiscordAccessError && error.code === "discord_unavailable") {
       return {
         authenticated: true,
         authorized: false,
+        frjMember: false,
         status: 503,
         reason: error.code,
         user,
@@ -167,6 +196,7 @@ export async function authorizeAdminRequest(request, env, fetcher = fetch) {
     return {
       authenticated: true,
       authorized: false,
+      frjMember: false,
       status: 200,
       reason: error instanceof DiscordAccessError ? error.code : "role_required",
       user,

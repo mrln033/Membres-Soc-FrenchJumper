@@ -8,6 +8,7 @@ const configSource = readFileSync(new URL("../../../js/config.js", import.meta.u
 const indexSource = readFileSync(new URL("../../../index.html", import.meta.url), "utf8");
 const clientSource = readFileSync(new URL("../../../js/client.js", import.meta.url), "utf8");
 const styleSource = readFileSync(new URL("../../../css/style.css", import.meta.url), "utf8");
+const syncSource = readFileSync(new URL("../../../sync.html", import.meta.url), "utf8");
 
 function loadConfigState(url, initialStorage = {}, afterLoad = "") {
   const values = new Map(Object.entries(initialStorage));
@@ -151,6 +152,10 @@ test("rafraîchit après connexion uniquement une page interne mémorisée", () 
   assert.match(indexSource, /document\.getElementById\("mainFrame"\)\.src = page;/);
 });
 
+test("affiche explicitement le niveau Consultation FRJ", () => {
+  assert.match(indexSource, /frjMember \? `\$\{name\} — Consultation FRJ`/);
+});
+
 test("recharge la fiche à la déconnexion pour retirer immédiatement les données RH", () => {
   assert.match(indexSource, /const currentPage = getCurrentFramePage\(\);\s*logoutDiscord\(\);/);
   assert.match(indexSource, /renderAuthentication\(authState\);\s*reloadInternalPage\(currentPage\);/);
@@ -192,6 +197,47 @@ test("un refus d'autorisation déclasse immédiatement l'interface sans supprime
   assert.equal(downgraded.reason, "role_required");
 });
 
+test("un refus d'écriture conserve le niveau de lecture FRJ", () => {
+  const cachedState = {
+    authenticated: true,
+    authorized: false,
+    frjMember: true,
+    user: { id: "123456789012345678", name: "FRJ Test" },
+    reason: null
+  };
+  const loaded = loadConfigState(
+    "https://site.example.test/index.html",
+    {
+      FRJ_MEMBRES_ADMIN_SESSION: "session-signee",
+      FRJ_MEMBRES_AUTH_CACHE: JSON.stringify(cachedState)
+    },
+    'markAuthorizationDenied("role_required");'
+  );
+  const downgraded = JSON.parse(loaded.storage.FRJ_MEMBRES_AUTH_CACHE);
+  assert.equal(downgraded.authorized, false);
+  assert.equal(downgraded.frjMember, true);
+});
+
+test("un refus D1 confirmé retire un ancien niveau FRJ du cache", () => {
+  const cachedState = {
+    authenticated: true,
+    authorized: false,
+    frjMember: true,
+    user: { id: "123456789012345678", name: "Ancien FRJ" }
+  };
+  const loaded = loadConfigState(
+    "https://site.example.test/index.html",
+    {
+      FRJ_MEMBRES_ADMIN_SESSION: "session-signee",
+      FRJ_MEMBRES_AUTH_CACHE: JSON.stringify(cachedState)
+    },
+    'markAuthorizationDenied("role_required", false);'
+  );
+  const downgraded = JSON.parse(loaded.storage.FRJ_MEMBRES_AUTH_CACHE);
+  assert.equal(downgraded.authenticated, true);
+  assert.equal(downgraded.frjMember, false);
+});
+
 test("une panne de la lecture RH GAS conserve la fiche publique déjà affichée", () => {
   const loadFicheSource = clientSource.match(/async function loadFiche\(membreId\) \{[\s\S]*?\n\}/)?.[0] || "";
   assert.match(loadFicheSource, /data = await apiRequest\("getFiche"/);
@@ -203,10 +249,14 @@ test("une panne de la lecture RH GAS conserve la fiche publique déjà affichée
   );
 });
 
-test("lit les responsabilités via D1 lorsque la fiche publique utilise GAS", () => {
-  assert.match(clientSource, /if \(preferredBackend !== "gas"\)/);
+test("lit toujours les responsabilités semi-privées via D1", () => {
+  assert.match(clientSource, /await getFrjReadAuthorization\(\)/);
   assert.match(clientSource, /return apiRequestToBackend\(\s*"d1",\s*"getDiscordRolesForMember"/);
   assert.match(clientSource, /await loadProtectedDiscordRoles\(membreId\)/);
+});
+
+test("le retour de synchronisation remplace le shell parent", () => {
+  assert.match(syncSource, /<a href="index\.html" target="_parent" class="link-header">/);
 });
 
 test("sépare fonctions et activités en deux cartes responsives", () => {

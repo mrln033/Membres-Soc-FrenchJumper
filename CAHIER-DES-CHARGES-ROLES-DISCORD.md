@@ -66,7 +66,8 @@ Responsabilités Discord
 - Les responsabilités Discord sont affichées dans un bloc distinct et plus discret.
 - Les badges doivent revenir correctement à la ligne sur mobile.
 - Une catégorie vide reste masquée.
-- La date de dernière synchronisation est visible en mode Admin ; elle peut rester masquée en consultation publique.
+- La date de dernière synchronisation et les responsabilités sont visibles en accès RH et en Consultation FRJ ; elles
+  restent masquées en consultation publique.
 - Un retard ou une panne Discord ne doit pas empêcher l’ouverture de la fiche : les dernières données connues sont affichées.
 
 ## 4. Source et synchronisation des données
@@ -194,13 +195,15 @@ Le format exact devra être stable et lisible par GAS. Ces champs sont des copie
 - Aucun ID de rôle sensible ni secret n’est fourni directement par le navigateur pour décider d’une autorisation.
 - Toute modification déclenchée depuis le site exige une session OAuth valide.
 - Les droits RH du site continuent d’être vérifiés à partir des rôles `Chef d’Expédition` et `Conseiller d’Expédition`.
+- Le rôle FRJ `464706220905857026` donne uniquement accès à la lecture semi-privée des responsabilités Discord ; il
+  n'accorde aucune commande ni écriture RH.
 - Le rôle demandé doit appartenir à une liste blanche de rôles gérables.
 - Les rôles `Administrateur`, `Modérateurs`, les grades et les rôles techniques sont explicitement exclus de toute modification par cette nouvelle interface.
 - Les opérations d’ajout et de retrait doivent être idempotentes et journalisées.
 - Les réponses d’erreur Discord doivent être filtrées avant d’être affichées à l’utilisateur.
 - Conformément à l'analyse D-003, une connexion Discord ne donnera pas automatiquement un droit RH : tout membre du
-  serveur pourra être authentifié, mais seuls `Chef d'Expédition` et `Conseiller d'Expédition` pourront
-  accéder aux commandes d'administration. Un compte absent du serveur ne recevra aucune session ; après un message
+  serveur pourra être authentifié. Les membres portant le rôle FRJ verront les responsabilités Discord en lecture seule,
+  mais seuls `Chef d'Expédition` et `Conseiller d'Expédition` pourront accéder aux commandes d'administration. Un compte absent du serveur ne recevra aucune session ; après un message
   explicite, il reviendra en consultation publique non authentifiée sans blocage. Le détail du remplacement de `?admin=1`, publié en mode de migration protégé dans le Worker, GAS et le frontend, figure dans
   `ANALYSE-D003-CONNEXION-DISCORD.md`.
 
@@ -301,7 +304,7 @@ présentées dans deux cartes responsives distinctes. La demande reste en recett
 ordinateur et mobile, des deux backends et du bouton RH.
 
 La seconde recette a montré deux compléments nécessaires : la déconnexion recharge désormais la fiche courante pour
-effacer immédiatement les responsabilités du DOM ; sur une fiche publique lue depuis GAS, l'enrichissement RH est lu
+effacer immédiatement les responsabilités du DOM ; sur une fiche publique lue depuis GAS, l'enrichissement protégé est lu
 depuis D1, qui porte déjà l'authentification OAuth et la revalidation des rôles Discord. GAS reste le backend de la fiche
 et de son historique, et l'échec de l'enrichissement protégé demeure non bloquant.
 
@@ -310,3 +313,8 @@ Le 20 septembre 2026, l'audit de consommation a conduit à remplacer le cycle de
 l'index D1 redondant via la migration `0004_reduce_discord_role_writes.sql`. La recette finale en production valide
 39 tests automatisés, 1 324 membres, 3 218 mouvements, 118 caches Discord `OK`, 7 `ABSENT`, le refus `401` sans
 session et une fiche synchronisée contenant fonctions et activités. Le lot 1 est en production finale.
+
+La demande D-006 étend ensuite l'affichage sans modifier la source de vérité : les responsabilités Discord deviennent
+semi-privées et sont visibles en accès RH ou pour une session portant le rôle FRJ `464706220905857026`. Les fonctions
+et activités restent publiques. Le bouton de rafraîchissement et toutes les modifications métier restent réservés à
+l'accès RH ; fonctions, activités et responsabilités demeurent gérées exclusivement dans Discord.

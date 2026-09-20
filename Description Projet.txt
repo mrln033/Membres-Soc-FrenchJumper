@@ -105,7 +105,7 @@ Frontend statique GitHub Pages :
 - le bouton Connexion/Déconnexion Discord est toujours visible en bas du menu de `index.html` ; l'affichage RH dépend de `/auth/session` ;
 - D1 est prioritaire ; une sonde « /health » peut provoquer une redirection vers GAS en cas d'indisponibilité ;
 - le backend choisi est conservé dans les liens internes.
-- les fonctions et activités Discord sont affichées sous forme de badges lorsque D-002 est activée ; les catégories vides restent masquées et les responsabilités Discord sont réservées à l'affichage RH.
+- les fonctions et activités Discord sont affichées publiquement sous forme de badges ; les catégories vides restent masquées et les responsabilités Discord sont semi-privées, visibles en accès RH ou en Consultation FRJ.
 
 Backend principal Cloudflare :
 - projet : cloudflare/membres-soc-api ;
@@ -293,7 +293,7 @@ Périmètre recommandé pour le premier lot :
 - conservation de la dernière copie connue si Discord est temporairement indisponible.
 
 Décisions validées le 19/09/2026 :
-- responsabilités Discord suivies : Administrateur `464513638414417930` et Modérateur `464514892355993600` ; elles sont visibles uniquement par les utilisateurs disposant d'un accès RH au site ;
+- responsabilités Discord suivies : Administrateur `464513638414417930` et Modérateur `464514892355993600` ; elles sont visibles par les utilisateurs disposant d'un accès RH ou du niveau Consultation FRJ ;
 - fonctions en jeu suivies : Enzoboy `464706697408020482` et Pilote PF13 `1538203076434075668` ;
 - activités suivies : Chasseur `811239593675456523`, Mineur `811240383127879691`, Crafteur `811240450123890688`, Tradeur `1070296235782701097`, Healeur `811240547552854050`, Sweateur `811240494390312973` et Streameur `962964676956790844` ;
 - les catégories vides sont masquées ;
@@ -328,6 +328,26 @@ Mise en production finale au 20/09/2026 :
 - la migration `0004_reduce_discord_role_writes.sql` a supprimé l'index redondant ; la sauvegarde préalable est `seed/d1-pre-0004-20260920.sql` ;
 - le Worker `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686` sert 100 % du trafic ; `8968e108-2274-49ac-9b97-50aff3b81c73` est le retour arrière immédiat ;
 - la recette production valide 39 tests automatisés, 1 324 membres, 3 218 mouvements, 118 caches Discord `OK`, 7 `ABSENT`, le cache HTTP public et le refus `401` d'une action sans session.
+
+
+
+D-005 [TYPE] [À FAIRE]
+Demande : Synchronisation GAS / D1
+	Losque l'on est sur cette page, un bouton '<< Accueil' est présent en haut à gauche. L'appui sur ce bouton a un effet surprenant : il recharge l'intégralité du shell dans la zone de droite, dupliquant par la meme occasion le menu de gauche.
+
+
+
+D-006 [TYPE] [À FAIRE]
+Demande : Connexion Discord
+	Je voudrais modifier un des niveaux d'accès. Actuellement, une connexion Discord sans accès RH et inconnu du serveur sont considérées de la même manière.
+	J'aimerais qu'un membre du serveur FrenchJumper connecté soit traité différemment : au-dessu du bouton, faire apparaitre son nom et son niveau d'accès (a l'instar des membres RH) : 'Toto - Consultation FRJ' par exemple.
+	De ce fait, l'affichage des fonctions discord sur les fiches membres est accordées à la 'Consultation FRJ', rendant ces indication semi-privées ,)
+	Il existera donc 3 niveaux :
+	- Accès RH => défini à la connexion Discord après vérification des roles => Affichage Fonctions Discord, Fonctions et Activités / modification accordées
+	- Consultation FRJ => membre du serveur, role 'FRJ' => Affichage Fonctions Discord, Fonctions et Activités / aucune modification possible
+	- Consultation Publique => membre du serveur ou non, pas de role 'FRJ' => Affichage Fonctions et Activités / aucune modification possible
+
+
 
 Modèle à copier pour une nouvelle demande :
 
