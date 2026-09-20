@@ -52,11 +52,13 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
   si la première écriture a déjà été appliquée.
 - La synchronisation standard passe par un Service Binding vers le Worker `discord-proxy`. Depuis D-009, le proxy
   traite séparément les rôles et le pseudonyme : un refus hiérarchique sur le pseudonyme devient un avertissement
-  explicite sans masquer la réussite des rôles. Son déploiement versionné utilise `worker/wrangler.jsonc` avec
-  conservation obligatoire des variables distantes.
-- D-009 est déployée avec le proxy `0f99dd88-a6a9-4ad0-b944-5d0c0250f933` et le Worker D1
-  `158c60f0-55a9-4508-bf58-c719c989fff6`. Leurs retours arrière immédiats sont respectivement
-  `35944e35-d9d4-4c3e-aa59-46348f9701a1` et `b753d68b-7900-4f41-b09e-b565363c2b0e`.
+  explicite sans masquer la réussite des rôles. Depuis D-010, le proxy lit exclusivement les secrets Cloudflare
+  chiffrés `DISCORD_BOT_TOKEN` et `SYNC_SHARED_SECRET` ; les anciennes variables en clair sont absentes de sa version
+  active et les déploiements ne doivent pas utiliser `--keep-vars`.
+- D-010 est déployée avec le proxy `e77228b5-ec13-4dfe-89fc-3a3293215089` ; son retour arrière technique immédiat
+  `c0d20694-b993-4a70-b0c1-95e1fe094070` contient encore les anciens bindings en clair et ne doit servir qu'en ultime
+  recours. Le Worker D1 reste `158c60f0-55a9-4508-bf58-c719c989fff6`, avec
+  `b753d68b-7900-4f41-b09e-b565363c2b0e` comme retour arrière immédiat.
 - Le retrait du rôle « Règlement Soc OK » est exécuté directement par ce nouveau Worker, uniquement après une synchronisation standard réussie et uniquement pour un mouvement de sortie.
 
 ## Synchronisation bidirectionnelle

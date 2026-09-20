@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { syncDiscordRolesAndNickname } from "../../../worker/discord-sync.js";
+
+const proxyWorker = readFileSync(new URL("../../../worker/worker.js", import.meta.url), "utf8");
+const proxyConfig = readFileSync(new URL("../../../worker/wrangler.jsonc", import.meta.url), "utf8");
 
 const roles = {
   ROLE_FRJ: "100000000000000001",
@@ -11,6 +15,16 @@ const roles = {
   GRADE5: "100000000000000015",
   GRADE6: "100000000000000016"
 };
+
+test("utilise uniquement des secrets Cloudflare pour les deux valeurs sensibles", () => {
+  assert.match(proxyConfig, /"required"\s*:\s*\[[\s\S]*"DISCORD_BOT_TOKEN"[\s\S]*"SYNC_SHARED_SECRET"/);
+  assert.doesNotMatch(proxyConfig, /"BOT_TOKEN"\s*:/);
+  assert.doesNotMatch(proxyConfig, /"SECRET"\s*:/);
+  assert.match(proxyWorker, /env\.DISCORD_BOT_TOKEN/);
+  assert.match(proxyWorker, /env\.SYNC_SHARED_SECRET/);
+  assert.doesNotMatch(proxyWorker, /env\.BOT_TOKEN/);
+  assert.doesNotMatch(proxyWorker, /env\.SECRET/);
+});
 
 test("conserve le succès des rôles quand Discord refuse seulement le pseudonyme", async () => {
   const calls = [];

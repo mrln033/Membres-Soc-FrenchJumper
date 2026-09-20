@@ -42,7 +42,7 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 20/09/2026 à 15:44 Europe/Paris :
+État connu au 20/09/2026 à 16:09 Europe/Paris :
 - la production GitHub Pages contient D-002, D-005, D-006, D-007 et D-008 ;
 - D-001 est validée par l'utilisateur sur PC uniquement ; la recette mobile/tablette n'est pas encore revendiquée ;
 - le Worker `b753d68b-7900-4f41-b09e-b565363c2b0e` est en production avec OAuth Discord exclusif, `AUTH_LOGIN_POLICY=guild_members` et le rôle FRJ `464706220905857026` ;
@@ -56,7 +56,8 @@ Règles d'intervention :
 - le lot 1 de D-002 est actif et validé côté frontend GitHub Pages, D1, Worker et GAS ;
 - Discord est l'unique source de vérité et l'unique interface de gestion des fonctions, activités et responsabilités ; le site les synchronise et les affiche uniquement en lecture seule.
 - l'analyse D-003 sur le remplacement de `?admin=1` est terminée ; les trois niveaux sont Accès RH, Consultation FRJ et Consultation publique ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
-- D-009 est déployée côté proxy Discord (`0f99dd88-a6a9-4ad0-b944-5d0c0250f933`), Worker D1 (`158c60f0-55a9-4508-bf58-c719c989fff6`) et GAS v146 ; sa publication frontend est portée par la PR #20.
+- D-009 est déployée côté Worker D1 (`158c60f0-55a9-4508-bf58-c719c989fff6`) et GAS v146 ; sa publication frontend est portée par la PR #20.
+- D-010 est active sur le proxy Discord (`e77228b5-ec13-4dfe-89fc-3a3293215089`) : le jeton du bot et le secret partagé sont désormais des secrets Cloudflare chiffrés, et les anciens bindings en clair sont absents de la version active. La régénération du jeton Discord et la rotation coordonnée du secret partagé restent recommandées pour invalider leurs copies historiques.
 
 Ordre conseillé :
 1. traiter les nouvelles demandes ajoutées dans ce fichier selon leur priorité explicite ;
@@ -220,6 +221,15 @@ Secrets Cloudflare attendus, à stocker avec Wrangler et jamais dans Git :
 - DISCORD_PROXY_SECRET
 - SYNC_SHARED_SECRET
 
+Secrets du Worker `discord-proxy`, déclarés obligatoires dans `worker/wrangler.jsonc` :
+- DISCORD_BOT_TOKEN
+- SYNC_SHARED_SECRET
+
+Bindings historiques interdits dans le Worker `discord-proxy` :
+- BOT_TOKEN
+- SECRET
+- BOT_KEY
+
 Propriétés Apps Script attendues, jamais dans Git :
 - ADMIN_SESSION_SECRET
 - ADMIN_DISCORD_ROLE_IDS
@@ -242,7 +252,7 @@ Stockage navigateur temporaire :
 ------------------------
 -= DEMANDES À RÉALISER =-
 ------------------------
->>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-010 <<<
+>>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-011 <<<
 
 D-002 [ÉVOLUTION] [EN PRODUCTION]
 Demande : afficher sur la fiche des membres leurs fonctions en jeu, activités en jeu et responsabilités Discord, sans les confondre avec le grade de la Soc ni avec les rôles donnant accès à l'administration du site.
@@ -296,7 +306,7 @@ Mise en production finale au 20/09/2026 :
 - la recette production valide 39 tests automatisés, 1 324 membres, 3 218 mouvements, 118 caches Discord `OK`, 7 `ABSENT`, le cache HTTP public et le refus `401` d'une action sans session.
 Modèle à copier pour une nouvelle demande :
 
-D-010 [TYPE] [À FAIRE]
+D-011 [TYPE] [À FAIRE]
 Demande :
 [Décrire ici le problème, le résultat attendu, les pages ou services concernés, les règles à préserver et, si possible, les critères de validation.]
 
@@ -311,6 +321,16 @@ Demande initiale :
 
 Réalisation :
 [Détail horodaté des travaux, fichiers et services concernés, contrôles, tests, migrations, déploiements, validations et éventuelles réserves.]
+
+[2026-09-20 16:09 Europe/Paris] Demande D-010 terminée.
+Demande initiale :
+D-010 [SÉCURITÉ] [À FAIRE]
+Demande : peux-tu traiter cette anomalie stp ?
+
+Contexte conservé : le Worker `discord-proxy` stockait le jeton du bot et le secret partagé dans des variables Cloudflare `plain_text`, ce qui permettait à un opérateur autorisé de relire leur valeur dans les métadonnées d'une version.
+
+Réalisation :
+[2026-09-20 16:09 Europe/Paris] Les deux valeurs existantes ont été transférées sans affichage ni écriture locale vers les secrets Cloudflare chiffrés `DISCORD_BOT_TOKEN` et `SYNC_SHARED_SECRET`. Le code du proxy utilise exclusivement ces nouveaux bindings. `worker/wrangler.jsonc` déclare désormais toutes les variables publiques et les deux secrets obligatoires ; `keep_vars` a été supprimé afin que les anciens bindings `BOT_TOKEN`, `SECRET` et `BOT_KEY` ne puissent pas être conservés silencieusement. La version isolée `e77228b5-ec13-4dfe-89fc-3a3293215089` a été inspectée uniquement par noms et types : les deux valeurs sensibles sont de type `secret_text` et aucun ancien binding n'y figure. Elle sert désormais 100 % du trafic. Contrôles réussis : 51 tests automatisés, syntaxe Node, dry-run Wrangler, refus de la route `/sync` sans authentification en HTTP 403 et santé D1 positive. Aucun membre Discord, aucune donnée D1 et aucun déploiement GAS ou frontend n'ont été modifiés. Le retour arrière technique `c0d20694-b993-4a70-b0c1-95e1fe094070` contient encore les anciens bindings et ne doit être utilisé qu'en ultime recours. Réserve de sécurité : les versions historiques Cloudflare ne sont pas réécrites ; la régénération du jeton dans le portail Discord et la rotation coordonnée du secret partagé proxy/D1/GAS restent nécessaires pour invalider définitivement les anciennes valeurs.
 
 [2026-09-20 15:44 Europe/Paris] Demande D-009 terminée.
 Demande initiale :

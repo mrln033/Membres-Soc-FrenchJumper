@@ -26,7 +26,7 @@ async function handleDiscordSync(request) {
     return jsonResponse({ success: false, error: "JSON invalide" }, 400);
   }
 
-  if (!env.SECRET || data.secret !== env.SECRET) {
+  if (!env.SYNC_SHARED_SECRET || data.secret !== env.SYNC_SHARED_SECRET) {
     return jsonResponse({ success: false, error: "Unauthorized" }, 403);
   }
 
@@ -169,7 +169,7 @@ function getDiscordConfig() {
 
   const missing = [];
 
-  if (!env.BOT_TOKEN) missing.push("BOT_TOKEN");
+  if (!env.DISCORD_BOT_TOKEN) missing.push("DISCORD_BOT_TOKEN");
   if (!env.GUILD_ID) missing.push("GUILD_ID");
 
   for (const [name, value] of Object.entries(roles)) {
@@ -181,7 +181,7 @@ function getDiscordConfig() {
   }
 
   return {
-    botToken: env.BOT_TOKEN,
+    botToken: env.DISCORD_BOT_TOKEN,
     guildId: env.GUILD_ID,
     roles: roles
   };
