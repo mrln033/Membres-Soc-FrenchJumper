@@ -50,7 +50,10 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - Aucun jeton administrateur historique n'est accepté ; une session OAuth Discord est obligatoire.
 - Une écriture n'est jamais rejouée automatiquement vers l'autre backend : un délai réseau ne permet pas de savoir
   si la première écriture a déjà été appliquée.
-- La synchronisation standard passe par un Service Binding vers le Worker existant `discord-proxy` ; son code et son déploiement ne sont pas modifiés.
+- La synchronisation standard passe par un Service Binding vers le Worker `discord-proxy`. Depuis D-009, le proxy
+  traite séparément les rôles et le pseudonyme : un refus hiérarchique sur le pseudonyme devient un avertissement
+  explicite sans masquer la réussite des rôles. Son déploiement versionné utilise `worker/wrangler.jsonc` avec
+  conservation obligatoire des variables distantes.
 - Le retrait du rôle « Règlement Soc OK » est exécuté directement par ce nouveau Worker, uniquement après une synchronisation standard réussie et uniquement pour un mouvement de sortie.
 
 ## Synchronisation bidirectionnelle

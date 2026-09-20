@@ -1277,7 +1277,10 @@ function syncDiscordMembre_(membre, options) {
       return {
         success: true,
         message: "Synchronisation envoyée pour " + membre.nomAvatar,
-        removedRoles: removedRoles
+        removedRoles: removedRoles,
+        nicknameUpdated: result.nicknameUpdated !== false,
+        warningCode: result.warningCode || null,
+        warning: result.warning || null
       };
     }
 
@@ -1485,12 +1488,14 @@ function syncDiscordFromWeb(data) {
     }
 
     const result = syncDiscordMembre_(membre);
-    notifyDiscordSyncLog_(membre, result.success);
+    notifyDiscordSyncLog_(membre, result.success, result.warning || "");
 
     if (result.success) {
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
-        message: result.message
+        message: result.message,
+        warningCode: result.warningCode || null,
+        warning: result.warning || null
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -1511,7 +1516,7 @@ function syncDiscordFromWeb(data) {
   }
 }
 
-function notifyDiscordSyncLog_(membre, success) {
+function notifyDiscordSyncLog_(membre, success, warning) {
   try {
     const webhookUrl = getRequiredScriptProperty_("DISCORD_WEBHOOK_RH");
     const now = new Date();
@@ -1524,7 +1529,9 @@ function notifyDiscordSyncLog_(membre, success) {
     const embed = {
       title: "🔄 Synchronisation Discord (pour vérification)",
       description: success
-        ? "✅ Synchronisation effectuée"
+        ? (warning
+            ? "⚠️ Rôles synchronisés avec avertissement\n\n" + warning
+            : "✅ Synchronisation effectuée")
         : "❌ Erreur lors de la synchronisation\n\nRôle notifié : <@&464706697408020482>",
       color: success ? 0x2ecc71 : 0xe74c3c,
       fields: [

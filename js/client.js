@@ -725,11 +725,20 @@ function buildCardMembre(m, mouvements, discordRoles) {
 				btn.innerText = "⏳ Synchronisation...";
 				try {
 
-					await apiRequest("syncDiscordFromWeb", {
+					const result = await apiRequest("syncDiscordFromWeb", {
 						membreId: m.id
 					}, "POST");
 
-					btn.innerText = "✅ OK";
+					if (result.warning) {
+						btn.innerText = "⚠️ Partiel";
+						await openInfoModal(
+							"Synchronisation Discord partielle",
+							result.warning,
+							"warning"
+						);
+					} else {
+						btn.innerText = "✅ OK";
+					}
 
 				} catch(err) {
 					console.error("Synchronisation Discord impossible :", err);
@@ -921,6 +930,12 @@ async function handleMembreAction(actionLabel, membre, btn) {
 			await openInfoModal(
 				"Synchronisation Discord",
 				"Action enregistrée, mais synchronisation Discord non effectuée : " + result.syncDiscord.error,
+				"warning"
+			);
+		} else if (result.syncDiscord && result.syncDiscord.warning) {
+			await openInfoModal(
+				"Synchronisation Discord partielle",
+				"Action enregistrée. " + result.syncDiscord.warning,
 				"warning"
 			);
 		}

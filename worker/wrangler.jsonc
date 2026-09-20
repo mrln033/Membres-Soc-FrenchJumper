@@ -1,0 +1,7 @@
+{
+  "$schema": "../cloudflare/membres-soc-api/node_modules/wrangler/config-schema.json",
+  "name": "discord-proxy",
+  "main": "worker.js",
+  "compatibility_date": "2026-03-08",
+  "keep_vars": true
+}

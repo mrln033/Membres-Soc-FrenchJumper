@@ -40,6 +40,8 @@ test("masque les catégories vides et réserve les responsabilités aux accès R
   assert.match(client, /if \(showActivities\)/);
   assert.match(client, /Actualiser les rôles depuis Discord/);
   assert.match(client, /Synchroniser vers Discord/);
+  assert.match(client, /Synchronisation Discord partielle/);
+  assert.match(client, /result\.warning/);
   assert.doesNotMatch(client, /Actualiser les rôles Discord/);
   assert.doesNotMatch(client, /Synchroniser Discord/);
 });

@@ -42,8 +42,8 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 20/09/2026 à 14:39 Europe/Paris :
-- la production GitHub Pages contient D-002, D-005, D-006 et D-007 ;
+État connu au 20/09/2026 à 15:44 Europe/Paris :
+- la production GitHub Pages contient D-002, D-005, D-006, D-007 et D-008 ;
 - D-001 est validée par l'utilisateur sur PC uniquement ; la recette mobile/tablette n'est pas encore revendiquée ;
 - le Worker `b753d68b-7900-4f41-b09e-b565363c2b0e` est en production avec OAuth Discord exclusif, `AUTH_LOGIN_POLICY=guild_members` et le rôle FRJ `464706220905857026` ;
 - GAS v145 est publié sur l'URL `/exec` existante avec la même exigence de session Discord ; v144 constitue le retour arrière immédiat ;
@@ -241,7 +241,7 @@ Stockage navigateur temporaire :
 ------------------------
 -= DEMANDES À RÉALISER =-
 ------------------------
->>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-009 <<<
+>>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-010 <<<
 
 D-002 [ÉVOLUTION] [EN PRODUCTION]
 Demande : afficher sur la fiche des membres leurs fonctions en jeu, activités en jeu et responsabilités Discord, sans les confondre avec le grade de la Soc ni avec les rôles donnant accès à l'administration du site.
@@ -295,7 +295,7 @@ Mise en production finale au 20/09/2026 :
 - la recette production valide 39 tests automatisés, 1 324 membres, 3 218 mouvements, 118 caches Discord `OK`, 7 `ABSENT`, le cache HTTP public et le refus `401` d'une action sans session.
 Modèle à copier pour une nouvelle demande :
 
-D-007 [TYPE] [À FAIRE]
+D-010 [TYPE] [À FAIRE]
 Demande :
 [Décrire ici le problème, le résultat attendu, les pages ou services concernés, les règles à préserver et, si possible, les critères de validation.]
 
@@ -310,6 +310,16 @@ Demande initiale :
 
 Réalisation :
 [Détail horodaté des travaux, fichiers et services concernés, contrôles, tests, migrations, déploiements, validations et éventuelles réserves.]
+
+[2026-09-20 15:44 Europe/Paris] Demande D-009 terminée.
+Demande initiale :
+D-009 [CORRECTIF] [À FAIRE]
+Demande : ok pour la solution numéro 1... avec un message plus explicite sur le site en cas de refus
+
+Contexte conservé : le clic sur « Synchroniser vers Discord » depuis la fiche de « Merlin Merzhin Lesage » renvoyait `Discord HTTP 403` / `Missing Permissions` / code Discord `50013`. La solution numéro 1 validée consiste à conserver le bot sous le rôle Administrateur, à ne pas élargir ses permissions et à traiter séparément la synchronisation des rôles et la modification du pseudonyme.
+
+Réalisation :
+[2026-09-20 15:44 Europe/Paris] Le proxy Discord synchronise d'abord les rôles Soc ; un échec de cette phase reste bloquant. La modification du pseudonyme s'exécute ensuite séparément : si Discord la refuse à cause de la hiérarchie, les rôles restent considérés comme synchronisés et le résultat contient l'avertissement explicite « Les rôles Discord ont bien été synchronisés. Le pseudonyme n'a pas été modifié, car le rôle du bot FrenchJumper est placé sous le rôle le plus élevé de ce membre dans la hiérarchie Discord. » D1 et GAS transmettent cet avertissement au frontend, qui affiche « Synchronisation Discord partielle » et l'explication au lieu d'un échec global. Les notifications RH de GAS distinguent également ce succès partiel. Aucun rôle ni droit supplémentaire n'est accordé au bot. Trois tests couvrent le succès complet, le refus du pseudonyme après succès des rôles et l'échec bloquant d'un rôle ; la suite passe à 50 tests. Déploiements et recette de production à consigner après publication.
 
 [2026-09-20 15:23 Europe/Paris] Demande D-008 terminée.
 Demande initiale :
