@@ -51,9 +51,12 @@ export async function enqueueDiscordRoleRefresh(env) {
 
 export async function handleDiscordRoleQueue(batch, env) {
   const completed = [];
+  // Le catalogue est commun à tout le lot. Le relire pour chaque membre
+  // multipliait inutilement les rows read D1 (jusqu'à 10 fois par lot).
+  const allowedRoleIds = await getActiveDiscordRoleIds(env);
   for (const message of batch.messages) {
     try {
-      const refresh = await refreshDiscordRoleState(env, message.body?.memberId);
+      const refresh = await refreshDiscordRoleState(env, message.body?.memberId, fetch, allowedRoleIds);
       completed.push({ message, memberId: String(message.body?.memberId || ""), ...refresh });
     } catch (error) {
       console.error(JSON.stringify({
@@ -89,18 +92,23 @@ export async function handleDiscordRoleQueue(batch, env) {
 }
 
 export async function refreshDiscordRolesForMember(env, memberId, fetcher = fetch) {
-  const refresh = await refreshDiscordRoleState(env, memberId, fetcher);
+  const allowedRoleIds = await getActiveDiscordRoleIds(env);
+  const refresh = await refreshDiscordRoleState(env, memberId, fetcher, allowedRoleIds);
   if (refresh.needsGasReplication) {
     await replicateRolesBatchToGas(env, [{ memberId: String(memberId || "").trim(), roles: refresh.snapshot }]);
   }
   return refresh.snapshot;
 }
 
-async function refreshDiscordRoleState(env, memberId, fetcher = fetch) {
+async function refreshDiscordRoleState(env, memberId, fetcher = fetch, allowedRoleIds = null) {
   const id = String(memberId || "").trim();
   if (!id) throw new Error("MembreID manquant");
-  const member = await env.DB.prepare(
-    "SELECT id, discord_id FROM members WHERE id = ?"
+  const member = await env.DB.prepare(`
+    SELECT m.id, m.discord_id, s.role_hash, s.gas_synced_at
+    FROM members m
+    LEFT JOIN member_discord_role_sync s ON s.member_id = m.id
+    WHERE m.id = ?
+  `
   ).bind(id).first();
   if (!member) throw new Error("Membre introuvable");
 
@@ -123,18 +131,12 @@ async function refreshDiscordRoleState(env, memberId, fetcher = fetch) {
     throw error;
   }
 
-  const catalogue = await env.DB.prepare(
-    "SELECT discord_role_id FROM discord_role_catalog WHERE active = 1"
-  ).all();
-  const allowed = new Set(catalogue.results.map((row) => String(row.discord_role_id)));
+  const allowed = allowedRoleIds || await getActiveDiscordRoleIds(env);
   const roleIds = discordMember.found
     ? [...new Set(discordMember.roles.map(String).filter((roleId) => allowed.has(roleId)))].sort()
     : [];
   const roleHash = roleIds.join(",");
-  const previous = await env.DB.prepare(
-    "SELECT role_hash, gas_synced_at FROM member_discord_role_sync WHERE member_id = ?"
-  ).bind(id).first();
-  const changed = String(previous?.role_hash || "") !== roleHash;
+  const changed = String(member.role_hash || "") !== roleHash;
 
   const statements = [];
   if (changed) {
@@ -145,10 +147,6 @@ async function refreshDiscordRoleState(env, memberId, fetcher = fetch) {
         VALUES (?, ?, ?, ?)
       `).bind(id, roleId, now, now));
     }
-  } else {
-    statements.push(env.DB.prepare(
-      "UPDATE member_discord_roles SET last_seen_at = ? WHERE member_id = ?"
-    ).bind(now, id));
   }
   statements.push(env.DB.prepare(`
     INSERT INTO member_discord_role_sync (
@@ -163,11 +161,18 @@ async function refreshDiscordRoleState(env, memberId, fetcher = fetch) {
       gas_synced_at = CASE WHEN member_discord_role_sync.role_hash = excluded.role_hash
         THEN member_discord_role_sync.gas_synced_at ELSE NULL END,
       last_error = NULL
-  `).bind(id, discordId, discordMember.found ? "OK" : "ABSENT", roleHash, now, now, changed ? null : previous?.gas_synced_at || null));
+  `).bind(id, discordId, discordMember.found ? "OK" : "ABSENT", roleHash, now, now, changed ? null : member.gas_synced_at || null));
   await env.DB.batch(statements);
 
   const snapshot = await getCachedDiscordRoles(env, id, true);
-  return { snapshot, needsGasReplication: changed || !previous?.gas_synced_at };
+  return { snapshot, needsGasReplication: changed || !member.gas_synced_at };
+}
+
+async function getActiveDiscordRoleIds(env) {
+  const catalogue = await env.DB.prepare(
+    "SELECT discord_role_id FROM discord_role_catalog WHERE active = 1"
+  ).all();
+  return new Set(catalogue.results.map((row) => String(row.discord_role_id)));
 }
 
 function upsertSyncState(env, memberId, discordId, status, attemptedAt, succeededAt, error) {

@@ -35,8 +35,22 @@ fiche. Elles permettent de déployer le code sans modifier le site visible.
 9. Passer `DISCORD_ROLE_DISPLAY_ENABLED` à `true`, publier ensuite le frontend et tester ordinateur/mobile, public/RH,
    D1/GAS et le bouton `Actualiser les rôles Discord`.
 
-Les changements de configuration Cron peuvent demander jusqu'à quinze minutes pour se propager. Le premier remplissage
-du cache peut donc dépasser ponctuellement la cible de dix minutes ; cette cible s'applique au fonctionnement stabilisé.
+Les changements de configuration Cron peuvent demander jusqu'à quinze minutes pour se propager. Le remplissage initial
+peut être lancé manuellement ; en fonctionnement stabilisé, la collecte automatique a lieu une fois par jour à 03:17 UTC.
+
+## Réduction de consommation du 20 septembre 2026
+
+- Le cron passe de toutes les dix minutes à une exécution quotidienne, adaptée à la faible fréquence des changements.
+- Le catalogue D1 est lu une fois par lot de dix messages au lieu d'une fois par membre.
+- Un snapshot Discord identique ne réécrit plus toutes les lignes `member_discord_roles` ; seul l'état de contrôle est daté.
+- La migration `0004_reduce_discord_role_writes.sql` supprime l'index `(member_id)` redondant avec la clé primaire
+  `(member_id, discord_role_id)`.
+- Avec 125 membres Discord, la charge Queue nominale passe d'environ 54 000 à 375 opérations par jour, hors reprises.
+- Avant déploiement, D1 signalait sur 24 h 1 457 019 rows read et 14 953 rows written. La sauvegarde locale ignorée
+  par Git est `seed/d1-pre-0004-20260920.sql`.
+- La migration distante est appliquée et le Worker de production est `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686`.
+  Le contrôle post-déploiement retourne 1 324 membres et 3 218 mouvements ; la version de retour arrière est
+  `8968e108-2274-49ac-9b97-50aff3b81c73`.
 
 ## Publication du 19 septembre 2026
 

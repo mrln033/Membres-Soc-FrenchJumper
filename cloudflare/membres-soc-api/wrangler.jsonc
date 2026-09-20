@@ -61,7 +61,9 @@
     ]
   },
   "triggers": {
-    "crons": ["*/10 * * * *"]
+    // Une collecte quotidienne suffit pour des rôles qui changent rarement.
+    // 03:17 UTC évite les heures rondes et reste dans la nuit en France.
+    "crons": ["17 3 * * *"]
   },
   "services": [
     {

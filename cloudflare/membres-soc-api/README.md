@@ -20,7 +20,8 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
   publique non bloquante. Une panne Discord est identifiée séparément.
 - D-002 est activée avec `DISCORD_ROLE_SYNC_MODE=active` et `DISCORD_ROLE_DISPLAY_ENABLED=true`. Discord reste
   l'unique source et le site ne possède aucune route de modification des fonctions, activités ou responsabilités.
-- Le Worker D-002 actif depuis le 19 septembre 2026 est `8968e108-2274-49ac-9b97-50aff3b81c73`. Le remplissage initial
+- Le Worker optimisé actif depuis le 20 septembre 2026 est `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686`. La version
+  D-002 précédente `8968e108-2274-49ac-9b97-50aff3b81c73` reste le repère de retour arrière. Le remplissage initial
   a traité 125 membres en 8 min 13 s (118 `OK`, 7 `ABSENT`, 0 `ERROR`) et n'a laissé aucune réplication GAS en attente.
 - Le frontend D-002 est publié sur GitHub Pages depuis la PR #7, commit de fusion `e8c8209`.
 - La fiche rend d'abord le contrat public, puis enrichit séparément les responsabilités en accès RH : un échec de cet
@@ -51,7 +52,7 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - Chaque mutation possède un UUID utilisé comme clé d'idempotence.
 - Les mouvements sont append-only et dédupliqués par `MouvementID`.
 - Les réplications ne rappellent jamais Discord et ne réémettent jamais une mutation inverse.
-- Un cron toutes les dix minutes relance les mutations en attente et contrôle les compteurs GAS/D1.
+- Un cron quotidien à 03:17 UTC relance les mutations en attente et contrôle les compteurs GAS/D1.
 - Le tableau de synchronisation apparaît après connexion d'un compte autorisé et reste accessible avec `backend=d1`.
 
 ## Cache des fonctions et activités Discord (D-002)
@@ -60,8 +61,11 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
   synchronisation. Tous les rôles du catalogue ont `site_editable=0`.
 - `frj-discord-role-sync` est une file distincte, limitée à un lot concurrent ; sa DLQ est
   `frj-discord-role-sync-dlq`. La file métier `frj-membres-sync` reste inchangée.
-- Le cron existant programme une lecture des membres toutes les dix minutes lorsque
+- Le cron existant programme une lecture des membres une fois par jour lorsque
   `DISCORD_ROLE_SYNC_MODE=active`.
+- Le catalogue des rôles suivis est lu une seule fois par lot Queue et une association membre/rôle inchangée n'est
+  plus réécrite. La migration `0004_reduce_discord_role_writes.sql` retire l'index redondant déjà couvert par la
+  clé primaire composite.
 - Une erreur Discord conserve la dernière copie connue. Un membre réellement absent du serveur reçoit une copie vide.
 - Les fonctions et activités sont publiques. Les responsabilités Administrateur/Modérateur sont retournées uniquement
   par une action protégée RH.
