@@ -1,6 +1,6 @@
 Projet = 'Membres Soc FrenchJumper'
 
-Dernière mise à jour de ce document : 20/09/2026
+Dernière mise à jour de ce document : 21/09/2026
 
 ------------------
 -= INSTRUCTIONS =-
@@ -42,7 +42,7 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 20/09/2026 à 16:09 Europe/Paris :
+État connu au 21/09/2026 à 06:42 Europe/Paris :
 - la production GitHub Pages contient D-002, D-005, D-006, D-007 et D-008 ;
 - D-001 est validée par l'utilisateur sur PC uniquement ; la recette mobile/tablette n'est pas encore revendiquée ;
 - le Worker `b753d68b-7900-4f41-b09e-b565363c2b0e` est en production avec OAuth Discord exclusif, `AUTH_LOGIN_POLICY=guild_members` et le rôle FRJ `464706220905857026` ;
@@ -53,7 +53,7 @@ Règles d'intervention :
 - D1 est le backend choisi par défaut par le frontend ; « ?backend=gas » force le backend de secours GAS ;
 - l'authentification Discord est l'unique authentification des accès RH côté D1 et GAS ;
 - la synchronisation bidirectionnelle GAS/D1 est configurée en mode actif dans le Worker ;
-- le lot 1 de D-002 est actif et validé côté frontend GitHub Pages, D1, Worker et GAS ;
+- D-002 est terminée et classée dans « Réalisations effectuées » ; son lot 1 reste actif et validé côté frontend GitHub Pages, D1, Worker et GAS ;
 - Discord est l'unique source de vérité et l'unique interface de gestion des fonctions, activités et responsabilités ; le site les synchronise et les affiche uniquement en lecture seule.
 - l'analyse D-003 sur le remplacement de `?admin=1` est terminée ; les trois niveaux sont Accès RH, Consultation FRJ et Consultation publique ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
 - D-009 est déployée côté Worker D1 (`158c60f0-55a9-4508-bf58-c719c989fff6`) et GAS v146 ; sa publication frontend est portée par la PR #20.
@@ -254,6 +254,26 @@ Stockage navigateur temporaire :
 ------------------------
 >>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-011 <<<
 
+Modèle à copier pour une nouvelle demande :
+
+D-011 [TYPE] [À FAIRE]
+Demande :
+[Décrire ici le problème, le résultat attendu, les pages ou services concernés, les règles à préserver et, si possible, les critères de validation.]
+
+------------------------------
+-= RÉALISATIONS EFFECTUÉES =-
+------------------------------
+Format obligatoire lors de la clôture d'une demande :
+
+[AAAA-MM-JJ HH:MM Europe/Paris] Demande D-NNN terminée.
+Demande initiale :
+[Copie intégrale et strictement identique du bloc auparavant présent dans « Demandes à réaliser ».]
+
+Réalisation :
+[Détail horodaté des travaux, fichiers et services concernés, contrôles, tests, migrations, déploiements, validations et éventuelles réserves.]
+
+[2026-09-21 06:42 Europe/Paris] Demande D-002 terminée.
+Demande initiale :
 D-002 [ÉVOLUTION] [EN PRODUCTION]
 Demande : afficher sur la fiche des membres leurs fonctions en jeu, activités en jeu et responsabilités Discord, sans les confondre avec le grade de la Soc ni avec les rôles donnant accès à l'administration du site.
 
@@ -304,23 +324,9 @@ Mise en production finale au 20/09/2026 :
 - la migration `0004_reduce_discord_role_writes.sql` a supprimé l'index redondant ; la sauvegarde préalable est `seed/d1-pre-0004-20260920.sql` ;
 - le Worker `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686` sert 100 % du trafic ; `8968e108-2274-49ac-9b97-50aff3b81c73` est le retour arrière immédiat ;
 - la recette production valide 39 tests automatisés, 1 324 membres, 3 218 mouvements, 118 caches Discord `OK`, 7 `ABSENT`, le cache HTTP public et le refus `401` d'une action sans session.
-Modèle à copier pour une nouvelle demande :
-
-D-011 [TYPE] [À FAIRE]
-Demande :
-[Décrire ici le problème, le résultat attendu, les pages ou services concernés, les règles à préserver et, si possible, les critères de validation.]
-
-------------------------------
--= RÉALISATIONS EFFECTUÉES =-
-------------------------------
-Format obligatoire lors de la clôture d'une demande :
-
-[AAAA-MM-JJ HH:MM Europe/Paris] Demande D-NNN terminée.
-Demande initiale :
-[Copie intégrale et strictement identique du bloc auparavant présent dans « Demandes à réaliser ».]
 
 Réalisation :
-[Détail horodaté des travaux, fichiers et services concernés, contrôles, tests, migrations, déploiements, validations et éventuelles réserves.]
+[2026-09-21 06:42 Europe/Paris] Le lot 1 D-002 est clôturé après validation fonctionnelle et mesure du premier cycle quotidien complet en production. Les PR #7 à #12 et les optimisations ultérieures sont fusionnées dans `main`. Le Worker synchronise en lecture seule les fonctions, activités et responsabilités Discord vers D1 puis GAS ; le frontend sépare les données publiques des responsabilités protégées et conserve un rafraîchissement manuel immédiat. La migration D1 `0004_reduce_discord_role_writes.sql` et le cron quotidien à 03:17 UTC sont actifs. Le cycle du 21 septembre a traité 125 membres (118 `OK`, 7 `ABSENT`, 0 erreur), sans backlog dans les quatre files ni message en DLQ. Les opérations de `frj-discord-role-sync` sont passées de 10 194 le 20 septembre à 369 le 21 septembre après le cycle quotidien, soit une baisse de 96,38 %. Sur 24 heures, D1 est passé de 14 953 à 154 rows written et de 10 655 à 139 requêtes d'écriture. La production retourne 1 324 membres et 3 218 mouvements ; les contrôles d'authentification, de cache public, de fiche synchronisée et de séparation des responsabilités sont validés. Aucun point D-002 ne reste à valider ; toute modification future des rôles depuis le site demeure hors périmètre et exigera une nouvelle demande.
 
 [2026-09-20 16:09 Europe/Paris] Demande D-010 terminée.
 Demande initiale :
