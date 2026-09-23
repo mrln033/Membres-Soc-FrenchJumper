@@ -1,6 +1,6 @@
 Projet = 'Membres Soc FrenchJumper'
 
-Dernière mise à jour de ce document : 21/09/2026
+Dernière mise à jour de ce document : 23/09/2026
 
 ------------------
 -= INSTRUCTIONS =-
@@ -42,7 +42,7 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 21/09/2026 à 06:42 Europe/Paris :
+État connu au 23/09/2026 à 16:53 Europe/Paris :
 - la production GitHub Pages contient D-002, D-005, D-006, D-007 et D-008 ;
 - D-001 est validée par l'utilisateur sur PC uniquement ; la recette mobile/tablette n'est pas encore revendiquée ;
 - le Worker `b753d68b-7900-4f41-b09e-b565363c2b0e` est en production avec OAuth Discord exclusif, `AUTH_LOGIN_POLICY=guild_members` et le rôle FRJ `464706220905857026` ;
@@ -50,7 +50,7 @@ Règles d'intervention :
 - l'ancien secret Cloudflare `ADMIN_TOKEN` a été supprimé et l'ancien jeton est refusé en HTTP 401 ;
 - D-007 est publiée par la PR #16 au commit de fusion `6e38512c6553b16c25ffe2562ff118525c95ea5f` ; le contenu des cartes Fonctions, Activités et Responsabilités Discord est centré ;
 - le présent fichier de pilotage est versionné dans GitHub afin d'être consultable et modifiable depuis tout appareil ;
-- D1 est le backend choisi par défaut par le frontend ; « ?backend=gas » force le backend de secours GAS ;
+- D1 est le backend choisi par défaut par le frontend, avec repli automatique en mémoire vers GAS ; les liens n'exposent plus le paramètre « backend » ; « ?backend=gas » force temporairement GAS dans l'onglet courant et « ?backend=d1 » rétablit le mode automatique, puis ces commandes sont retirées de l'URL ;
 - l'authentification Discord est l'unique authentification des accès RH côté D1 et GAS ;
 - la synchronisation bidirectionnelle GAS/D1 est configurée en mode actif dans le Worker ;
 - D-002 est terminée et classée dans « Réalisations effectuées » ; son lot 1 reste actif et validé côté frontend GitHub Pages, D1, Worker et GAS ;
@@ -58,6 +58,7 @@ Règles d'intervention :
 - l'analyse D-003 sur le remplacement de `?admin=1` est terminée ; les trois niveaux sont Accès RH, Consultation FRJ et Consultation publique ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
 - D-009 est déployée côté Worker D1 (`158c60f0-55a9-4508-bf58-c719c989fff6`) et GAS v146 ; sa publication frontend est portée par la PR #20.
 - D-010 est active sur le proxy Discord (`e77228b5-ec13-4dfe-89fc-3a3293215089`) : le jeton du bot et le secret partagé sont désormais des secrets Cloudflare chiffrés, et les anciens bindings en clair sont absents de la version active. La régénération du jeton Discord et la rotation coordonnée du secret partagé restent recommandées pour invalider leurs copies historiques.
+- D-011 est développée localement sur la branche `codex/d011-liens-backend` et attend la validation avant publication ; aucun service distant n'a été modifié pour cette étape.
 
 Ordre conseillé :
 1. traiter les nouvelles demandes ajoutées dans ce fichier selon leur priorité explicite ;
@@ -108,8 +109,8 @@ Frontend statique GitHub Pages :
 - styles : css/style.css ;
 - le paramètre « admin=1 » est désormais obsolète dans le code local : il est retiré de l'URL et ne constitue jamais une autorisation ;
 - le bouton Connexion/Déconnexion Discord est toujours visible en bas du menu de `index.html` ; l'affichage RH dépend de `/auth/session` ;
-- D1 est prioritaire ; une sonde « /health » peut provoquer une redirection vers GAS en cas d'indisponibilité ;
-- le backend choisi est conservé dans les liens internes.
+- D1 est prioritaire ; une sonde « /health » peut activer GAS en mémoire, sans redirection ni modification des liens, en cas d'indisponibilité ;
+- les liens internes ne contiennent jamais le paramètre « backend » ; les commandes ponctuelles « ?backend=gas » et « ?backend=d1 » sont consommées au chargement puis retirées de l'adresse.
 - les fonctions et activités Discord sont affichées publiquement sous forme de badges ; les catégories vides restent masquées et les responsabilités Discord sont semi-privées, visibles en accès RH ou en Consultation FRJ.
 
 Backend principal Cloudflare :
@@ -247,16 +248,26 @@ Stockage navigateur temporaire :
 - FRJ_MEMBRES_ADMIN_AUTH_ERROR : erreur du parcours OAuth ;
 - FRJ_MEMBRES_AUTH_CACHE : dernier état d'identité et d'autorisation validé, utilisé uniquement pour permettre le secours GAS si le Worker est momentanément inaccessible ;
 - FRJ_MEMBRES_AUTH_RETURN_PAGE : URL interne mémorisée pendant la connexion Discord puis consommée une seule fois afin de rafraîchir la page affichée ;
+- FRJ_MEMBRES_BACKEND_OVERRIDE : forçage temporaire de GAS limité à l'onglet courant ; supprimé par « ?backend=d1 » ou à la fermeture de l'onglet ;
 - aucun ancien jeton administrateur n'est conservé dans le navigateur.
 
 ------------------------
 -= DEMANDES À RÉALISER =-
 ------------------------
->>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-011 <<<
+>>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-012 <<<
+
+D-011 [EVOLUTION] [À VALIDER]
+Demande : A l'instar de ce qu'on a fait auourd'hui sur le projet "FRJ - For Sale", je souhaite supprimer définitivement le paramètre backend de tous les lien.
+	Je veux que le mode par défaut soit 'd1', avec GAS en cas d'indisponibilité. Le paramètres 'backend' ne doit plus être systématiquement notifier dans l'URL. Mais je veux conserver la possibilité malgré tout de le spécifier, à des fins de tests et développement.
+
+Précision validée avant réalisation : la synchronisation bidirectionnelle D1/GAS côté serveur est conservée. Le navigateur ne rejoue jamais sur GAS une écriture déjà envoyée à D1 dont le résultat est incertain ; il n'utilise GAS que si l'indisponibilité de D1 a été constatée avant l'envoi.
+
+Avancement au 23/09/2026 à 16:53 Europe/Paris : développement local terminé sur `codex/d011-liens-backend`. Les liens sont canoniques sans paramètre « backend », le repli D1 vers GAS se fait en mémoire, les commandes de test restent disponibles pour l'onglet courant et la page de synchronisation demeure strictement réservée à D1. Documentation et tests ont été adaptés. Publication distante et validation utilisateur encore à effectuer.
+
 
 Modèle à copier pour une nouvelle demande :
 
-D-011 [TYPE] [À FAIRE]
+D-012 [TYPE] [À FAIRE]
 Demande :
 [Décrire ici le problème, le résultat attendu, les pages ou services concernés, les règles à préserver et, si possible, les critères de validation.]
 

@@ -5,9 +5,10 @@ momentanément incompatible avec le Worker ou avec GAS.
 
 ## Résultat attendu
 
-- Sans paramètre `backend`, le site utilise D1.
-- `backend=gas` ou `backend=GAS` force GAS.
-- Une panne détectée de D1 redirige la page courante vers `backend=gas` sans rejouer automatiquement une écriture.
+- Sans paramètre `backend`, le site utilise D1 puis se replie sur GAS si D1 est indisponible.
+- `backend=gas` ou `backend=GAS` force GAS pour l'onglet courant ; le paramètre est consommé puis retiré de l'adresse et des liens.
+- `backend=d1` annule ce forçage et rétablit le mode automatique D1 puis GAS.
+- Une lecture D1 en échec peut être rejouée sur GAS. Une écriture déjà envoyée à D1 ne l'est jamais ; la synchronisation serveur assure sa propagation si elle a été validée.
 - `admin=1` est ignoré puis retiré de l'URL ; l'affichage RH provient exclusivement de la session Discord vérifiée.
 - Un utilisateur est autorisé s'il porte au moins un rôle listé dans `ADMIN_DISCORD_ROLE_IDS`.
 - `AUTH_LOGIN_POLICY=guild_members` permet à tout membre du serveur de se connecter sans obtenir automatiquement de
@@ -225,7 +226,7 @@ Puis ouvrir `http://127.0.0.1:8787/`. Vérifier successivement :
 - fonctionnement du bouton depuis `index.html` intégré dans une iframe d'une autre origine ;
 - ajout d'un membre de test raisonnablement identifiable ;
 - modification puis consultation de sa fiche ;
-- conservation de `backend=gas` dans les liens après un basculement manuel.
+- absence de `backend` dans les liens après un forçage manuel, avec conservation du choix dans le seul onglet courant.
 
 ## 8. Clôture réalisée
 
@@ -248,7 +249,7 @@ En cas d'incident :
 2. Dans `cloudflare/membres-soc-api`, examiner `npx wrangler versions list`, puis revenir à une version OAuth connue
    comme stable. La version pré-clôture est `cb729f06-1a5f-49ae-b823-ebd8fee39aa6`.
 3. Rétablir le frontend avec un `git revert` du commit concerné, puis republier GitHub Pages.
-4. Utiliser temporairement `?backend=gas` si D1 est la seule partie indisponible.
+4. Utiliser temporairement `?backend=gas` si D1 est la seule partie indisponible ; `?backend=d1` rétablit ensuite le mode automatique.
 
 La version Worker pré-clôture référence l'ancien mécanisme. Son utilisation complète demanderait de recréer
 explicitement `ADMIN_TOKEN` ; elle n'est donc pas recommandée et ne doit jamais être engagée comme simple rollback.

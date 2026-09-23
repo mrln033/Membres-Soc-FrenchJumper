@@ -38,14 +38,22 @@
   <script>
     const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
     async function loadSyncStatus() {
+      // Cette page admin n'existe que côté D1 : déterminer le backend actif avant
+      // de tenter une action, afin de ne jamais envoyer ses commandes à GAS.
+      await ensurePreferredBackendAvailable();
+      if (getActiveBackend() !== "d1") {
+        document.getElementById("syncSummary").textContent =
+          "D1 est indisponible : le suivi de synchronisation reste désactivé pendant le secours GAS.";
+        return;
+      }
       const state = await ensureAuthState();
-      if (!state.authorized || preferredBackend !== "d1") {
+      if (!state.authorized) {
         document.getElementById("syncSummary").textContent = state.authenticated
           ? "Un rôle RH Discord est requis pour consulter la synchronisation."
           : "Connectez-vous depuis le menu principal pour consulter la synchronisation.";
         return;
       }
-      const data = await apiRequest("getSyncStatus", {}, "POST");
+      const data = await apiRequestD1Only("getSyncStatus");
       document.getElementById("syncSummary").textContent = data.counts.length
         ? data.counts.map(item => `${item.target} ${item.status}: ${item.count}`).join(" · ")
         : "Aucune mutation enregistrée";
@@ -56,8 +64,12 @@
         <td>${esc(item.operation)}</td><td>${esc(item.status)}</td><td>${esc(item.attempts)}</td>
         <td>${esc(item.last_error || "")}</td></tr>`).join("");
     }
-    document.getElementById("auditButton").onclick = async () => { await apiRequest("runSyncAudit", {}, "POST"); await loadSyncStatus(); };
-    document.getElementById("retryButton").onclick = async () => { await apiRequest("retryPendingSync", {}, "POST"); await loadSyncStatus(); };
+    async function runD1SyncAction(action) {
+      await apiRequestD1Only(action);
+      await loadSyncStatus();
+    }
+    document.getElementById("auditButton").onclick = () => runD1SyncAction("runSyncAudit");
+    document.getElementById("retryButton").onclick = () => runD1SyncAction("retryPendingSync");
     loadSyncStatus().catch(error => { document.getElementById("syncSummary").textContent = error.message; });
   </script>
 </body>

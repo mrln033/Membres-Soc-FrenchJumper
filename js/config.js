@@ -5,29 +5,59 @@ const ADMIN_OAUTH_STATE_KEY = "FRJ_MEMBRES_ADMIN_OAUTH_STATE";
 const ADMIN_AUTH_ERROR_KEY = "FRJ_MEMBRES_ADMIN_AUTH_ERROR";
 const ADMIN_AUTH_CACHE_KEY = "FRJ_MEMBRES_AUTH_CACHE";
 const ADMIN_AUTH_RETURN_PAGE_KEY = "FRJ_MEMBRES_AUTH_RETURN_PAGE";
+const BACKEND_OVERRIDE_KEY = "FRJ_MEMBRES_BACKEND_OVERRIDE";
 const ADMIN_AUTH_MESSAGE_TYPE = "frj-discord-auth";
 const D1_HEALTH_TIMEOUT_MS = 3500;
 
 const currentParams = new URLSearchParams(window.location.search);
 const requestedBackend = String(currentParams.get("backend") || "").trim().toLowerCase();
-const preferredBackend = requestedBackend === "gas" ? "gas" : "d1";
-const API_URL = preferredBackend === "d1" ? D1_API_URL : GAS_API_URL;
+// Le paramètre backend est une commande de test ponctuelle : GAS reste forcé
+// dans l'onglet jusqu'à un backend=d1 explicite ou la fermeture de l'onglet.
+// Il est ensuite retiré de l'adresse et ne se propage jamais dans les liens.
+const preferredBackend = resolvePreferredBackend(requestedBackend);
 const API_BACKENDS = Object.freeze({ gas: GAS_API_URL, d1: D1_API_URL });
 
 let authConfigPromise = null;
 let authStatePromise = null;
 let backendReadyPromise = null;
+let activeBackend = preferredBackend;
 let authState = Object.freeze({ authenticated: false, authorized: false, frjMember: false, user: null, reason: null });
 let isAdmin = false;
 
 consumeDiscordAuthCallback();
-removeObsoleteAdminParameter();
+removeObsoleteRoutingParameters();
 installDiscordAuthMessageListener();
 
-function removeObsoleteAdminParameter() {
-    if (!currentParams.has("admin")) return;
+function resolvePreferredBackend(requested) {
+    if (requested === "gas") {
+        writeBackendOverride("gas");
+        return "gas";
+    }
+    if (requested === "d1") {
+        writeBackendOverride("");
+        return "d1";
+    }
+    try {
+        return sessionStorage.getItem(BACKEND_OVERRIDE_KEY) === "gas" ? "gas" : "d1";
+    } catch {
+        return "d1";
+    }
+}
+
+function writeBackendOverride(value) {
+    try {
+        if (value === "gas") sessionStorage.setItem(BACKEND_OVERRIDE_KEY, "gas");
+        else sessionStorage.removeItem(BACKEND_OVERRIDE_KEY);
+    } catch (error) {
+        console.warn("Impossible de mémoriser le backend de test dans cet onglet.", error);
+    }
+}
+
+function removeObsoleteRoutingParameters() {
+    if (!currentParams.has("admin") && !currentParams.has("backend")) return;
     const cleanUrl = new URL(window.location.href);
     cleanUrl.searchParams.delete("admin");
+    cleanUrl.searchParams.delete("backend");
     history.replaceState(null, document.title, cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
 }
 
@@ -78,7 +108,7 @@ function takeAuthenticationNotice() {
 }
 
 function rememberAuthenticationReturnPage(page) {
-    const value = String(page || "").trim();
+    const value = sanitizeInternalPage(page);
     if (value) sessionStorage.setItem(ADMIN_AUTH_RETURN_PAGE_KEY, value);
     else sessionStorage.removeItem(ADMIN_AUTH_RETURN_PAGE_KEY);
 }
@@ -86,7 +116,22 @@ function rememberAuthenticationReturnPage(page) {
 function takeAuthenticationReturnPage() {
     const page = sessionStorage.getItem(ADMIN_AUTH_RETURN_PAGE_KEY) || "";
     sessionStorage.removeItem(ADMIN_AUTH_RETURN_PAGE_KEY);
-    return page;
+    return sanitizeInternalPage(page);
+}
+
+function sanitizeInternalPage(page) {
+    const value = String(page || "").trim();
+    if (!value) return "";
+    try {
+        const target = new URL(value, window.location.href);
+        const siteRoot = new URL(".", window.location.href);
+        if (target.origin !== window.location.origin || !target.pathname.startsWith(siteRoot.pathname)) return "";
+        target.searchParams.delete("backend");
+        target.searchParams.delete("admin");
+        return target.pathname.slice(siteRoot.pathname.length) + target.search + target.hash;
+    } catch {
+        return "";
+    }
 }
 
 function getAdminAuthConfig() {
@@ -112,6 +157,10 @@ async function ensureAuthState(force = false) {
                 cache: "no-store",
                 headers: { Authorization: `Bearer ${session}` }
             });
+            // Une indisponibilité serveur doit emprunter le même chemin que
+            // l'erreur réseau afin que le secours GAS puisse utiliser le
+            // dernier état Discord validé, marqué comme périmé.
+            if (response.status >= 500) throw new Error("Vérification Discord temporairement indisponible");
             const result = await response.json().catch(() => ({}));
             if (response.status === 401 || result.authenticated !== true) {
                 clearStoredSession();
@@ -226,8 +275,11 @@ function logoutDiscord() {
     setAuthenticationNotice("Vous êtes déconnecté. Consultation publique active.", "logged_out");
 }
 
-function ensurePreferredBackendAvailable() {
-    if (preferredBackend === "gas") return Promise.resolve();
+function ensurePreferredBackendAvailable(forceProbe = false) {
+    if (activeBackend === "gas") return Promise.resolve(activeBackend);
+    // Une écriture demande une sonde fraîche : D1 a pu tomber depuis la
+    // première lecture de la page. Le test reste antérieur à tout envoi métier.
+    if (forceProbe) backendReadyPromise = null;
     if (backendReadyPromise) return backendReadyPromise;
     backendReadyPromise = (async () => {
         const controller = new AbortController();
@@ -238,36 +290,41 @@ function ensurePreferredBackendAvailable() {
             const health = await response.json();
             if (health.ok !== true) throw new Error("Réponse de santé D1 invalide");
         } catch (error) {
-            redirectToGas(error);
-            throw new Error("D1 indisponible, redirection vers GAS…");
+            activateGasFallback(error);
         } finally { clearTimeout(timeout); }
+        return activeBackend;
     })();
     return backendReadyPromise;
 }
 
-function redirectToGas(reason) {
+function activateGasFallback(reason) {
+    if (activeBackend === "gas") return activeBackend;
     console.warn("D1 indisponible, basculement vers GAS.", reason);
-    const target = new URL(window.location.href);
-    if (String(target.searchParams.get("backend") || "").toLowerCase() === "gas") return;
-    target.searchParams.set("backend", "gas");
-    window.location.replace(target.toString());
+    activeBackend = "gas";
+    window.dispatchEvent(new CustomEvent("frj-backend-changed", {
+        detail: { backend: activeBackend, automatic: preferredBackend === "d1" }
+    }));
+    return activeBackend;
+}
+
+function getActiveBackend() {
+    return activeBackend;
 }
 
 function buildInternalPageUrl(path, extraParams = {}) {
     const url = new URL(path, window.location.href);
-    if (preferredBackend === "gas") url.searchParams.set("backend", "gas");
-    else url.searchParams.delete("backend");
-    url.searchParams.delete("admin");
     Object.entries(extraParams).forEach(([key, value]) => url.searchParams.set(key, value));
-    return url.pathname.split("/").pop() + url.search;
+    // Même un appelant ancien ne peut plus réintroduire ces paramètres dans un lien.
+    url.searchParams.delete("backend");
+    url.searchParams.delete("admin");
+    return url.pathname.split("/").pop() + url.search + url.hash;
 }
 
-function preserveBackendInLinks() {
+function removeRoutingParametersFromLinks() {
     document.querySelectorAll("a[href]").forEach(link => {
         const url = new URL(link.href, window.location.href);
-        if (url.origin !== window.location.origin || !url.pathname.endsWith(".html")) return;
-        if (preferredBackend === "gas") url.searchParams.set("backend", "gas");
-        else url.searchParams.delete("backend");
+        if (url.origin !== window.location.origin) return;
+        url.searchParams.delete("backend");
         url.searchParams.delete("admin");
         link.href = url.toString();
     });
@@ -279,6 +336,6 @@ function bytesToBase64Url(bytes) {
     return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", preserveBackendInLinks);
-else preserveBackendInLinks();
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", removeRoutingParametersFromLinks);
+else removeRoutingParametersFromLinks();
 console.log("Backend prioritaire :", preferredBackend === "d1" ? "Cloudflare D1" : "Google Sheets / GAS");
