@@ -42,8 +42,8 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 23/09/2026 à 16:53 Europe/Paris :
-- la production GitHub Pages contient D-002, D-005, D-006, D-007 et D-008 ;
+État connu au 23/09/2026 à 17:06 Europe/Paris :
+- la production GitHub Pages contient D-002, D-005, D-006, D-007, D-008 et D-011 ;
 - D-001 est validée par l'utilisateur sur PC uniquement ; la recette mobile/tablette n'est pas encore revendiquée ;
 - le Worker `b753d68b-7900-4f41-b09e-b565363c2b0e` est en production avec OAuth Discord exclusif, `AUTH_LOGIN_POLICY=guild_members` et le rôle FRJ `464706220905857026` ;
 - GAS v146 est publié sur l'URL `/exec` existante avec la même exigence de session Discord ; v145 constitue le retour arrière immédiat ;
@@ -58,7 +58,7 @@ Règles d'intervention :
 - l'analyse D-003 sur le remplacement de `?admin=1` est terminée ; les trois niveaux sont Accès RH, Consultation FRJ et Consultation publique ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
 - D-009 est déployée côté Worker D1 (`158c60f0-55a9-4508-bf58-c719c989fff6`) et GAS v146 ; sa publication frontend est portée par la PR #20.
 - D-010 est active sur le proxy Discord (`e77228b5-ec13-4dfe-89fc-3a3293215089`) : le jeton du bot et le secret partagé sont désormais des secrets Cloudflare chiffrés, et les anciens bindings en clair sont absents de la version active. La régénération du jeton Discord et la rotation coordonnée du secret partagé restent recommandées pour invalider leurs copies historiques.
-- D-011 est développée localement sur la branche `codex/d011-liens-backend` et attend la validation avant publication ; aucun service distant n'a été modifié pour cette étape.
+- D-011 est publiée par la PR #23 au commit de fusion `5f4b41424f3b2fe67c4a4ed218f51aa2a33afb81` ; le déploiement GitHub Pages `35878784701` est réussi et la branche distante `codex/d011-liens-backend` est conservée temporairement comme repère de retour arrière.
 
 Ordre conseillé :
 1. traiter les nouvelles demandes ajoutées dans ce fichier selon leur priorité explicite ;
@@ -256,15 +256,6 @@ Stockage navigateur temporaire :
 ------------------------
 >>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-012 <<<
 
-D-011 [EVOLUTION] [À VALIDER]
-Demande : A l'instar de ce qu'on a fait auourd'hui sur le projet "FRJ - For Sale", je souhaite supprimer définitivement le paramètre backend de tous les lien.
-	Je veux que le mode par défaut soit 'd1', avec GAS en cas d'indisponibilité. Le paramètres 'backend' ne doit plus être systématiquement notifier dans l'URL. Mais je veux conserver la possibilité malgré tout de le spécifier, à des fins de tests et développement.
-
-Précision validée avant réalisation : la synchronisation bidirectionnelle D1/GAS côté serveur est conservée. Le navigateur ne rejoue jamais sur GAS une écriture déjà envoyée à D1 dont le résultat est incertain ; il n'utilise GAS que si l'indisponibilité de D1 a été constatée avant l'envoi.
-
-Avancement au 23/09/2026 à 16:53 Europe/Paris : développement local terminé sur `codex/d011-liens-backend`. Les liens sont canoniques sans paramètre « backend », le repli D1 vers GAS se fait en mémoire, les commandes de test restent disponibles pour l'onglet courant et la page de synchronisation demeure strictement réservée à D1. Documentation et tests ont été adaptés. Publication distante et validation utilisateur encore à effectuer.
-
-
 Modèle à copier pour une nouvelle demande :
 
 D-012 [TYPE] [À FAIRE]
@@ -282,6 +273,19 @@ Demande initiale :
 
 Réalisation :
 [Détail horodaté des travaux, fichiers et services concernés, contrôles, tests, migrations, déploiements, validations et éventuelles réserves.]
+
+[2026-09-23 17:06 Europe/Paris] Demande D-011 terminée.
+Demande initiale :
+D-011 [EVOLUTION] [À FAIRE]
+Demande : A l'instar de ce qu'on a fait auourd'hui sur le projet "FRJ - For Sale", je souhaite supprimer définitivement le paramètre backend de tous les lien.
+	Je veux que le mode par défaut soit 'd1', avec GAS en cas d'indisponibilité. Le paramètres 'backend' ne doit plus être systématiquement notifier dans l'URL. Mais je veux conserver la possibilité malgré tout de le spécifier, à des fins de tests et développement.
+
+Précision validée avant réalisation : la synchronisation bidirectionnelle D1/GAS côté serveur est conservée. Le navigateur ne rejoue jamais sur GAS une écriture déjà envoyée à D1 dont le résultat est incertain ; il n'utilise GAS que si l'indisponibilité de D1 a été constatée avant l'envoi.
+
+Réalisation :
+[2026-09-23 17:06 Europe/Paris] Le frontend utilise D1 par défaut et active le secours GAS en mémoire sans redirection. Les liens internes, les retours OAuth et l'adresse courante sont nettoyés des paramètres `backend` et `admin`. Les commandes ponctuelles `?backend=gas` et `?backend=d1` restent disponibles pour l'onglet courant, puis disparaissent de l'URL. Une lecture D1 indisponible peut être rejouée une seule fois sur GAS ; une écriture déjà envoyée à D1 ne l'est jamais. Les commandes techniques de synchronisation sont strictement limitées à D1. Les changements concernent `js/config.js`, `js/client.js`, `index.html`, `sync.html`, les tests frontend et les documentations du dépôt.
+
+La suite de 60 tests Node, `npm run check`, les contrôles de syntaxe JavaScript/HTML et `git diff --check` réussissent. La PR #23 a été fusionnée dans `main` au commit `5f4b41424f3b2fe67c4a4ed218f51aa2a33afb81`. Le déploiement GitHub Pages `35878784701` s'est terminé avec succès. Les fichiers `index.html`, `js/config.js`, `js/client.js` et `sync.html` publiés répondent en HTTP 200 avec les marqueurs D-011 attendus ; l'ancien routage est absent. La santé D1 et une lecture publique GAS ont été contrôlées avec succès. Aucun Worker, secret, schéma D1 ni déploiement GAS n'a été modifié. Le commit de production antérieur `dafb473ce4bfdfb2ebdc48eb5df485bf9abc276f` et la branche distante `codex/d011-liens-backend` constituent le retour arrière conservé pendant la validation en production demandée par l'utilisateur.
 
 [2026-09-21 06:42 Europe/Paris] Demande D-002 terminée.
 Demande initiale :
