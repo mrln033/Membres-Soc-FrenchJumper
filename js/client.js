@@ -3,24 +3,39 @@ async function apiRequest(action, data = null, method = "GET") {
     const normalizedMethod = String(method || "GET").toUpperCase();
     const isWrite = normalizedMethod !== "GET" && normalizedMethod !== "HEAD";
 
-    // La sonde précède aussi les écritures : si D1 ne répond pas, on navigue
-    // vers GAS sans rejouer une mutation dont le résultat serait incertain.
-    await ensurePreferredBackendAvailable();
+    // La sonde précède aussi les écritures. Si elle échoue avant tout envoi,
+    // GAS peut être choisi sans risque de doublon. Une écriture D1 déjà envoyée
+    // n'est en revanche jamais rejouée automatiquement sur GAS.
+    await ensurePreferredBackendAvailable(isWrite);
+    const backend = getActiveBackend();
 
     if (isWrite) {
         const adminAuthorization = await getAdminAuthorization();
-        return apiRequestToBackend(preferredBackend, action, data, normalizedMethod, adminAuthorization);
+        return apiRequestToBackend(backend, action, data, normalizedMethod, adminAuthorization);
     }
 
     try {
-        return await apiRequestToBackend(preferredBackend, action, data, normalizedMethod);
+        return await apiRequestToBackend(backend, action, data, normalizedMethod);
     } catch (error) {
-        if (preferredBackend === "d1" && isBackendUnavailableError(error)) {
-            redirectToGas(error);
-            throw new Error("D1 indisponible, redirection vers GAS…");
+        if (backend === "d1" && isBackendUnavailableError(error)) {
+            activateGasFallback(error);
+            return apiRequestToBackend("gas", action, data, normalizedMethod);
         }
         throw error;
     }
+}
+
+// Certaines commandes techniques (audit et reprise de synchronisation) n'ont
+// aucun équivalent GAS. Elles échouent proprement si D1 est indisponible au
+// lieu d'emprunter le mécanisme général de secours.
+async function apiRequestD1Only(action, data = null, method = "POST") {
+    const normalizedMethod = String(method || "POST").toUpperCase();
+    await ensurePreferredBackendAvailable(true);
+    if (getActiveBackend() !== "d1") {
+        throw new Error("D1 est indisponible : cette commande ne peut pas être exécutée sur GAS.");
+    }
+    const adminAuthorization = await getAdminAuthorization();
+    return apiRequestToBackend("d1", action, data, normalizedMethod, adminAuthorization);
 }
 
 async function apiRequestToBackend(backend, action, data, method, adminAuthorization = "") {

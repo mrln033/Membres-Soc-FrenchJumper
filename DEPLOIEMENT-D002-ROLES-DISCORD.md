@@ -27,7 +27,7 @@ fiche. Elles permettent de déployer le code sans modifier le site visible.
 5. Appliquer la migration D1 `0003_discord_role_cache.sql`. Elle est additive et ne modifie ni membre, ni grade, ni
    mouvement.
 6. Déployer le Worker avec les deux gardes encore désactivées. Contrôler `/health`, les lectures publiques, une action
-   RH existante et le repli `?backend=gas`.
+   RH existante et le repli GAS, automatique ou forcé temporairement par `?backend=gas`.
 7. Passer seulement `DISCORD_ROLE_SYNC_MODE` à `active`, redéployer puis surveiller la file, sa DLQ, les erreurs 429 et
    la progression de `member_discord_role_sync`. Les réponses 429 sont rejouées après le délai demandé par Discord.
 8. Comparer plusieurs fiches dans Discord, D1 et GAS, dont une sans rôle suivi, une avec plusieurs activités et une
@@ -73,7 +73,7 @@ peut être lancé manuellement ; en fonctionnement stabilisé, la collecte autom
   automatiquement lorsque la largeur disponible est insuffisante. Ce correctif est publié par la PR #10 au commit
   `2d6977abdecb9bc942001179ce5cf48452265ce6` ; les fichiers JavaScript/CSS et la fiche GAS servis ont été contrôlés en HTTP 200.
 - La déconnexion recharge la page interne courante afin de reconstruire son affichage public et de supprimer toute
-  responsabilité semi-privée déjà injectée dans le DOM. Lorsque `backend=gas`, la fiche publique reste fournie par GAS mais la
+  responsabilité semi-privée déjà injectée dans le DOM. Lorsque GAS est actif, la fiche publique reste fournie par GAS mais la
   lecture protégée des responsabilités utilise D1, déjà responsable de la session OAuth et de sa revalidation Discord ;
   une indisponibilité de cet enrichissement laisse la fiche GAS publique visible.
 

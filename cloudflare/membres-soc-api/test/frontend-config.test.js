@@ -10,7 +10,7 @@ const clientSource = readFileSync(new URL("../../../js/client.js", import.meta.u
 const styleSource = readFileSync(new URL("../../../css/style.css", import.meta.url), "utf8");
 const syncSource = readFileSync(new URL("../../../sync.html", import.meta.url), "utf8");
 
-function loadConfigState(url, initialStorage = {}, afterLoad = "") {
+function loadConfigState(url, initialStorage = {}, afterLoad = "", options = {}) {
   const values = new Map(Object.entries(initialStorage));
   let replacedUrl = null;
   const location = new URL(url);
@@ -24,6 +24,7 @@ function loadConfigState(url, initialStorage = {}, afterLoad = "") {
     open() { return null; }
   };
   window.top = window;
+  const links = Array.from(options.linkHrefs || [], href => ({ href }));
   const context = vm.createContext({
     URL,
     URLSearchParams,
@@ -33,17 +34,21 @@ function loadConfigState(url, initialStorage = {}, afterLoad = "") {
     Error,
     Object,
     String,
+    setTimeout,
+    clearTimeout,
     console,
     crypto: webcrypto,
     CustomEvent: class CustomEvent { constructor(type, options) { this.type = type; this.detail = options?.detail; } },
     btoa,
-    fetch: async () => Response.json({ mode: "discord", configured: true }),
+    Response,
+    Headers,
+    fetch: options.fetch || (async () => Response.json({ mode: "discord", configured: true })),
     window,
     history: { replaceState(_state, _title, urlValue) { replacedUrl = urlValue; } },
     document: {
       title: "Test",
       readyState: "complete",
-      querySelectorAll() { return []; }
+      querySelectorAll() { return links; }
     },
     sessionStorage: {
       getItem(key) { return values.has(key) ? values.get(key) : null; },
@@ -52,16 +57,19 @@ function loadConfigState(url, initialStorage = {}, afterLoad = "") {
     }
   });
   vm.runInContext(
-    `${configSource}\n${afterLoad}\n;globalThis.__result = { preferredBackend, page: buildInternalPageUrl("fiche.html", { id: "abc" }) };`,
+    `${configSource}\n${afterLoad}\n;globalThis.__result = { preferredBackend, activeBackend: getActiveBackend(), page: buildInternalPageUrl("fiche.html", { id: "abc", backend: "gas" }) };`,
     context
   );
   // Ramène l'objet hors du realm vm pour une comparaison stricte fiable.
-  return JSON.parse(JSON.stringify({
+  const snapshot = JSON.parse(JSON.stringify({
     result: context.__result,
     testResult: context.__testResult,
     storage: Object.fromEntries(values),
-    replacedUrl
+    replacedUrl,
+    links: links.map(link => link.href)
   }));
+  snapshot.pending = context.__testPromise;
+  return snapshot;
 }
 
 function loadConfig(url, initialStorage = {}) {
@@ -71,11 +79,11 @@ function loadConfig(url, initialStorage = {}) {
 test("sélectionne D1 et supprime l'ancien paramètre admin", () => {
   assert.deepEqual(
     loadConfig("https://site.example.test/index.html"),
-    { preferredBackend: "d1", page: "fiche.html?id=abc" }
+    { preferredBackend: "d1", activeBackend: "d1", page: "fiche.html?id=abc" }
   );
   assert.deepEqual(
     loadConfig("https://site.example.test/index.html?admin=1"),
-    { preferredBackend: "d1", page: "fiche.html?id=abc" }
+    { preferredBackend: "d1", activeBackend: "d1", page: "fiche.html?id=abc" }
   );
   const legacyAdmin = loadConfigState("https://site.example.test/index.html?admin=1");
   assert.equal(legacyAdmin.storage.admin, undefined);
@@ -88,11 +96,148 @@ test("ne conserve plus aucun chemin frontend vers l'ancien jeton Admin", () => {
   assert.doesNotMatch(configSource, /window\.prompt/);
 });
 
-test("accepte GAS sans tenir compte de la casse et le conserve dans les liens", () => {
-  assert.deepEqual(
-    loadConfig("https://site.example.test/index.html?backend=GAS"),
-    { preferredBackend: "gas", page: "fiche.html?backend=gas&id=abc" }
+test("consomme backend=GAS sans le propager dans les liens", () => {
+  const loaded = loadConfigState("https://site.example.test/index.html?backend=GAS");
+  assert.deepEqual(loaded.result, { preferredBackend: "gas", activeBackend: "gas", page: "fiche.html?id=abc" });
+  assert.equal(loaded.storage.FRJ_MEMBRES_BACKEND_OVERRIDE, "gas");
+  assert.equal(loaded.replacedUrl, "/index.html");
+});
+
+test("conserve le forçage GAS dans l'onglet avec des liens canoniques", () => {
+  const loaded = loadConfigState(
+    "https://site.example.test/fiche.html?id=abc",
+    { FRJ_MEMBRES_BACKEND_OVERRIDE: "gas" },
+    "",
+    { linkHrefs: ["https://site.example.test/mouvements.html?backend=gas&id=abc#detail"] }
   );
+  assert.deepEqual(loaded.result, { preferredBackend: "gas", activeBackend: "gas", page: "fiche.html?id=abc" });
+  assert.equal(loaded.links[0], "https://site.example.test/mouvements.html?id=abc#detail");
+});
+
+test("backend=d1 rétablit le mode automatique D1 dans l'onglet", () => {
+  const loaded = loadConfigState(
+    "https://site.example.test/index.html?backend=d1&vue=actifs",
+    { FRJ_MEMBRES_BACKEND_OVERRIDE: "gas" }
+  );
+  assert.deepEqual(loaded.result, { preferredBackend: "d1", activeBackend: "d1", page: "fiche.html?id=abc" });
+  assert.equal(loaded.storage.FRJ_MEMBRES_BACKEND_OVERRIDE, undefined);
+  assert.equal(loaded.replacedUrl, "/index.html?vue=actifs");
+});
+
+test("une panne de santé D1 active GAS sans ajouter de paramètre à l'URL", async () => {
+  const loaded = loadConfigState(
+    "https://site.example.test/index.html",
+    {},
+    "globalThis.__testPromise = ensurePreferredBackendAvailable().then(() => ({ backend: getActiveBackend() }));",
+    { fetch: async url => String(url).endsWith("/health") ? new Response("indisponible", { status: 503 }) : Response.json({}) }
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(await loaded.pending)), { backend: "gas" });
+  assert.equal(loaded.replacedUrl, null);
+  assert.equal(loaded.storage.FRJ_MEMBRES_BACKEND_OVERRIDE, undefined);
+});
+
+test("une lecture D1 en échec est rejouée une seule fois sur GAS", async () => {
+  const calls = [];
+  const loaded = loadConfigState(
+    "https://site.example.test/index.html",
+    {},
+    `${clientSource}
+     globalThis.__testPromise = apiRequest("getMembres");`,
+    { fetch: async (url, options = {}) => {
+      calls.push({ url: String(url), method: options.method || "GET" });
+      if (String(url).endsWith("/health")) return Response.json({ ok: true });
+      if (String(url).startsWith("https://frj-membres-soc-api")) {
+        return Response.json({ error: "D1 indisponible" }, { status: 503 });
+      }
+      return Response.json({ source: "gas" });
+    } }
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(await loaded.pending)), { source: "gas" });
+  assert.equal(calls.filter(call => call.url.includes("script.google.com")).length, 1);
+});
+
+test("une écriture D1 déjà envoyée n'est jamais rejouée sur GAS", async () => {
+  const calls = [];
+  const loaded = loadConfigState(
+    "https://site.example.test/index.html",
+    { FRJ_MEMBRES_ADMIN_SESSION: "session-signee" },
+    `${clientSource}
+     globalThis.__testPromise = apiRequest("updateMembreInfos", { membreId: "abc" }, "POST");`,
+    { fetch: async (url, options = {}) => {
+      calls.push({ url: String(url), method: options.method || "GET" });
+      if (String(url).endsWith("/health")) return Response.json({ ok: true });
+      if (String(url).endsWith("/auth/session")) {
+        return Response.json({ authenticated: true, authorized: true, frjMember: true, user: { id: "1", name: "RH" } });
+      }
+      return Response.json({ error: "résultat incertain" }, { status: 503 });
+    } }
+  );
+  await assert.rejects(loaded.pending, /résultat incertain/);
+  const businessPosts = calls.filter(call => call.method === "POST");
+  assert.equal(businessPosts.length, 1);
+  assert.equal(businessPosts[0].url, "https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev");
+});
+
+test("une sonde D1 en échec route une écriture non envoyée vers GAS", async () => {
+  const calls = [];
+  const loaded = loadConfigState(
+    "https://site.example.test/index.html",
+    { FRJ_MEMBRES_ADMIN_SESSION: "session-signee" },
+    `${clientSource}
+     globalThis.__testPromise = apiRequest("updateMembreInfos", { membreId: "abc" }, "POST");`,
+    { fetch: async (url, options = {}) => {
+      calls.push({ url: String(url), method: options.method || "GET" });
+      if (String(url).endsWith("/health")) return new Response("indisponible", { status: 503 });
+      if (String(url).endsWith("/auth/session")) {
+        return Response.json({ authenticated: true, authorized: true, frjMember: true, user: { id: "1", name: "RH" } });
+      }
+      return Response.json({ success: true, source: "gas" });
+    } }
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(await loaded.pending)), { success: true, source: "gas" });
+  const businessPosts = calls.filter(call => call.method === "POST");
+  assert.equal(businessPosts.length, 1);
+  assert.match(businessPosts[0].url, /^https:\/\/script\.google\.com\//);
+});
+
+test("une commande réservée à D1 n'est jamais envoyée à GAS", async () => {
+  const calls = [];
+  const loaded = loadConfigState(
+    "https://site.example.test/sync.html",
+    { FRJ_MEMBRES_ADMIN_SESSION: "session-signee" },
+    `${clientSource}
+     globalThis.__testPromise = apiRequestD1Only("runSyncAudit");`,
+    { fetch: async (url, options = {}) => {
+      calls.push({ url: String(url), method: options.method || "GET" });
+      return new Response("indisponible", { status: 503 });
+    } }
+  );
+  await assert.rejects(loaded.pending, /ne peut pas être exécutée sur GAS/);
+  assert.equal(calls.some(call => call.url.includes("script.google.com")), false);
+  assert.equal(calls.some(call => call.method === "POST"), false);
+});
+
+test("une erreur serveur de vérification Discord conserve le dernier accès validé pour GAS", async () => {
+  const cachedState = {
+    authenticated: true,
+    authorized: true,
+    frjMember: true,
+    user: { id: "1", name: "RH en cache" }
+  };
+  const loaded = loadConfigState(
+    "https://site.example.test/index.html",
+    {
+      FRJ_MEMBRES_ADMIN_SESSION: "session-signee",
+      FRJ_MEMBRES_AUTH_CACHE: JSON.stringify(cachedState)
+    },
+    "globalThis.__testPromise = ensureAuthState(true);",
+    { fetch: async () => new Response("indisponible", { status: 503 }) }
+  );
+  const state = JSON.parse(JSON.stringify(await loaded.pending));
+  assert.equal(state.authenticated, true);
+  assert.equal(state.authorized, true);
+  assert.equal(state.stale, true);
+  assert.equal(state.reason, "verification_unavailable");
 });
 
 test("un refus OAuth nettoie la session et conserve un message public explicite", () => {
@@ -147,7 +292,7 @@ test("mémorise la page courante une seule fois pendant la connexion", () => {
        second: takeAuthenticationReturnPage()
      };`
   );
-  assert.deepEqual(loaded.testResult, { first: page, second: "" });
+  assert.deepEqual(loaded.testResult, { first: "fiche.html?id=abc#historique", second: "" });
   assert.equal(loaded.storage.FRJ_MEMBRES_AUTH_RETURN_PAGE, undefined);
 });
 
@@ -263,6 +408,13 @@ test("lit toujours les responsabilités semi-privées via D1", () => {
 
 test("le retour de synchronisation remplace le shell parent", () => {
   assert.match(syncSource, /<a href="index\.html" target="_parent" class="link-header">/);
+});
+
+test("la page de synchronisation vérifie D1 avant toute commande réservée à D1", () => {
+  assert.match(syncSource, /await ensurePreferredBackendAvailable\(\);[\s\S]*getActiveBackend\(\) !== "d1"/);
+  assert.match(syncSource, /apiRequestD1Only\("getSyncStatus"\)/);
+  assert.match(syncSource, /async function runD1SyncAction\(action\)[\s\S]*await apiRequestD1Only\(action\);/);
+  assert.match(clientSource, /async function apiRequestD1Only[\s\S]*cette commande ne peut pas être exécutée sur GAS/);
 });
 
 test("sépare fonctions et activités en deux cartes responsives", () => {

@@ -136,6 +136,7 @@ ensurePreferredBackendAvailable()
     .catch(error => console.error("Initialisation :", error));
 
 initializeAuthenticationControls();
+window.addEventListener("frj-backend-changed", () => renderAuthentication(authState));
 window.addEventListener("frj-auth-state-changed", event => {
     renderAuthentication(event.detail);
     const notice = takeAuthenticationNotice();
@@ -156,7 +157,7 @@ function renderAuthentication(state) {
     const authenticated = state && state.authenticated === true;
     const frjMember = state && state.frjMember === true;
     document.getElementById("menuNouveauMembre").style.display = authorized ? "" : "none";
-    document.getElementById("menuSynchronisation").style.display = authorized && preferredBackend === "d1" ? "" : "none";
+    document.getElementById("menuSynchronisation").style.display = authorized && getActiveBackend() === "d1" ? "" : "none";
     if (authenticated) {
         clearAuthenticationNotice();
         refreshPageAfterAuthentication();

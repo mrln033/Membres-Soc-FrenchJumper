@@ -6,7 +6,7 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 
 - Base D1 distante : `frj-membres-soc` (`09b3c024-99f9-4add-a12c-ed214a462df5`), région WEUR.
 - Worker déployé : <https://frj-membres-soc-api.merlin-merzhin-lesage.workers.dev>.
-- La version préparée du site utilise D1 par défaut et redirige vers GAS si la sonde `/health` échoue.
+- Le site utilise D1 par défaut et bascule en mémoire vers GAS si la sonde `/health` échoue, sans ajouter de paramètre aux liens.
 - OAuth Discord est l'unique authentification des accès RH. L'ancien jeton administrateur et ses variables de
   compatibilité ont été supprimés le 20 septembre 2026.
 - Les écritures exigent une session OAuth valide et l'un des rôles Discord autorisés.
@@ -35,13 +35,14 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - La fiche rend d'abord le contrat public, puis enrichit séparément les responsabilités en accès RH ou Consultation FRJ : un échec de cet
   appel protégé conserve la consultation publique. Les fonctions et activités sont affichées dans deux cartes
   responsives distinctes.
-- En mode frontend `backend=gas`, la fiche publique et son historique proviennent de GAS, mais la lecture semi-privée des
+- Lorsque GAS est forcé pour l'onglet, la fiche publique et son historique proviennent de GAS, mais la lecture semi-privée des
   responsabilités appelle directement l'action D1 protégée avec la même session OAuth. La déconnexion recharge la page
   interne courante pour éliminer immédiatement toute donnée RH déjà rendue.
 
 ## Sécurité de la migration
 
-- L'absence de paramètre `backend` sélectionne D1 ; seul `backend=gas` force le secours GAS.
+- L'absence de paramètre `backend` sélectionne le mode automatique D1 puis GAS. `backend=gas` force GAS dans l'onglet courant,
+  puis disparaît de l'adresse et de tous les liens ; `backend=d1` annule ce forçage.
 - Le Worker D1 possède son propre nom, sa propre configuration et sa propre base.
 - Les exports XLSX et les snapshots SQL/JSON sont ignorés par Git.
 - Les lectures sont publiques pour conserver le contrat actuel.
@@ -69,7 +70,7 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
 - Les mouvements sont append-only et dédupliqués par `MouvementID`.
 - Les réplications ne rappellent jamais Discord et ne réémettent jamais une mutation inverse.
 - Un cron quotidien à 03:17 UTC relance les mutations en attente et contrôle les compteurs GAS/D1.
-- Le tableau de synchronisation apparaît après connexion d'un compte autorisé et reste accessible avec `backend=d1`.
+- Le tableau de synchronisation apparaît après connexion d'un compte autorisé lorsque D1 est le backend actif.
 
 ## Cache des fonctions et activités Discord (D-002)
 

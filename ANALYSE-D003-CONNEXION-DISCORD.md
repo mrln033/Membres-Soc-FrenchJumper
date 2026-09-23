@@ -185,7 +185,7 @@ Cette variante évite de lire `window.top.location` lorsque le parent est d'une 
 
 ### 4.5 Compatibilité GAS
 
-Le login reste fourni par le Worker Cloudflare, même si `backend=gas` est sélectionné. Une session déjà obtenue peut être vérifiée par GAS grâce au secret HMAC partagé. GAS continue de relire les rôles avant chaque écriture.
+Le login reste fourni par le Worker Cloudflare, même si GAS est forcé pour l'onglet avec `backend=gas`. Le paramètre est ensuite retiré de l'adresse et des liens. Une session déjà obtenue peut être vérifiée par GAS grâce au secret HMAC partagé. GAS continue de relire les rôles avant chaque écriture.
 
 Conséquence connue : si le Worker OAuth est indisponible, les lectures publiques GAS restent utilisables, mais une nouvelle connexion Discord ne peut pas être initiée. Une session encore valide peut continuer à servir GAS. Ce comportement doit être affiché clairement et testé.
 
@@ -222,7 +222,7 @@ Conséquence connue : si le Worker OAuth est indisponible, les lectures publique
 - passer la politique à `AUTH_LOGIN_POLICY=guild_members` ;
 - configurer `FRJ_MEMBER_ROLE_ID=464706220905857026` ;
 - contrôler un compte RH, un membre FRJ, un membre sans rôle FRJ, un compte absent du serveur avec retour public explicite, une session expirée et un retrait de rôle en cours de session ;
-- vérifier l'appel direct, l'iframe historique, le mobile, D1 et `backend=gas`.
+- vérifier l'appel direct, l'iframe historique, le mobile, D1, le repli automatique et le forçage ponctuel `backend=gas`.
 
 ### Étape 4 — D-001 clôturée le 20 septembre 2026
 

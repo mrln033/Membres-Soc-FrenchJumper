@@ -73,7 +73,7 @@ Cette implémentation est publiée en production depuis GAS v144. GAS v145, acti
 définitivement l'authentification legacy ; v144 est le retour arrière immédiat et la version 142 reste le repère
 antérieur à D-002. L'URL `/exec` n'a pas changé.
 
-Le frontend `backend=gas` lit toujours la fiche et l'historique publics dans GAS. Pour les responsabilités D-002,
+Lorsque GAS est forcé dans l'onglet, le frontend lit toujours la fiche et l'historique publics dans GAS. Pour les responsabilités D-002,
 l'enrichissement semi-privé utilise toutefois l'action protégée du Worker D1 : celui-ci est déjà l'émetteur de la session OAuth
 et revalide les rôles Discord. Aucun jeton n'est placé dans l'URL. À la déconnexion, l'iframe est rechargée afin que les
 données RH précédemment affichées ne subsistent jamais dans le DOM public.
@@ -149,7 +149,7 @@ Ordre d'activation :
 1. Ajouter les deux fichiers et les proprietes ci-dessus avec `SYNC_ENABLED=false`.
 2. Deployer une nouvelle version de l'application Web en conservant l'URL `/exec` actuelle.
 3. Executer manuellement `setupBidirectionalSync` une fois depuis l'editeur Apps Script et accepter les autorisations.
-4. Vérifier le tableau `sync.html?backend=d1` après connexion avec un compte RH (D1 est le backend par défaut).
+4. Vérifier le tableau `sync.html` après connexion avec un compte RH (D1 est le backend par défaut).
 5. Passer `SYNC_ENABLED=true`, puis activer `SYNC_MODE=active` dans le Worker seulement apres un test controle.
 
 Les mutations recues de D1 mettent a jour les feuilles sans appeler Discord et sans creer une mutation inverse.
