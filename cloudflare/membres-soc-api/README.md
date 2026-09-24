@@ -20,6 +20,10 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
   publique non bloquante. Une panne Discord est identifiée séparément.
 - D-002 est activée avec `DISCORD_ROLE_SYNC_MODE=active` et `DISCORD_ROLE_DISPLAY_ENABLED=true`. Discord reste
   l'unique source et le site ne possède aucune route de modification des fonctions, activités ou responsabilités.
+- Depuis l'incident du 24 septembre 2026, la version active
+  `c3d84fce-aede-4aa7-ba5f-abba22f6b856` protège les traitements planifiés contre tout rejeu. La migration
+  `0005_scheduled_job_runs.sql` garantit une seule maintenance et une seule collecte D-002 par jour UTC ; le Worker
+  ignore tout cron autre que `17 3 * * *` et désactive les retries de l'événement planifié.
 - Le Worker optimisé actif depuis le 20 septembre 2026 est `8fcb2f52-a9a8-4448-9cd3-5dcd2bfb3686`. La version
   D-002 précédente `8968e108-2274-49ac-9b97-50aff3b81c73` reste le repère de retour arrière. Le remplissage initial
   a traité 125 membres en 8 min 13 s (118 `OK`, 7 `ABSENT`, 0 `ERROR`) et n'a laissé aucune réplication GAS en attente.
@@ -80,6 +84,13 @@ Ce Worker est volontairement séparé de `../../worker/worker.js`, qui reste le 
   `frj-discord-role-sync-dlq`. La file métier `frj-membres-sync` reste inchangée.
 - Le cron existant programme une lecture des membres une fois par jour lorsque
   `DISCORD_ROLE_SYNC_MODE=active`.
+- `scheduled.js` valide l'expression `17 3 * * *`, appelle `controller.noRetry()` et acquiert dans
+  `scheduled_job_runs` un verrou `daily-maintenance` propre à la date UTC. Les relances concurrentes ou tardives
+  sont donc ignorées avant tout envoi Queue.
+- `enqueueDiscordRoleRefresh()` possède une seconde garde indépendante, `discord-role-refresh`, afin qu'un appel
+  futur qui contournerait la maintenance générale ne puisse pas remettre les mêmes membres en file le même jour.
+- Les trois tâches quotidiennes utilisent `Promise.allSettled` : l'échec d'un audit ou d'une réplication est enregistré
+  sans provoquer le rejeu d'une collecte Discord déjà exécutée.
 - Le catalogue des rôles suivis est lu une seule fois par lot Queue et une association membre/rôle inchangée n'est
   plus réécrite. La migration `0004_reduce_discord_role_writes.sql` retire l'index redondant déjà couvert par la
   clé primaire composite.
@@ -114,6 +125,9 @@ lorsque Discord ne permet momentanément pas de revalider les rôles. Seule la l
 4. `npm run db:seed:local`
 5. `npm test`
 6. `npm run dev`
+
+Après toute modification du traitement planifié, vérifier aussi que la migration `0005_scheduled_job_runs.sql` est
+appliquée avant le Worker et que `scheduled_job_runs` contient au maximum une ligne par couple `(job_name, run_date)`.
 
 Pour tester le site local avec D1 sans publier GitHub Pages, lancer `npm run dev:site`, puis ouvrir
 `http://127.0.0.1:8787/`. Le serveur écoute uniquement sur la machine locale.

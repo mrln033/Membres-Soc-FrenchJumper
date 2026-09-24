@@ -35,18 +35,49 @@ export async function getCachedDiscordRoles(env, memberId, includeStaff = false)
   };
 }
 
-export async function enqueueDiscordRoleRefresh(env) {
+export async function enqueueDiscordRoleRefresh(env, options = {}) {
   if (String(env.DISCORD_ROLE_SYNC_MODE || "off") !== "active" || !env.DISCORD_ROLE_QUEUE) return 0;
+  const now = options.now || new Date().toISOString();
+  const runDate = now.slice(0, 10);
+  const claim = await env.DB.prepare(`
+    INSERT INTO scheduled_job_runs (job_name, run_date, status, started_at)
+    VALUES ('discord-role-refresh', ?, 'RUNNING', ?)
+    ON CONFLICT(job_name, run_date) DO NOTHING
+  `).bind(runDate, now).run();
+  if (Number(claim.meta?.changes || 0) !== 1) {
+    console.warn(JSON.stringify({ message: "Duplicate Discord role refresh ignored", runDate }));
+    return 0;
+  }
+
   const result = await env.DB.prepare(`
     SELECT id FROM members
     WHERE discord_id GLOB '[0-9]*' AND length(discord_id) BETWEEN 17 AND 20
     ORDER BY id
   `).all();
   const messages = result.results.map((row) => ({ body: { type: QUEUE_TYPE, memberId: row.id } }));
-  for (let index = 0; index < messages.length; index += 100) {
-    await env.DISCORD_ROLE_QUEUE.sendBatch(messages.slice(index, index + 100));
+  try {
+    for (let index = 0; index < messages.length; index += 100) {
+      await env.DISCORD_ROLE_QUEUE.sendBatch(messages.slice(index, index + 100));
+    }
+    await finishDiscordRoleRefreshRun(env, runDate, "COMPLETED", messages.length, null);
+  } catch (error) {
+    await finishDiscordRoleRefreshRun(env, runDate, "FAILED", 0, error);
+    throw error;
   }
   return messages.length;
+}
+
+async function finishDiscordRoleRefreshRun(env, runDate, status, enqueued, error) {
+  await env.DB.prepare(`
+    UPDATE scheduled_job_runs
+    SET status = ?, finished_at = ?, details_json = ?
+    WHERE job_name = 'discord-role-refresh' AND run_date = ?
+  `).bind(
+    status,
+    new Date().toISOString(),
+    JSON.stringify({ enqueued, error: error ? String(error?.message || error).slice(0, 1000) : null }),
+    runDate
+  ).run();
 }
 
 export async function handleDiscordRoleQueue(batch, env) {
