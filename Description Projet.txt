@@ -1,6 +1,6 @@
 Projet = 'Membres Soc FrenchJumper'
 
-Dernière mise à jour de ce document : 23/09/2026
+Dernière mise à jour de ce document : 24/09/2026
 
 ------------------
 -= INSTRUCTIONS =-
@@ -42,10 +42,10 @@ Règles d'intervention :
 -------------------
 -= POINT DE REPRISE =-
 -------------------
-État connu au 23/09/2026 à 17:06 Europe/Paris :
+État connu au 24/09/2026 à 16:55 Europe/Paris :
 - la production GitHub Pages contient D-002, D-005, D-006, D-007, D-008 et D-011 ;
 - D-001 est validée par l'utilisateur sur PC uniquement ; la recette mobile/tablette n'est pas encore revendiquée ;
-- le Worker `b753d68b-7900-4f41-b09e-b565363c2b0e` est en production avec OAuth Discord exclusif, `AUTH_LOGIN_POLICY=guild_members` et le rôle FRJ `464706220905857026` ;
+- le Worker `c3d84fce-aede-4aa7-ba5f-abba22f6b856` est en production avec OAuth Discord exclusif, `AUTH_LOGIN_POLICY=guild_members`, le rôle FRJ `464706220905857026` et la protection anti-rejeu D-002 ;
 - GAS v146 est publié sur l'URL `/exec` existante avec la même exigence de session Discord ; v145 constitue le retour arrière immédiat ;
 - l'ancien secret Cloudflare `ADMIN_TOKEN` a été supprimé et l'ancien jeton est refusé en HTTP 401 ;
 - D-007 est publiée par la PR #16 au commit de fusion `6e38512c6553b16c25ffe2562ff118525c95ea5f` ; le contenu des cartes Fonctions, Activités et Responsabilités Discord est centré ;
@@ -54,6 +54,7 @@ Règles d'intervention :
 - l'authentification Discord est l'unique authentification des accès RH côté D1 et GAS ;
 - la synchronisation bidirectionnelle GAS/D1 est configurée en mode actif dans le Worker ;
 - D-002 est terminée et classée dans « Réalisations effectuées » ; son lot 1 reste actif et validé côté frontend GitHub Pages, D1, Worker et GAS ;
+- à la suite d'un rejeu anormal de D-002 toutes les dix minutes le 24 septembre, la migration `0005_scheduled_job_runs.sql` impose désormais une exécution quotidienne unique en D1 ; le Worker refuse tout cron autre que `17 3 * * *`, appelle `noRetry()` et isole les trois tâches de maintenance ;
 - Discord est l'unique source de vérité et l'unique interface de gestion des fonctions, activités et responsabilités ; le site les synchronise et les affiche uniquement en lecture seule.
 - l'analyse D-003 sur le remplacement de `?admin=1` est terminée ; les trois niveaux sont Accès RH, Consultation FRJ et Consultation publique ; un compte absent du serveur Discord revient, après un message explicite, à la consultation publique non authentifiée sans aucun blocage.
 - D-009 est déployée côté Worker D1 (`158c60f0-55a9-4508-bf58-c719c989fff6`) et GAS v146 ; sa publication frontend est portée par la PR #20.
@@ -117,10 +118,10 @@ Backend principal Cloudflare :
 - projet : cloudflare/membres-soc-api ;
 - Worker : frj-membres-soc-api ;
 - base : Cloudflare D1 ;
-- migrations versionnées : 0001_initial.sql, 0002_bidirectional_sync.sql, 0003_discord_role_cache.sql et 0004_reduce_discord_role_writes.sql ;
-- modules principaux : index.js, auth.js, domain.js, discord.js, discord-roles.js et sync.js ;
+- migrations versionnées : 0001_initial.sql, 0002_bidirectional_sync.sql, 0003_discord_role_cache.sql, 0004_reduce_discord_role_writes.sql et 0005_scheduled_job_runs.sql ;
+- modules principaux : index.js, auth.js, domain.js, discord.js, discord-roles.js, scheduled.js et sync.js ;
 - files métier : frj-membres-sync et frj-membres-sync-dlq ; file dédiée aux lectures de rôles : frj-discord-role-sync et frj-discord-role-sync-dlq ;
-- contrôle planifié une fois par jour à 03:17 UTC ;
+- contrôle planifié une fois par jour à 03:17 UTC, protégé par un verrou quotidien D1 et une validation stricte de l'expression Cron ;
 - Service Binding vers le Worker « discord-proxy » existant ;
 - tests Node couvrant l'authentification, le métier, Discord, le frontend et la synchronisation.
 
@@ -273,6 +274,31 @@ Demande initiale :
 
 Réalisation :
 [Détail horodaté des travaux, fichiers et services concernés, contrôles, tests, migrations, déploiements, validations et éventuelles réserves.]
+
+[2026-09-24 16:55 Europe/Paris] Complément correctif de la demande D-002.
+Signalement utilisateur :
+« aujourd'hui encore, j'ai eu un msg de Cloudflere concernant l'explosion de l'utilisation quatidenne des Queues.... peux-tu mesurer ce montant ? et me conseiller pour les baisser :s »
+
+Précision utilisateur :
+« il s'agissait de la tache D-002 de ce projet » puis demande d'effectuer les réparations nécessaires, la clôture de
+D-002 ayant déjà été validée après observation.
+
+Réalisation :
+[2026-09-24 16:55 Europe/Paris] Les métriques Cloudflare ont mesuré 10 367 opérations Queue sur la journée, dont
+10 361 pour `frj-discord-role-sync` et 6 pour la file métier. D-002 totalisait 3 577 écritures, 3 427 lectures et
+3 357 suppressions, avec une nouvelle mise en file toutes les dix minutes entre 10:00 et 14:10 UTC. Les 10 000
+opérations quotidiennes du forfait gratuit étaient donc dépassées. Le cron distant et `wrangler.jsonc` étaient pourtant
+tous deux restés sur `17 3 * * *`, et aucun déploiement récent n'avait réintroduit l'ancien cron ; le défaut traité est
+donc un rejeu d'événements planifiés, et non une régression du code de clôture D-002.
+
+La migration additive `0005_scheduled_job_runs.sql` crée un verrou atomique quotidien en D1. Le nouveau module
+`src/scheduled.js` appelle `controller.noRetry()`, ignore toute expression autre que `17 3 * * *`, n'autorise qu'une
+maintenance par date UTC et isole les trois tâches avec `Promise.allSettled`. `enqueueDiscordRoleRefresh()` possède une
+seconde garde quotidienne indépendante. La migration a été appliquée avant le code ; les deux verrous du jour ont été
+créés explicitement pour neutraliser les événements déjà en vol. Le Worker
+`c3d84fce-aede-4aa7-ba5f-abba22f6b856` est déployé avec le cron quotidien confirmé. Les contrôles valident 64 tests,
+la syntaxe, le dry-run, `/health` à 1 324 membres et 3 219 mouvements, ainsi que les quatre backlogs Queue à zéro.
+Les guides D-002, le cahier des charges, le README Worker et le présent journal ont été mis à jour.
 
 [2026-09-23 17:06 Europe/Paris] Demande D-011 terminée.
 Demande initiale :

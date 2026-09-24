@@ -52,6 +52,38 @@ peut être lancé manuellement ; en fonctionnement stabilisé, la collecte autom
   Le contrôle post-déploiement retourne 1 324 membres et 3 218 mouvements ; la version de retour arrière est
   `8968e108-2274-49ac-9b97-50aff3b81c73`.
 
+## Incident de rejeu et correction du 24 septembre 2026
+
+- Les métriques Cloudflare ont montré 10 367 opérations Queue sur la journée : 10 361 provenaient de
+  `frj-discord-role-sync` et 6 de `frj-membres-sync`. D-002 comptait 3 577 écritures, 3 427 lectures et
+  3 357 suppressions. Les quatre files avaient un backlog nul après traitement.
+- La cadence observée était une nouvelle mise en file toutes les dix minutes de 10:00 à 14:10 UTC, malgré un
+  déclencheur distant et un fichier `wrangler.jsonc` tous deux configurés sur `17 3 * * *`. Le dépôt et le Worker
+  déployé ne contenaient pas de second chemin d'envoi vers `DISCORD_ROLE_QUEUE`.
+- La migration additive `0005_scheduled_job_runs.sql` crée `scheduled_job_runs`, dont la clé primaire
+  `(job_name, run_date)` constitue un verrou atomique en D1.
+- `scheduled.js` appelle immédiatement `controller.noRetry()`, refuse toute expression autre que `17 3 * * *`, puis
+  acquiert le verrou `daily-maintenance` de la date UTC. Un second verrou `discord-role-refresh` protège directement
+  la production D-002.
+- Les tâches `flushPendingMutations`, `runSyncAudit` et `enqueueDiscordRoleRefresh` sont isolées avec
+  `Promise.allSettled`. Une panne partielle est journalisée et ne rejoue plus les tâches déjà réussies.
+- La migration a été appliquée avant le Worker. Les deux verrous du 24 septembre ont été insérés explicitement pour
+  neutraliser les événements déjà en vol. Le Worker corrigé est `c3d84fce-aede-4aa7-ba5f-abba22f6b856`.
+- La validation comprend 64 tests Node, le contrôle de syntaxe, le dry-run Wrangler, `/health` à 1 324 membres et
+  3 219 mouvements, le cron distant `17 3 * * *` et quatre backlogs à zéro.
+
+Contrôle d'exploitation après chaque exécution quotidienne :
+
+```sql
+SELECT job_name, run_date, status, started_at, finished_at, details_json
+FROM scheduled_job_runs
+ORDER BY run_date DESC, job_name;
+```
+
+Une seule ligne `daily-maintenance` et une seule ligne `discord-role-refresh` doivent exister par date UTC. Ne jamais
+supprimer les lignes de la journée courante pour « relancer » la collecte : utiliser le rafraîchissement RH individuel
+si une donnée urgente doit être remise à jour.
+
 ## Publication du 19 septembre 2026
 
 - Sauvegarde D1 préalable : export SQL local ignoré par Git `seed/d1-pre-d002-20260919.sql`.

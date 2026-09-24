@@ -1,12 +1,12 @@
 import { EXIT_TYPES, getMemberTransition, normalizeAvatarName, parseEffectiveDate } from "./domain.js";
 import { removeDiscordRole } from "./discord.js";
 import {
-  enqueueDiscordRoleRefresh,
   getCachedDiscordRoles,
   handleDiscordRoleQueue,
   isDiscordRoleMessage,
   refreshDiscordRolesForMember
 } from "./discord-roles.js";
+import { runScheduledMaintenance } from "./scheduled.js";
 import { authorizeAdminRequest, handleAuthRoute } from "./auth.js";
 import {
   flushPendingMutations,
@@ -96,8 +96,8 @@ export default {
     if (syncMessages.length) await handleSyncQueue({ messages: syncMessages }, env);
   },
 
-  async scheduled(_controller, env) {
-    await Promise.all([flushPendingMutations(env), runSyncAudit(env), enqueueDiscordRoleRefresh(env)]);
+  async scheduled(controller, env) {
+    await runScheduledMaintenance(controller, env);
   }
 };
 

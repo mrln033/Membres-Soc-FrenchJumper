@@ -314,6 +314,14 @@ l'index D1 redondant via la migration `0004_reduce_discord_role_writes.sql`. La 
 39 tests automatisés, 1 324 membres, 3 218 mouvements, 118 caches Discord `OK`, 7 `ABSENT`, le refus `401` sans
 session et une fiche synchronisée contenant fonctions et activités. Le lot 1 est en production finale.
 
+Le 24 septembre 2026, Cloudflare a de nouveau signalé le dépassement du quota quotidien Queues. Les métriques ont
+attribué 10 361 opérations à D-002 et révélé un rejeu toutes les dix minutes, alors que la configuration active restait
+quotidienne. Le traitement est désormais idempotent au niveau de l'orchestration : validation stricte du cron
+`17 3 * * *`, désactivation des retries du Scheduled Event, verrou quotidien D1 pour la maintenance générale, second
+verrou quotidien pour la collecte Discord et isolation des tâches concurrentes. La migration
+`0005_scheduled_job_runs.sql` et le Worker `c3d84fce-aede-4aa7-ba5f-abba22f6b856` sont actifs en production. Cette
+protection fait partie des critères permanents de D-002 : un événement dupliqué ne doit produire aucun nouveau message.
+
 La demande D-006 étend ensuite l'affichage sans modifier la source de vérité : les responsabilités Discord deviennent
 semi-privées et sont visibles en accès RH ou pour une session portant le rôle FRJ `464706220905857026`. Les fonctions
 et activités restent publiques. Le bouton de rafraîchissement et toutes les modifications métier restent réservés à

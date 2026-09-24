@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 
 const migration = readFileSync(new URL("../migrations/0003_discord_role_cache.sql", import.meta.url), "utf8");
 const worker = readFileSync(new URL("../src/discord-roles.js", import.meta.url), "utf8");
+const scheduled = readFileSync(new URL("../src/scheduled.js", import.meta.url), "utf8");
 const config = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8");
 const client = readFileSync(new URL("../../../js/client.js", import.meta.url), "utf8");
 
@@ -31,6 +32,14 @@ test("limite les lectures et écritures D1 du rafraîchissement périodique", ()
   assert.match(worker, /const allowedRoleIds = await getActiveDiscordRoleIds\(env\);/);
   assert.match(worker, /LEFT JOIN member_discord_role_sync s ON s\.member_id = m\.id/);
   assert.doesNotMatch(worker, /UPDATE member_discord_roles SET last_seen_at/);
+});
+
+test("empêche le rejeu du cron et de D-002 pendant la même journée", () => {
+  assert.match(scheduled, /controller\.noRetry\(\)/);
+  assert.match(scheduled, /controller\.cron !== DAILY_MAINTENANCE_CRON/);
+  assert.match(scheduled, /claimDailyRun/);
+  assert.match(worker, /Duplicate Discord role refresh ignored/);
+  assert.match(worker, /ON CONFLICT\(job_name, run_date\) DO NOTHING/);
 });
 
 test("masque les catégories vides et réserve les responsabilités aux accès RH ou FRJ", () => {
