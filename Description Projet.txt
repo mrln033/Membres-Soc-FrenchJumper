@@ -1,6 +1,6 @@
 Projet = 'Membres Soc FrenchJumper'
 
-Dernière mise à jour de ce document : 24/09/2026
+Dernière mise à jour de ce document : 26/09/2026
 
 ------------------
 -= INSTRUCTIONS =-
@@ -255,13 +255,44 @@ Stockage navigateur temporaire :
 ------------------------
 -= DEMANDES À RÉALISER =-
 ------------------------
->>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-012 <<<
+>>> PROCHAIN IDENTIFIANT À ATTRIBUER : D-014 <<<
 
 Modèle à copier pour une nouvelle demande :
 
-D-012 [TYPE] [À FAIRE]
+D-014 [TYPE] [À FAIRE]
 Demande :
 [Décrire ici le problème, le résultat attendu, les pages ou services concernés, les règles à préserver et, si possible, les critères de validation.]
+
+D-012 [CORRECTIF] [À VALIDER]
+Demande :
+en mode RH, lorsqu'une modification est faite sur une fiche membre, l'affichage ne se met pas à jour après validation et enregistrement...
+
+Avancement au 25/09/2026 :
+- la cause a été identifiée dans le cache HTTP public de `getFiche`, réutilisé lors de la relecture effectuée seulement 500 ms après l'écriture ;
+- après une modification d'informations ou un mouvement RH réussi, la fiche est désormais relue immédiatement avec une URL de lecture unique qui contourne le cache ;
+- les consultations ordinaires conservent le cache public existant et le comportement couvre D1 comme GAS ;
+- un test de non-régression protège les deux parcours de modification ; la publication et la recette utilisateur restent à effectuer.
+
+D-013 [CORRECTIF] [À VALIDER]
+Demande :
+depuis hier, impossible de me connecter via Discord :
+
+Vérification Discord temporairement indisponible (HTTP 401)
+
+Diagnostic au 26/09/2026 :
+- le Worker D1 est sain et `/health` retourne 1 324 membres et 3 219 mouvements ; la configuration OAuth est active en mode `guild_members` ;
+- les secrets Cloudflare requis sont présents par leur nom et restent chiffrés ; aucune valeur sensible n'a été affichée ;
+- les 126 membres du cache Discord sont tous passés en statut `ERROR` lors du cycle du 26 septembre à partir de 03:17 UTC, avec `Discord HTTP 401: Unauthorized` ;
+- leur dernier succès date du 25 septembre à 03:18 UTC, ce qui situe l'invalidation du jeton bot entre ces deux contrôles ;
+- Discord annonce tous ses services opérationnels ; un HTTP 401 sur la lecture d'un membre indique que `DISCORD_BOT_TOKEN` n'est plus accepté ;
+- la réparation attend la régénération du jeton du bot FrenchJumper dans le portail Discord, puis son remplacement coordonné dans les secrets `DISCORD_BOT_TOKEN` des Workers `frj-membres-soc-api` et `discord-proxy`, suivi d'une recette de connexion et de synchronisation.
+
+Avancement au 26/09/2026 après rotation :
+- l'utilisateur confirme avoir renouvelé le jeton Discord lors du changement de propriétaire du bot puis l'avoir enregistré interactivement, sans l'exposer, dans les deux secrets Cloudflare `DISCORD_BOT_TOKEN` ;
+- la modification du secret de `frj-membres-soc-api` a créé la version `e2093619-e10a-47a8-8698-2ccb193ccdd8`, active à 100 % depuis 04:34:54 UTC ;
+- la modification du secret de `discord-proxy` a créé la version `66dec549-fc98-4473-b842-c15b98d44ef6`, active à 100 % depuis 04:37:01 UTC ;
+- `/health` répond HTTP 200 avec 1 324 membres et 3 219 mouvements, et `/auth/config` confirme OAuth Discord configuré en politique `guild_members` ;
+- une connexion Discord réelle puis une synchronisation volontaire restent à valider avant de clôturer D-013.
 
 ------------------------------
 -= RÉALISATIONS EFFECTUÉES =-

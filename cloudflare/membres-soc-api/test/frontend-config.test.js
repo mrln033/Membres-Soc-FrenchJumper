@@ -390,14 +390,24 @@ test("un refus D1 confirmé retire un ancien niveau FRJ du cache", () => {
 });
 
 test("une panne de la lecture RH GAS conserve la fiche publique déjà affichée", () => {
-  const loadFicheSource = clientSource.match(/async function loadFiche\(membreId\) \{[\s\S]*?\n\}/)?.[0] || "";
-  assert.match(loadFicheSource, /data = await apiRequest\("getFiche"/);
+  const loadFicheSource = clientSource.match(/async function loadFiche\(membreId, forceRefresh = false\) \{[\s\S]*?\n\}/)?.[0] || "";
+  assert.match(loadFicheSource, /data = await apiRequest\(\s*"getFiche"/);
   assert.match(loadFicheSource, /displayFiche\(container, data\.membre, data\.historique, publicDiscordRoles\)/);
   assert.match(loadFicheSource, /fiche publique conservée/);
   assert.ok(
     loadFicheSource.indexOf("displayFiche(container") < loadFicheSource.indexOf("loadProtectedDiscordRoles(membreId)"),
     "la fiche publique doit être affichée avant l'enrichissement RH"
   );
+});
+
+test("relit la fiche sans cache après une modification RH", () => {
+  const loadFicheSource = clientSource.match(/async function loadFiche\(membreId, forceRefresh = false\) \{[\s\S]*?\n\}/)?.[0] || "";
+  const memberActionSource = clientSource.match(/async function handleMembreAction\([\s\S]*?\n\}/)?.[0] || "";
+  const editInfoSource = clientSource.match(/async function handleEditMembreInfos\([\s\S]*?\n\}/)?.[0] || "";
+
+  assert.match(loadFicheSource, /forceRefresh \? \{ refresh: Date\.now\(\) \} : \{\}/);
+  assert.match(memberActionSource, /await loadFiche\(membre\.id, true\)/);
+  assert.match(editInfoSource, /await loadFiche\(membre\.id, true\)/);
 });
 
 test("lit toujours les responsabilités semi-privées via D1", () => {
