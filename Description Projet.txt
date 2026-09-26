@@ -271,7 +271,12 @@ Avancement au 25/09/2026 :
 - la cause a été identifiée dans le cache HTTP public de `getFiche`, réutilisé lors de la relecture effectuée seulement 500 ms après l'écriture ;
 - après une modification d'informations ou un mouvement RH réussi, la fiche est désormais relue immédiatement avec une URL de lecture unique qui contourne le cache ;
 - les consultations ordinaires conservent le cache public existant et le comportement couvre D1 comme GAS ;
-- un test de non-régression protège les deux parcours de modification ; la publication et la recette utilisateur restent à effectuer.
+- un test de non-régression protège les deux parcours de modification.
+
+Publication au 26/09/2026 :
+- les changements D-012 et le suivi D-013 ont été fusionnés par la PR #26 au commit `a3754460e6040ca187056af336224e31ad5415c8` ;
+- le déploiement GitHub Pages `36264295410` a réussi et le fichier `js/client.js` public contient les marqueurs de relecture forcée attendus ;
+- la recette utilisateur après modification d'une fiche reste à effectuer avant de clôturer D-012.
 
 D-013 [CORRECTIF] [À VALIDER]
 Demande :
@@ -292,6 +297,7 @@ Avancement au 26/09/2026 après rotation :
 - la modification du secret de `frj-membres-soc-api` a créé la version `e2093619-e10a-47a8-8698-2ccb193ccdd8`, active à 100 % depuis 04:34:54 UTC ;
 - la modification du secret de `discord-proxy` a créé la version `66dec549-fc98-4473-b842-c15b98d44ef6`, active à 100 % depuis 04:37:01 UTC ;
 - `/health` répond HTTP 200 avec 1 324 membres et 3 219 mouvements, et `/auth/config` confirme OAuth Discord configuré en politique `guild_members` ;
+- le suivi de l'incident est publié avec D-012 par la PR #26 au commit `a3754460e6040ca187056af336224e31ad5415c8` ;
 - une connexion Discord réelle puis une synchronisation volontaire restent à valider avant de clôturer D-013.
 
 ------------------------------
