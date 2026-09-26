@@ -509,14 +509,17 @@ function formatDate(date) {
 // ================================
 // CHARGEMENT FICHE
 // ================================
-async function loadFiche(membreId) {
+async function loadFiche(membreId, forceRefresh = false) {
 	console.log("Fonction : client.js - loadFiche(membreId)");
   const container = document.getElementById("ficheMembre");
   container.innerHTML = "Chargement...";
 
   let data;
   try {
-    data = await apiRequest("getFiche", { id: membreId });
+    data = await apiRequest("getFiche", {
+      id: membreId,
+      ...(forceRefresh ? { refresh: Date.now() } : {})
+    });
   } catch (err) {
     console.error(err);
     container.innerHTML = "Erreur chargement";
@@ -955,9 +958,7 @@ async function handleMembreAction(actionLabel, membre, btn) {
 			);
 		}
 
-		setTimeout(() => {
-			loadFiche(membre.id);
-		}, 500);
+		await loadFiche(membre.id, true);
 
 	} catch (err) {
 		console.error(err);
@@ -998,9 +999,7 @@ async function handleEditMembreInfos(membre, btn) {
 		}
 
 		btn.innerText = "OK";
-		setTimeout(() => {
-			loadFiche(membre.id);
-		}, 500);
+		await loadFiche(membre.id, true);
 
 	} catch (err) {
 		console.error(err);
